@@ -6,16 +6,11 @@ RUN npm install -g pnpm
 # Set working directory
 WORKDIR /app
 
-# Copy package files
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY packages/*/package.json ./packages/*/
-COPY apps/web/package.json ./apps/web/
+# Copy all source code first
+COPY . .
 
 # Install dependencies
 RUN pnpm install --frozen-lockfile
-
-# Copy source code
-COPY . .
 
 # Build the project
 RUN pnpm build
