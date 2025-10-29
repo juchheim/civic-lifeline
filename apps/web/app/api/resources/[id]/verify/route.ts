@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { getResourcesCollection, getResourceAuditsCollection, ObjectId } from "@cl/db";
+import { getResourcesCollection, getResourceAuditsCollection } from "@cl/db";
 
 const zBody = z.object({
   method: z.union([z.literal("phone"), z.literal("site"), z.literal("email")]),
@@ -19,8 +19,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
   const col = await getResourcesCollection();
   const audits = await getResourceAuditsCollection();
-  const _id = new ObjectId(id);
-  const upd = await col.updateOne({ _id }, { $set: { verified: { by: who, at, method }, updatedAt: at } });
+  const upd = await col.updateOne({ _id: id } as any, { $set: { verified: { by: who, at, method }, updatedAt: at } });
   if (upd.matchedCount === 0) return NextResponse.json({ error: { code: "NOT_FOUND" } }, { status: 404 });
   await audits.insertOne({ resourceId: id, action: "verify", by: who, at, method, notes });
   return NextResponse.json({ id, verified: { by: who, at, method } });
