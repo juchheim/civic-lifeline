@@ -6,7 +6,12 @@
     "emitDeclarationOnly": false,
     "outDir": "dist",
     "noEmit": false,
-    "lib": ["ES2021"]
+    "lib": ["ES2021"],
+    "paths": {
+      "@cl/db": ["../db/dist/index.d.ts"],
+      "@cl/types": ["../types/dist/index.d.ts"],
+      "@cl/utils": ["../utils/dist/index.d.ts"]
+    }
   },
   "include": ["src"],
   "references": [
