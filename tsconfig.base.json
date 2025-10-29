@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "lib": ["ES2020", "DOM"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "baseUrl": ".",
+    "paths": {
+      "@types/*": ["packages/types/src/*"],
+      "@utils/*": ["packages/utils/src/*"],
+      "@cl/db": ["packages/db/src"],
+      "@cl/types": ["packages/types/src"],
+      "@cl/utils": ["packages/utils/src"]
+    }
+  }
+}

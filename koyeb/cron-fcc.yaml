@@ -1,0 +1,17 @@
+name: cl-fcc-ingest
+regions:
+  - fra
+triggers:
+  - type: cron
+    schedule: "0 6 * * 1"
+scaling:
+  preset: free
+env:
+  - key: MONGO_URI
+    value: ${MONGO_URI}
+  - key: FCC_CSV_URL_TEMPLATE
+    value: ${FCC_CSV_URL_TEMPLATE}
+  - key: NODE_ENV
+    value: production
+run:
+  cmd: pnpm workers:ingest:fcc --state=MS --asOf=$(date -u +%Y-%m-%d)

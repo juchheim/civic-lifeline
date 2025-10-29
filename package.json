@@ -1,0 +1,31 @@
+{
+  "name": "cl-monorepo",
+  "private": true,
+  "packageManager": "pnpm@9.12.0",
+  "scripts": {
+    "build": "pnpm -r --parallel build",
+    "dev": "pnpm --filter @web dev",
+    "lint": "eslint .",
+    "typecheck": "pnpm -r typecheck",
+    "prepare": "if [ -d .git ]; then husky install; fi",
+    "format": "prettier --write .",
+    "prettier": "prettier --check .",
+    "test": "vitest",
+    "workers:ingest:fcc": "tsx packages/workers/src/ingest-fcc.ts"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.2",
+    "eslint-config-prettier": "^9.1.0",
+    "@playwright/test": "^1.48.2",
+    "@types/node": "^20.14.12",
+    "@typescript-eslint/eslint-plugin": "^8.10.0",
+    "@typescript-eslint/parser": "^8.10.0",
+    "eslint": "^9.12.0",
+    "eslint-config-next": "^14.2.5",
+    "husky": "^9.1.6",
+    "prettier": "^3.3.3",
+    "prettier-plugin-tailwindcss": "^0.6.8",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.4"
+  }
+}

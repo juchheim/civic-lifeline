@@ -1,0 +1,101 @@
+### ----------------------------------------------------
+### Environment variables (pulled from your .env)
+### ----------------------------------------------------
+@baseUrl = {{$dotenv NEXT_PUBLIC_APP_BASE_URL}}
+@if not @baseUrl
+@baseUrl = http://localhost:3000
+@endif
+
+@blsBase = {{$dotenv BLS_API_V2_URL}}
+@blsKey  = {{$dotenv BLS_API_KEY}}
+
+@hudCounselorByLocation = {{$dotenv HUD_COUNSELOR_SEARCH_BY_LOCATION_URL}}
+@hudFmr = {{$dotenv HUD_FMR_API_URL}}
+@hudApiKey = {{$dotenv HUD_API_KEY}}
+
+@fccDownload = {{$dotenv FCC_NBM_DOWNLOAD_PAGE}}
+@usdaFeature = {{$dotenv USDA_SNAP_ARCGIS_FEATURE_URL}}
+
+### Handy test variables (Yazoo City area)
+@yazooBbox = -90.7,32.6,-90.1,33.1
+@yazooFips = 28163
+@lat = 32.889
+@lon = -90.405
+@radius = 30
+@startYear = 2018
+@endYear = 2025
+
+### ----------------------------------------------------
+### LOCAL API — Food (USDA SNAP via your server proxy)
+### ----------------------------------------------------
+GET {{baseUrl}}/api/food/snap?bbox={{yazooBbox}}&limit=300
+Accept: application/json
+
+###
+
+# Optional: filter by one or more store types (csv) if your route supports it
+GET {{baseUrl}}/api/food/snap?bbox={{yazooBbox}}&types=Supermarket,Convenience&limit=300
+Accept: application/json
+
+### ----------------------------------------------------
+### LOCAL API — Jobs (BLS LAUS series via your server)
+### ----------------------------------------------------
+GET {{baseUrl}}/api/jobs/unemployment?countyFips={{yazooFips}}&start={{startYear}}&end={{endYear}}
+Accept: application/json
+
+### ----------------------------------------------------
+### LOCAL API — Broadband summary (from your DB after ETL)
+### ----------------------------------------------------
+GET {{baseUrl}}/api/broadband/summary?geo=county&fips={{yazooFips}}
+Accept: application/json
+
+### ----------------------------------------------------
+### LOCAL API — Housing (HUD)
+### ----------------------------------------------------
+# Counselors near a lat/lon (server caches 24h)
+GET {{baseUrl}}/api/housing/counselors?lat={{lat}}&lon={{lon}}&radius={{radius}}
+Accept: application/json
+
+###
+# Fair Market Rents for a county/year
+GET {{baseUrl}}/api/housing/fmr?fips={{yazooFips}}&year={{endYear}}
+Accept: application/json
+
+### ====================================================
+### Upstream sanity checks (optional direct calls)
+### ====================================================
+
+### BLS V2 (timeseries) — direct POST
+POST {{blsBase}}
+Content-Type: application/json
+
+{
+  "seriesid": ["LAUCN281630000000003"],
+  "startyear": "{{startYear}}",
+  "endyear": "{{endYear}}",
+  "registrationkey": "{{$dotenv BLS_API_KEY}}"
+}
+
+###
+
+### HUD Housing Counselor — by location (no key required)
+GET {{hudCounselorByLocation}}?Lat={{lat}}&Long={{lon}}&Distance={{radius}}
+Accept: application/json
+
+###
+
+### HUD FMR — requires API key (header: apikey)
+GET {{hudFmr}}?fips={{yazooFips}}&year={{endYear}}
+Accept: application/json
+apikey: {{hudApiKey}}
+
+###
+
+### FCC download portal (reference only — ETL pulls CSVs)
+GET {{fccDownload}}
+Accept: text/html
+
+###
+# NOTE on USDA upstream:
+# The ArcGIS FeatureServer query is easiest via your server proxy.
+# Direct upstream queries require URL-encoded JSON geometry; use your /api/food/snap instead.
