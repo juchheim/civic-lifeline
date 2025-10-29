@@ -5,8 +5,13 @@
     "declaration": true,
     "emitDeclarationOnly": false,
     "outDir": "dist",
-    "rootDir": "src",
-    "noEmit": false
+    "noEmit": false,
+    "lib": ["ES2021"]
   },
-  "include": ["src"]
+  "include": ["src"],
+  "references": [
+    { "path": "../types" },
+    { "path": "../utils" },
+    { "path": "../db" }
+  ]
 }
