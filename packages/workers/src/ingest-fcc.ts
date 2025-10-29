@@ -17,7 +17,13 @@ function parseArgs(): Args {
   const out: Partial<Args> = {};
   for (const a of args) {
     const m = a.match(/^--([^=]+)=(.+)$/);
-    if (m) (out as any)[m[1]] = m[2];
+    if (m) {
+      const key = m[1];
+      const val = m[2];
+      if (key === "state") out.state = val;
+      else if (key === "asOf") out.asOf = val;
+      else if (key === "url") out.url = val;
+    }
   }
   if (!out.state) throw new Error("--state=MS required");
   if (!out.asOf) throw new Error("--asOf=YYYY-MM-DD required");

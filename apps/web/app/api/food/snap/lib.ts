@@ -46,9 +46,27 @@ export function buildArcgisUrl(bbox: Bbox, limit: number, base?: string): string
   u.searchParams.set("returnGeometry", "true");
   u.searchParams.set("geometryType", "esriGeometryEnvelope");
   u.searchParams.set("geometry", `${minLon},${minLat},${maxLon},${maxLat}`);
-  u.searchParams.set("outFields", "*");
+  u.searchParams.set(
+    "outFields",
+    [
+      "Store_Name",
+      "Store_Street_Address",
+      "Additional_Address",
+      "City",
+      "State",
+      "Zip_Code",
+      "Store_Type",
+      "Latitude",
+      "Longitude",
+      "Phone_Number",
+      "Phone",
+      "Hours",
+      "Store_Hours"
+    ].join(",")
+  );
   u.searchParams.set("resultOffset", "0");
   u.searchParams.set("resultRecordCount", String(limit));
+  u.searchParams.set("geometryPrecision", "5");
   return u.toString();
 }
 
@@ -72,13 +90,13 @@ export function transformArcgisToSnapItems(json: any): SnapItem[] {
     const geom = (f && typeof f === "object" && (f as any).geometry) || {};
 
     const name = attr(attrs, ["store_name", "storename", "name"]);
-    const address1 = attr(attrs, ["street_address", "address", "addr", "site_address"]);
+    const address1 = attr(attrs, ["store_street_address", "street_address", "address", "addr", "site_address"]);
     const city = attr(attrs, ["city", "municipality"]);
     const state = attr(attrs, ["state", "st"]);
     const zip = attr(attrs, ["zip", "zip_code", "zipcode", "postalcode"]);
     const storeType = attr(attrs, ["store_type", "type", "category"]);
-    const phone = attr(attrs, ["phone", "phone_number", "phonenumber"]);
-    const hours = attr(attrs, ["hours", "opening_hours", "open_hours", "operation_hours"]);
+    const phone = attr(attrs, ["phone", "phone_number", "phonenumber", "phone number"]);
+    const hours = attr(attrs, ["hours", "store_hours", "opening_hours", "open_hours", "operation_hours"]);
 
     const x = (geom as any)?.x ?? attr(attrs, ["longitude", "lon", "x"]);
     const y = (geom as any)?.y ?? attr(attrs, ["latitude", "lat", "y"]);

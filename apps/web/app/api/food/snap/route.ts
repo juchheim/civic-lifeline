@@ -67,7 +67,7 @@ export async function GET(req: NextRequest) {
   try {
     const arcgisUrl = buildArcgisUrl(bbox, limit);
     const configuredTimeout = Number(process.env.USDA_SNAP_TIMEOUT_MS);
-    const timeoutMs = Number.isFinite(configuredTimeout) && configuredTimeout > 0 ? configuredTimeout : 20000;
+    const timeoutMs = Number.isFinite(configuredTimeout) && configuredTimeout > 0 ? configuredTimeout : 45000;
     const json = await fetchWithRetry(arcgisUrl, { timeoutMs }, 4);
     const items = transformArcgisToSnapItems(json);
 
