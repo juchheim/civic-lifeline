@@ -7,10 +7,11 @@
     "outDir": "dist",
     "noEmit": false,
     "lib": ["ES2021"],
+    "baseUrl": "../..",
     "paths": {
-      "@cl/db": ["packages/db/dist/index.d.ts"],
-      "@cl/types": ["packages/types/dist/index.d.ts"],
-      "@cl/utils": ["packages/utils/dist/index.d.ts"]
+      "@cl/db": ["packages/db/dist"],
+      "@cl/types": ["packages/types/dist"],
+      "@cl/utils": ["packages/utils/dist"]
     }
   },
   "include": ["src"],
