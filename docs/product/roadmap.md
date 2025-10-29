@@ -28,3 +28,7 @@
 - Rate limits/retries; monitoring; WCAG 2.2 AA audit pass; SEO polish.
 
 > Stretch: Alerts, bilingual mode, county comparisons, Go ETL microservice.
+
+---
+
+Last updated: 2025-10-29 — CI stabilized for workers TypeScript build (Docker).
