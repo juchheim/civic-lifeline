@@ -53,7 +53,7 @@ export default function FoodPage() {
     refetchOnWindowFocus: false,
   });
 
-  const items = data?.items ?? [];
+  const items = useMemo(() => data?.items ?? [], [data]);
   const source = data?.source ?? "USDA ArcGIS";
   const lastUpdated = data?.lastUpdated;
 
@@ -162,4 +162,3 @@ export default function FoodPage() {
     </main>
   );
 }
-
