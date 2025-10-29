@@ -10,7 +10,10 @@
     "baseUrl": ".",
     "paths": {
       "@types/*": ["packages/types/src/*"],
-      "@utils/*": ["packages/utils/src/*"]
+      "@utils/*": ["packages/utils/src/*"],
+      "@cl/types": ["packages/types/src/index.ts"],
+      "@cl/utils": ["packages/utils/src/index.ts"],
+      "@cl/db": ["packages/db/src/index.ts"]
     }
   }
 }
