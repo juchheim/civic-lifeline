@@ -3,6 +3,16 @@ import { z } from "zod";
 import { parseBbox, clampToWorld, Bbox } from "@cl/utils";
 import type { SnapItem } from "@cl/types";
 
+const EARTH_RADIUS = 6378137;
+
+function toWebMercator(lon: number, lat: number): [number, number] {
+  const x = (lon * Math.PI) / 180 * EARTH_RADIUS;
+  const clampedLat = Math.max(Math.min(lat, 89.999999), -89.999999);
+  const y =
+    Math.log(Math.tan(Math.PI / 4 + (clampedLat * Math.PI) / 360)) * EARTH_RADIUS;
+  return [x, y];
+}
+
 export const zQuery = z.object({
   bbox: z
     .string()
@@ -37,31 +47,33 @@ export function buildArcgisUrl(bbox: Bbox, limit: number, base?: string): string
       "VhQ18K5S5F7fNwJ0/ArcGIS/rest/services/USDA_SNAP_Retailers/FeatureServer/0/query"; // replace via env if needed
 
   const [minLon, minLat, maxLon, maxLat] = bbox;
+  const [minX, minY] = toWebMercator(minLon, minLat);
+  const [maxX, maxY] = toWebMercator(maxLon, maxLat);
   const u = new URL(endpoint);
   u.searchParams.set("f", "json");
   u.searchParams.set("where", "1=1");
-  u.searchParams.set("inSR", "4326");
+  u.searchParams.set("inSR", "102100");
   u.searchParams.set("outSR", "4326");
   u.searchParams.set("spatialRel", "esriSpatialRelIntersects");
   u.searchParams.set("returnGeometry", "true");
   u.searchParams.set("geometryType", "esriGeometryEnvelope");
-  u.searchParams.set("geometry", `${minLon},${minLat},${maxLon},${maxLat}`);
+  u.searchParams.set("geometry", `${minX},${minY},${maxX},${maxY}`);
   u.searchParams.set(
     "outFields",
     [
       "Store_Name",
       "Store_Street_Address",
-      "Additional_Address",
+      "Additonal_Address",
       "City",
       "State",
       "Zip_Code",
+      "Zip4",
+      "County",
       "Store_Type",
       "Latitude",
       "Longitude",
-      "Phone_Number",
-      "Phone",
-      "Hours",
-      "Store_Hours"
+      "Incentive_Program",
+      "Grantee_Name"
     ].join(",")
   );
   u.searchParams.set("resultOffset", "0");
@@ -91,9 +103,11 @@ export function transformArcgisToSnapItems(json: any): SnapItem[] {
 
     const name = attr(attrs, ["store_name", "storename", "name"]);
     const address1 = attr(attrs, ["store_street_address", "street_address", "address", "addr", "site_address"]);
+    const address2 = attr(attrs, ["additonal_address", "additional_address"]);
     const city = attr(attrs, ["city", "municipality"]);
     const state = attr(attrs, ["state", "st"]);
     const zip = attr(attrs, ["zip", "zip_code", "zipcode", "postalcode"]);
+    const zip4 = attr(attrs, ["zip4", "zip_4", "zipcode_4"]);
     const storeType = attr(attrs, ["store_type", "type", "category"]);
     const phone = attr(attrs, ["phone", "phone_number", "phonenumber", "phone number"]);
     const hours = attr(attrs, ["hours", "store_hours", "opening_hours", "open_hours", "operation_hours"]);
@@ -105,7 +119,8 @@ export function transformArcgisToSnapItems(json: any): SnapItem[] {
       continue; // skip incomplete 
     }
 
-    const addressParts = [address1, city, state, zip].filter(Boolean);
+    const postal = zip4 && zip ? `${zip}-${zip4}` : zip;
+    const addressParts = [address1, address2, city, state, postal].filter(Boolean);
     const address = addressParts.join(", ");
 
     items.push({
