@@ -1,12 +1,16 @@
 {
-  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
+    "target": "ES2020",
+    "lib": ["ES2021"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
     "composite": true,
     "declaration": true,
     "emitDeclarationOnly": false,
     "outDir": "dist",
     "noEmit": false,
-    "lib": ["ES2021"],
+    "strict": true,
+    "skipLibCheck": true,
     "baseUrl": "../..",
     "paths": {
       "@cl/db": ["packages/db/dist"],
