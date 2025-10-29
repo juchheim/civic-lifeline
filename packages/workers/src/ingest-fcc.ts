@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 import { pipeline } from "node:stream";
 import { createWriteStream, createReadStream } from "node:fs";
-import { createHash } from "node:crypto";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { parse } from "csv-parse";
@@ -15,7 +14,7 @@ interface Args { state: string; asOf: string; url?: string }
 
 function parseArgs(): Args {
   const args = process.argv.slice(2);
-  const out: any = {};
+  const out: Partial<Args> = {};
   for (const a of args) {
     const m = a.match(/^--([^=]+)=(.+)$/);
     if (m) out[m[1]] = m[2];
@@ -50,7 +49,7 @@ async function main() {
   if (res.statusCode !== 200) throw new Error(`download failed: ${res.statusCode}`);
   const size = Number(res.headers["content-length"] || 0);
   await new Promise<void>((resolve, reject) =>
-    pipeline(res.body as any, createWriteStream(tmpPath), (err) => (err ? reject(err) : resolve())),
+    pipeline(res.body as unknown as NodeJS.ReadableStream, createWriteStream(tmpPath), (err) => (err ? reject(err) : resolve())),
   );
   log.info("downloaded", { bytes: size, tmpPath });
 
@@ -62,9 +61,9 @@ async function main() {
   let rows = 0;
   const parser = createReadStream(tmpPath).pipe(
     parse({ columns: true, relax_column_count: true, bom: true, skip_empty_lines: true })
-  );
+  ) as unknown as AsyncIterable<Record<string, string>>;
 
-  for await (const rec of parser as any as AsyncIterable<Record<string, string>>) {
+  for await (const rec of parser) {
     rows++;
     // Defensive column access
     const fips = (rec["county_fips"] || rec["county"] || rec["FIPS"] || rec["fips"] || "").toString().padStart(5, "0");

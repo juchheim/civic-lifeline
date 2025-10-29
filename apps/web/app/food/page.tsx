@@ -1,14 +1,13 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { zSnapResponse } from "@cl/types";
 import { bboxToQueryParam } from "@cl/utils";
 import SourceChip from "@/components/SourceChip";
 import EmptyState from "@/components/EmptyState";
 import StoreCard from "@/components/StoreCard";
-import { createLogger } from "@/lib/logger";
 
 const MapView = dynamic(() => import("@/components/MapView"), { ssr: false });
 
@@ -24,7 +23,7 @@ function useDebouncedValue<T>(value: T, delayMs: number): T {
 }
 
 export default function FoodPage() {
-  const log = useMemo(() => createLogger("ui/food"), []);
+  // const log = useMemo(() => createLogger("ui/food"), []);
   const [bbox, setBbox] = useState<Bbox | null>(null);
   const [selectedTypes, setSelectedTypes] = useState<Set<string>>(new Set());
   const debouncedBbox = useDebouncedValue(bbox, 400);
@@ -44,7 +43,7 @@ export default function FoodPage() {
     return zSnapResponse.parse(json);
   }, [bboxParam, typesParam]);
 
-  const { data, isFetching, isLoading, isError, error, refetch } = useQuery({
+  const { data, isFetching, isLoading, isError } = useQuery({
     queryKey: ["snap", bboxParam, typesParam],
     queryFn: fetchSnap,
     enabled: !!bboxParam,

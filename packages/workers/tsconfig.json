@@ -8,9 +8,9 @@
     "noEmit": false,
     "lib": ["ES2021"],
     "paths": {
-      "@cl/db": ["../db/dist/index.d.ts"],
-      "@cl/types": ["../types/dist/index.d.ts"],
-      "@cl/utils": ["../utils/dist/index.d.ts"]
+      "@cl/db": ["packages/db/dist/index.d.ts"],
+      "@cl/types": ["packages/types/dist/index.d.ts"],
+      "@cl/utils": ["packages/utils/dist/index.d.ts"]
     }
   },
   "include": ["src"],

@@ -25,9 +25,9 @@ export async function getFccBroadbandCollection(): Promise<Collection<FccBroadba
   return db.collection<FccBroadband & { _id: string }>("fccBroadband");
 }
 
-export async function getResourcesCollection(): Promise<Collection<any>> {
+export async function getResourcesCollection(): Promise<Collection<Resource & { _id: string }>> {
   const db = await getDb();
-  return db.collection("resources");
+  return db.collection<Resource & { _id: string }>("resources");
 }
 
 export interface ResourceAudit {

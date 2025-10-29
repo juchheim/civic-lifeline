@@ -14,9 +14,8 @@ function getRedis(): Redis | null {
 }
 
 async function fetchWithRetry(url: string, opts: { timeoutMs: number }, maxRetries = 3): Promise<any> {
-  let attempt = 0;
   let delay = 200;
-  while (true) {
+  for (let attempt = 0; attempt <= maxRetries; attempt += 1) {
     const controller = new AbortController();
     const t = setTimeout(() => controller.abort(), opts.timeoutMs);
     try {
@@ -36,9 +35,8 @@ async function fetchWithRetry(url: string, opts: { timeoutMs: number }, maxRetri
       return json;
     } catch (err) {
       clearTimeout(t);
-      if (attempt >= maxRetries) throw err;
+      if (attempt === maxRetries) throw err;
       await new Promise((r) => setTimeout(r, delay));
-      attempt += 1;
       delay = Math.min(2000, delay * 2);
     }
   }
@@ -63,7 +61,9 @@ export async function GET(req: NextRequest) {
         return NextResponse.json(JSON.parse(cached), { headers: { "x-cache": "hit" } });
       }
     }
-  } catch {}
+  } catch (e) {
+    log.warn("cache get error", { cacheKey, error: e instanceof Error ? e.message : String(e) });
+  }
 
   try {
     const endpoint = buildHudCounselorsUrl(lat, lon, radius);
@@ -80,7 +80,9 @@ export async function GET(req: NextRequest) {
         await redis.set(cacheKey, JSON.stringify(response), "EX", 3600);
         log.debug("cache set", { cacheKey });
       }
-    } catch {}
+    } catch (e) {
+      log.warn("cache set error", { cacheKey, error: e instanceof Error ? e.message : String(e) });
+    }
     return NextResponse.json(response, { headers: { "x-cache": "miss" } });
   } catch (err) {
     log.error("upstream error", { error: err instanceof Error ? err.message : String(err) });

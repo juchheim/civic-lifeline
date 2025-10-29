@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { MS_COUNTIES } from "@/data/ms-counties";
 import SourceChip from "@/components/SourceChip";

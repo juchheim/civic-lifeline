@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import Redis from "ioredis";
-import { z } from "zod";
 import { zSnapItem } from "@cl/types";
 import { zQuery, normalizeBbox, buildArcgisUrl, transformArcgisToSnapItems, hashKey } from "./lib";
 import { createLogger } from "@/lib/logger";
@@ -17,13 +16,12 @@ function getRedis(): Redis | null {
 }
 
 async function fetchWithRetry(url: string, opts: { timeoutMs: number }, maxRetries = 4): Promise<any> {
-  let attempt = 0;
   let delay = 200;
-  while (true) {
+  for (let attempt = 0; attempt <= maxRetries; attempt += 1) {
     const controller = new AbortController();
     const t = setTimeout(() => controller.abort(), opts.timeoutMs);
     try {
-      const res = await fetch(url, { signal: controller.signal, headers: { "accept": "application/json" }, cache: "no-store" });
+      const res = await fetch(url, { signal: controller.signal, headers: { accept: "application/json" }, cache: "no-store" });
       clearTimeout(t);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
@@ -31,9 +29,8 @@ async function fetchWithRetry(url: string, opts: { timeoutMs: number }, maxRetri
       return json;
     } catch (err) {
       clearTimeout(t);
-      if (attempt >= maxRetries) throw err;
+      if (attempt === maxRetries) throw err;
       await new Promise((r) => setTimeout(r, delay));
-      attempt += 1;
       delay = Math.min(2000, delay * 2);
     }
   }
@@ -62,7 +59,9 @@ export async function GET(req: NextRequest) {
         return NextResponse.json(data, { headers: { "x-cache": "hit" } });
       }
     }
-  } catch {}
+  } catch (e) {
+    log.warn("cache get error", { key, error: e instanceof Error ? e.message : String(e) });
+  }
 
   // Upstream fetch
   try {
@@ -96,7 +95,9 @@ export async function GET(req: NextRequest) {
         await redis.set(key, JSON.stringify(response), "EX", ttl);
         log.debug("cache set", { key, ttl });
       }
-    } catch {}
+    } catch (e) {
+      log.warn("cache set error", { key, error: e instanceof Error ? e.message : String(e) });
+    }
 
     log.info("success", { count: limited.length });
     return NextResponse.json(response, { headers: { "x-cache": "miss" } });
