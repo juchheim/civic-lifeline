@@ -22,6 +22,7 @@ export const zQuery = z.object({
     .string()
     .optional()
     .transform((v) => (v ? Math.min(500, Math.max(1, parseInt(v, 10))) : 300)),
+  debug: z.string().optional(),
 });
 
 export function normalizeBbox(input: string): Bbox {
