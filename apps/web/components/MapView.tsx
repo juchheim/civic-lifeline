@@ -1,14 +1,22 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { MapContainer, Marker, Popup, TileLayer, useMapEvents } from "react-leaflet";
+import type { Map as LeafletMap } from "leaflet";
 import type { SnapItem } from "@cl/types";
 
 type Bbox = [number, number, number, number];
 
+function boundsToBbox(bounds: any): Bbox {
+  const south = bounds.getSouth();
+  const west = bounds.getWest();
+  const north = bounds.getNorth();
+  const east = bounds.getEast();
+  return [west, south, east, north];
+}
+
 function ViewportListener({ onBboxChange }: { onBboxChange: (b: Bbox) => void }) {
   const map = useMapEvents({
-    load: () => onBboxChange(boundsToBbox(map.getBounds())),
     moveend: () => onBboxChange(boundsToBbox(map.getBounds())),
     zoomend: () => onBboxChange(boundsToBbox(map.getBounds())),
   });
@@ -20,23 +28,41 @@ function ViewportListener({ onBboxChange }: { onBboxChange: (b: Bbox) => void })
   return null;
 }
 
-function boundsToBbox(bounds: any): Bbox {
-  const south = bounds.getSouth();
-  const west = bounds.getWest();
-  const north = bounds.getNorth();
-  const east = bounds.getEast();
-  return [west, south, east, north];
-}
-
-export default function MapView({ items, onBboxChange }: { items: SnapItem[]; onBboxChange: (b: Bbox) => void }) {
+export default function MapView({
+  items,
+  onBboxChange,
+  focus,
+}: {
+  items: SnapItem[];
+  onBboxChange: (b: Bbox) => void;
+  focus?: SnapItem | null;
+}) {
   const center = useMemo<[number, number]>(() => [32.889, -90.405], []); // [lat, lon] Yazoo City, MS
   const zoom = 10;
+  const mapRef = useRef<LeafletMap | null>(null);
 
-  // Leaflet must only run on client; this file is dynamically imported with ssr:false from page
+  useEffect(() => {
+    if (!mapRef.current || !focus) return;
+    const map = mapRef.current;
+    const target: [number, number] = [focus.coords[1], focus.coords[0]];
+    const nextZoom = map.getZoom() < 14 ? 14 : map.getZoom();
+    map.flyTo(target, nextZoom, { duration: 0.6 });
+  }, [focus]);
+
   return (
-    <MapContainer {...({ center, zoom, style: { height: "50vh", width: "100%" }, scrollWheelZoom: true } as any)}>
+    <MapContainer
+      {...({ center, zoom, style: { height: "50vh", width: "100%" }, scrollWheelZoom: true } as any)}
+      whenCreated={(mapInstance: LeafletMap) => {
+        mapRef.current = mapInstance;
+        onBboxChange(boundsToBbox(mapInstance.getBounds()));
+      }}
+    >
       <TileLayer
-        {...({ attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors', url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" } as any)}
+        {...({
+          attribution:
+            '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+          url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+        } as any)}
       />
       <ViewportListener onBboxChange={onBboxChange} />
       {items.map((it) => (
@@ -53,4 +79,3 @@ export default function MapView({ items, onBboxChange }: { items: SnapItem[]; on
     </MapContainer>
   );
 }
-

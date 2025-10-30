@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { zSnapResponse } from "@cl/types";
+import { zSnapResponse, type SnapResponse, type SnapItem } from "@cl/types";
 import { bboxToQueryParam } from "@cl/utils";
 import SourceChip from "@/components/SourceChip";
 import EmptyState from "@/components/EmptyState";
@@ -43,7 +43,7 @@ export default function FoodPage() {
     return zSnapResponse.parse(json);
   }, [bboxParam, typesParam]);
 
-  const { data, isFetching, isLoading, isError } = useQuery({
+  const { data, isFetching, isLoading, isError } = useQuery<SnapResponse | null>({
     queryKey: ["snap", bboxParam, typesParam],
     queryFn: fetchSnap,
     enabled: !!bboxParam,
@@ -56,12 +56,17 @@ export default function FoodPage() {
   const items = useMemo(() => data?.items ?? [], [data]);
   const source = data?.source ?? "USDA ArcGIS";
   const lastUpdated = data?.lastUpdated;
+  const [focusedItem, setFocusedItem] = useState<SnapItem | null>(null);
 
   const availableTypes = useMemo(() => {
     const s = new Set<string>();
     for (const it of items) if (it.storeType) s.add(it.storeType);
     return Array.from(s).sort();
   }, [items]);
+
+  useEffect(() => {
+    setFocusedItem(null);
+  }, [typesParam]);
 
   const onToggleType = (t: string) => {
     setSelectedTypes((prev) => {
@@ -109,7 +114,7 @@ export default function FoodPage() {
       <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
         <section className="md:col-span-7">
           <div className="rounded border bg-white overflow-hidden" aria-label="Map of SNAP retailers">
-            <MapView items={items} onBboxChange={onBboxChange} />
+            <MapView items={items} onBboxChange={onBboxChange} focus={focusedItem} />
           </div>
         </section>
 
@@ -153,7 +158,7 @@ export default function FoodPage() {
                 <ul>
                   {items.map((it) => (
                     <li key={it.id}>
-                      <StoreCard item={it} />
+                      <StoreCard item={it} onFocus={setFocusedItem} />
                     </li>
                   ))}
                 </ul>
