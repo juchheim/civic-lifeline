@@ -89,7 +89,28 @@ export default function MapView({
       />
       <ViewportListener onBboxChange={onBboxChange} />
       {items.map((it) => (
-        <Marker key={it.id} position={[it.coords[1], it.coords[0]] /* [lat, lon] */}>
+        <Marker
+          key={it.id}
+          position={[it.coords[1], it.coords[0]] /* [lat, lon] */}
+          eventHandlers={{
+            add: (e: any) => {
+              const iconEl: HTMLElement | null = e?.target?._icon ?? null;
+              const shadowEl: HTMLElement | null = e?.target?._shadow ?? null;
+              const animate = (el: HTMLElement | null) => {
+                if (!el) return;
+                el.style.opacity = "0";
+                el.style.transition = "opacity 250ms ease-out, transform 250ms ease-out";
+                el.style.transform = "translateY(4px)";
+                requestAnimationFrame(() => {
+                  el.style.opacity = "1";
+                  el.style.transform = "translateY(0)";
+                });
+              };
+              animate(iconEl);
+              animate(shadowEl);
+            },
+          }}
+        >
           <Popup
             ref={(instance) => {
               if (instance) {
