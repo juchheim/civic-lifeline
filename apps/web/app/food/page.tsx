@@ -1,9 +1,10 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { zSnapResponse, type SnapResponse, type SnapItem } from "@cl/types";
+import type { Map as LeafletMap } from "leaflet";
 import { bboxToQueryParam } from "@cl/utils";
 import SourceChip from "@/components/SourceChip";
 import EmptyState from "@/components/EmptyState";
@@ -56,17 +57,13 @@ export default function FoodPage() {
   const items = useMemo(() => data?.items ?? [], [data]);
   const source = data?.source ?? "USDA ArcGIS";
   const lastUpdated = data?.lastUpdated;
-  const [focusedItem, setFocusedItem] = useState<SnapItem | null>(null);
+  const mapRef = useRef<LeafletMap | null>(null);
 
   const availableTypes = useMemo(() => {
     const s = new Set<string>();
     for (const it of items) if (it.storeType) s.add(it.storeType);
     return Array.from(s).sort();
   }, [items]);
-
-  useEffect(() => {
-    setFocusedItem(null);
-  }, [typesParam]);
 
   const onToggleType = (t: string) => {
     setSelectedTypes((prev) => {
@@ -82,6 +79,14 @@ export default function FoodPage() {
       if (!prev) return b;
       return prev[0] === b[0] && prev[1] === b[1] && prev[2] === b[2] && prev[3] === b[3] ? prev : b;
     });
+  }, []);
+
+  const handleStoreFocus = useCallback((store: SnapItem) => {
+    const map = mapRef.current;
+    if (!map) return;
+    const latlng: [number, number] = [store.coords[1], store.coords[0]];
+    const nextZoom = map.getZoom() < 14 ? 14 : map.getZoom();
+    map.flyTo(latlng, nextZoom, { duration: 0.6 });
   }, []);
 
   return (
@@ -114,7 +119,13 @@ export default function FoodPage() {
       <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
         <section className="md:col-span-7">
           <div className="rounded border bg-white overflow-hidden" aria-label="Map of SNAP retailers">
-            <MapView items={items} onBboxChange={onBboxChange} focus={focusedItem} />
+            <MapView
+              items={items}
+              onBboxChange={onBboxChange}
+              onMapReady={(map) => {
+                mapRef.current = map;
+              }}
+            />
           </div>
         </section>
 
@@ -158,7 +169,7 @@ export default function FoodPage() {
                 <ul>
                   {items.map((it) => (
                     <li key={it.id}>
-                      <StoreCard item={it} onFocus={setFocusedItem} />
+                      <StoreCard item={it} onFocus={handleStoreFocus} />
                     </li>
                   ))}
                 </ul>
