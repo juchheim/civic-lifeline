@@ -78,7 +78,7 @@ export default function MapView({
 
   return (
     <MapContainer
-      {...({ center, zoom, style: { height: "50vh", width: "100%" }, scrollWheelZoom: true, ref: mapRef } as any)}
+      {...({ center, zoom, minZoom: 8, style: { height: "50vh", width: "100%" }, scrollWheelZoom: true, ref: mapRef } as any)}
     >
       <TileLayer
         {...({
@@ -98,7 +98,7 @@ export default function MapView({
               const shadowEl: HTMLElement | null = e?.target?._shadow ?? null;
               const fade = (el: HTMLElement | null) => {
                 if (!el) return;
-                el.style.transition = "opacity 220ms ease-out";
+                el.style.transition = "opacity 350ms ease-out";
                 el.style.opacity = "0";
                 // wait a frame so Leaflet sets initial position before we fade
                 requestAnimationFrame(() => {
