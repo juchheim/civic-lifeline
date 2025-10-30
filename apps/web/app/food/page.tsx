@@ -72,9 +72,12 @@ export default function FoodPage() {
     });
   };
 
-  const onBboxChange = (b: Bbox) => {
-    setBbox(b);
-  };
+  const onBboxChange = useCallback((b: Bbox) => {
+    setBbox((prev) => {
+      if (!prev) return b;
+      return prev[0] === b[0] && prev[1] === b[1] && prev[2] === b[2] && prev[3] === b[3] ? prev : b;
+    });
+  }, []);
 
   return (
     <main className="flex flex-col gap-4 p-4 md:p-6">

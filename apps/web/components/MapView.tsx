@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { MapContainer, Marker, Popup, TileLayer, useMapEvents } from "react-leaflet";
 import type { SnapItem } from "@cl/types";
 
@@ -12,6 +12,11 @@ function ViewportListener({ onBboxChange }: { onBboxChange: (b: Bbox) => void })
     moveend: () => onBboxChange(boundsToBbox(map.getBounds())),
     zoomend: () => onBboxChange(boundsToBbox(map.getBounds())),
   });
+
+  useEffect(() => {
+    onBboxChange(boundsToBbox(map.getBounds()));
+  }, [map, onBboxChange]);
+
   return null;
 }
 
@@ -48,5 +53,4 @@ export default function MapView({ items, onBboxChange }: { items: SnapItem[]; on
     </MapContainer>
   );
 }
-
 
