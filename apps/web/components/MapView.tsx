@@ -92,8 +92,16 @@ export default function MapView({
         <Marker key={it.id} position={[it.coords[1], it.coords[0]] /* [lat, lon] */}>
           <Popup
             ref={(instance) => {
-              if (instance) popupRefs.current[it.id] = instance;
-              else delete popupRefs.current[it.id];
+              if (instance) {
+                try {
+                  (instance as any).options.autoPan = false;
+                } catch (e) {
+                  // ignore
+                }
+                popupRefs.current[it.id] = instance;
+              } else {
+                delete popupRefs.current[it.id];
+              }
             }}
           >
             <div className="space-y-1">
