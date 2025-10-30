@@ -47,12 +47,12 @@ export default function MapView({
       const L: any = (mod as any).default ?? mod;
       if (cancelled) return;
       const snapIcon = L.icon({
-        iconUrl: "/icons/snap-marker.png",
-        iconRetinaUrl: "/icons/snap-marker@2x.png",
+        iconUrl: "/icons/marker-icon.png",
+        iconRetinaUrl: "/icons/marker-icon-2x.png",
         iconSize: [37, 41],
         iconAnchor: [18, 41],
         popupAnchor: [0, -36],
-        shadowUrl: "/marker-shadow.png",
+        shadowUrl: "/icons/marker-shadow.png",
         shadowSize: [41, 41],
         shadowAnchor: [18, 41],
       });
