@@ -37,7 +37,7 @@ export default function MapView({
   focus?: SnapItem | null;
 }) {
   const center = useMemo<[number, number]>(() => [32.889, -90.405], []); // [lat, lon] Yazoo City, MS
-  const zoom = 8;
+  const zoom = 12;
   const mapRef = useRef<any>(null);
   const popupRefs = useRef<Record<string, any>>({});
   useEffect(() => {
@@ -78,7 +78,7 @@ export default function MapView({
 
   return (
     <MapContainer
-      {...({ center, zoom, minZoom: 8, style: { height: "50vh", width: "100%" }, scrollWheelZoom: true, ref: mapRef } as any)}
+      {...({ center, zoom, minZoom: 12, style: { height: "50vh", width: "100%" }, scrollWheelZoom: true, ref: mapRef } as any)}
     >
       <TileLayer
         {...({
