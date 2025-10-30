@@ -78,7 +78,7 @@ export default function MapView({
 
   return (
     <MapContainer
-      {...({ center, zoom, minZoom: 8, style: { height: "50vh", width: "100%" }, scrollWheelZoom: true, ref: mapRef } as any)}
+      {...({ center, zoom, minZoom: 10, style: { height: "50vh", width: "100%" }, scrollWheelZoom: true, ref: mapRef } as any)}
     >
       <TileLayer
         {...({
