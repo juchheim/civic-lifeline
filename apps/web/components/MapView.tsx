@@ -51,11 +51,7 @@ export default function MapView({
 
   return (
     <MapContainer
-      {...({ center, zoom, style: { height: "50vh", width: "100%" }, scrollWheelZoom: true } as any)}
-      whenCreated={(mapInstance: LeafletMap) => {
-        onBboxChange(boundsToBbox(mapInstance.getBounds()));
-        mapRef.current = mapInstance;
-      }}
+      {...({ center, zoom, style: { height: "50vh", width: "100%" }, scrollWheelZoom: true, ref: mapRef } as any)}
     >
       <TileLayer
         {...({
