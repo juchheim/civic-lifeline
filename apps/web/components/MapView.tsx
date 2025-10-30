@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useRef } from "react";
 import { MapContainer, Marker, Popup, TileLayer, useMapEvents } from "react-leaflet";
-import type { Map as LeafletMap } from "leaflet";
 import type { SnapItem } from "@cl/types";
 
 type Bbox = [number, number, number, number];
@@ -39,8 +38,30 @@ export default function MapView({
 }) {
   const center = useMemo<[number, number]>(() => [32.889, -90.405], []); // [lat, lon] Yazoo City, MS
   const zoom = 10;
-  const mapRef = useRef<LeafletMap | null>(null);
+  const mapRef = useRef<any>(null);
   const popupRefs = useRef<Record<string, any>>({});
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const mod = await import("leaflet");
+      const L: any = (mod as any).default ?? mod;
+      if (cancelled) return;
+      const snapIcon = L.icon({
+        iconUrl: "/icons/snap-marker.png",
+        iconRetinaUrl: "/icons/snap-marker@2x.png",
+        iconSize: [37, 41],
+        iconAnchor: [18, 41],
+        popupAnchor: [0, -36],
+        shadowUrl: "/marker-shadow.png",
+        shadowSize: [41, 41],
+        shadowAnchor: [18, 41],
+      });
+      L.Marker.prototype.options.icon = snapIcon;
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (!mapRef.current || !focus) return;
