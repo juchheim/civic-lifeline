@@ -45,7 +45,7 @@ export default function MapView({
     if (!mapRef.current || !focus) return;
     const map = mapRef.current;
     const target: [number, number] = [focus.coords[1], focus.coords[0]];
-    const nextZoom = map.getZoom() < 14 ? 14 : map.getZoom();
+    const nextZoom = Math.max(map.getZoom(), 16);
     map.flyTo(target, nextZoom, { duration: 0.6 });
   }, [focus]);
 
