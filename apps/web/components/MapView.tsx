@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { MapContainer, Marker, Popup, TileLayer, useMapEvents } from "react-leaflet";
 import type { Map as LeafletMap } from "leaflet";
 import type { SnapItem } from "@cl/types";
@@ -31,21 +31,30 @@ function ViewportListener({ onBboxChange }: { onBboxChange: (b: Bbox) => void })
 export default function MapView({
   items,
   onBboxChange,
-  onMapReady,
+  focus,
 }: {
   items: SnapItem[];
   onBboxChange: (b: Bbox) => void;
-  onMapReady?: (map: LeafletMap) => void;
+  focus?: SnapItem | null;
 }) {
   const center = useMemo<[number, number]>(() => [32.889, -90.405], []); // [lat, lon] Yazoo City, MS
   const zoom = 10;
+  const mapRef = useRef<LeafletMap | null>(null);
+
+  useEffect(() => {
+    if (!mapRef.current || !focus) return;
+    const map = mapRef.current;
+    const target: [number, number] = [focus.coords[1], focus.coords[0]];
+    const nextZoom = map.getZoom() < 14 ? 14 : map.getZoom();
+    map.flyTo(target, nextZoom, { duration: 0.6 });
+  }, [focus]);
 
   return (
     <MapContainer
       {...({ center, zoom, style: { height: "50vh", width: "100%" }, scrollWheelZoom: true } as any)}
       whenCreated={(mapInstance: LeafletMap) => {
         onBboxChange(boundsToBbox(mapInstance.getBounds()));
-        onMapReady?.(mapInstance);
+        mapRef.current = mapInstance;
       }}
     >
       <TileLayer
