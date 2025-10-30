@@ -40,6 +40,7 @@ export default function MapView({
   const center = useMemo<[number, number]>(() => [32.889, -90.405], []); // [lat, lon] Yazoo City, MS
   const zoom = 10;
   const mapRef = useRef<LeafletMap | null>(null);
+  const popupRefs = useRef<Record<string, any>>({});
 
   useEffect(() => {
     if (!mapRef.current || !focus) return;
@@ -47,6 +48,11 @@ export default function MapView({
     const target: [number, number] = [focus.coords[1], focus.coords[0]];
     const nextZoom = Math.max(map.getZoom(), 16);
     map.flyTo(target, nextZoom, { duration: 0.6 });
+
+    const popup = popupRefs.current[focus.id];
+    if (popup) {
+      popup.openOn(map);
+    }
   }, [focus]);
 
   return (
@@ -63,7 +69,12 @@ export default function MapView({
       <ViewportListener onBboxChange={onBboxChange} />
       {items.map((it) => (
         <Marker key={it.id} position={[it.coords[1], it.coords[0]] /* [lat, lon] */}>
-          <Popup>
+          <Popup
+            ref={(instance) => {
+              if (instance) popupRefs.current[it.id] = instance;
+              else delete popupRefs.current[it.id];
+            }}
+          >
             <div className="space-y-1">
               <div className="font-medium">{it.name}</div>
               <div className="text-xs text-gray-600">{it.address}</div>
