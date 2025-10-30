@@ -96,18 +96,17 @@ export default function MapView({
             add: (e: any) => {
               const iconEl: HTMLElement | null = e?.target?._icon ?? null;
               const shadowEl: HTMLElement | null = e?.target?._shadow ?? null;
-              const animate = (el: HTMLElement | null) => {
+              const fade = (el: HTMLElement | null) => {
                 if (!el) return;
+                el.style.transition = "opacity 220ms ease-out";
                 el.style.opacity = "0";
-                el.style.transition = "opacity 250ms ease-out, transform 250ms ease-out";
-                el.style.transform = "translateY(4px)";
+                // wait a frame so Leaflet sets initial position before we fade
                 requestAnimationFrame(() => {
                   el.style.opacity = "1";
-                  el.style.transform = "translateY(0)";
                 });
               };
-              animate(iconEl);
-              animate(shadowEl);
+              fade(iconEl);
+              fade(shadowEl);
             },
           }}
         >
