@@ -37,7 +37,7 @@ export default function MapView({
   focus?: SnapItem | null;
 }) {
   const center = useMemo<[number, number]>(() => [32.889, -90.405], []); // [lat, lon] Yazoo City, MS
-  const zoom = 12;
+  const zoom = 13;
   const mapRef = useRef<any>(null);
   const popupRefs = useRef<Record<string, any>>({});
   useEffect(() => {
