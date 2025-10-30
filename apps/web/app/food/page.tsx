@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { zSnapResponse, type SnapResponse, type SnapItem } from "@cl/types";
 import { bboxToQueryParam } from "@cl/utils";
@@ -26,6 +26,12 @@ export default function FoodPage() {
   // const log = useMemo(() => createLogger("ui/food"), []);
   const [bbox, setBbox] = useState<Bbox | null>(null);
   const [selectedTypes, setSelectedTypes] = useState<Set<string>>(new Set());
+  const [initialCenter, setInitialCenter] = useState<[number, number] | null>(null);
+  const [isGeolocating, setIsGeolocating] = useState(false);
+  const [isGeocoding, setIsGeocoding] = useState(false);
+  const [showManualInput, setShowManualInput] = useState(false);
+  const [manualQuery, setManualQuery] = useState("");
+  const [locationError, setLocationError] = useState<string | null>(null);
   const debouncedBbox = useDebouncedValue(bbox, 400);
 
   const typesParam = useMemo(() => (selectedTypes.size ? Array.from(selectedTypes).sort().join(",") : undefined), [selectedTypes]);
@@ -88,6 +94,141 @@ export default function FoodPage() {
     setFocusedItem(null);
   }, [typesParam]);
 
+  const handleLocationSelected = useCallback(
+    (lat: number, lon: number) => {
+      setInitialCenter([lat, lon]);
+      setBbox(null);
+      setFocusedItem(null);
+      setLocationError(null);
+      setShowManualInput(false);
+      setManualQuery("");
+    },
+    [setFocusedItem]
+  );
+
+  const handleUseCurrentLocation = useCallback(() => {
+    setLocationError(null);
+    if (!navigator.geolocation) {
+      setLocationError("Your browser does not support geolocation. Please enter your location instead.");
+      setShowManualInput(true);
+      return;
+    }
+    setIsGeolocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setIsGeolocating(false);
+        handleLocationSelected(pos.coords.latitude, pos.coords.longitude);
+      },
+      () => {
+        setIsGeolocating(false);
+        setLocationError("We couldn't access your current location. Please allow access or enter it manually.");
+      }
+    );
+  }, [handleLocationSelected]);
+
+  const handleManualSubmit = useCallback(
+    async (event: FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      const query = manualQuery.trim();
+      if (!query) {
+        setLocationError("Please enter a location.");
+        return;
+      }
+      setLocationError(null);
+      setIsGeocoding(true);
+      try {
+        const res = await fetch(`/api/geocode?q=${encodeURIComponent(query)}`, {
+          headers: { accept: "application/json" },
+        });
+        if (!res.ok) {
+          throw new Error("Geocode failed");
+        }
+        const json = await res.json();
+        if (typeof json.lat !== "number" || typeof json.lon !== "number") {
+          throw new Error("Invalid geocode response");
+        }
+        handleLocationSelected(json.lat, json.lon);
+      } catch (err) {
+        console.error(err);
+        setLocationError("We couldn't find that location. Try a full address, city and state, or ZIP code.");
+      } finally {
+        setIsGeocoding(false);
+      }
+    },
+    [handleLocationSelected, manualQuery]
+  );
+
+  const mapReady = !!initialCenter;
+
+  const locationPrompt = (
+    <div className="flex h-[50vh] w-full flex-col items-center justify-center gap-4 bg-gray-50 p-6 text-center">
+      <div className="space-y-2">
+        <h2 className="text-lg font-semibold">Choose a location to find nearby SNAP retailers</h2>
+        <p className="text-sm text-gray-600">Use your current location or enter an address, city/state, or ZIP code.</p>
+      </div>
+      <div className="flex flex-col gap-2 w-full max-w-sm">
+        <button
+          type="button"
+          onClick={handleUseCurrentLocation}
+          disabled={isGeolocating || isGeocoding}
+          className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
+        >
+          {isGeolocating ? "Locating…" : "Use my current location"}
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setShowManualInput(true);
+            setLocationError(null);
+          }}
+          disabled={isGeolocating || isGeocoding}
+          className="rounded border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:border-gray-200 disabled:text-gray-400"
+        >
+          Enter a location manually
+        </button>
+      </div>
+      {showManualInput && (
+        <form className="w-full max-w-sm space-y-3" onSubmit={handleManualSubmit}>
+          <div className="text-left">
+            <label htmlFor="manual-location" className="block text-sm font-medium text-gray-700">
+              Location
+            </label>
+            <input
+              id="manual-location"
+              name="location"
+              value={manualQuery}
+              onChange={(event) => setManualQuery(event.target.value)}
+              placeholder="123 Main St, Jackson MS"
+              className="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring"
+            />
+            <p className="mt-1 text-xs text-gray-500">Full address, city & state, or ZIP code are all accepted.</p>
+          </div>
+          <div className="flex items-center justify-between gap-2">
+            <button
+              type="submit"
+              disabled={isGeocoding || isGeolocating}
+              className="flex-1 rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
+            >
+              {isGeocoding ? "Searching…" : "Search"}
+            </button>
+            <button
+              type="button"
+              disabled={isGeocoding}
+              onClick={() => {
+                setShowManualInput(false);
+                setLocationError(null);
+              }}
+              className="rounded border border-gray-300 px-3 py-2 text-xs font-medium text-gray-600 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:border-gray-200 disabled:text-gray-400"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      )}
+      {locationError && <p className="max-w-sm text-sm text-red-600">{locationError}</p>}
+    </div>
+  );
+
   return (
     <main className="flex flex-col gap-4 p-4 md:p-6">
       {isError && (
@@ -118,7 +259,11 @@ export default function FoodPage() {
       <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
         <section className="md:col-span-7">
           <div className="rounded border bg-white overflow-hidden" aria-label="Map of SNAP retailers">
-            <MapView items={items} onBboxChange={onBboxChange} focus={focusedItem} />
+            {mapReady ? (
+              <MapView items={items} onBboxChange={onBboxChange} focus={focusedItem} initialCenter={initialCenter ?? undefined} />
+            ) : (
+              locationPrompt
+            )}
           </div>
         </section>
 
@@ -126,9 +271,11 @@ export default function FoodPage() {
           <div className="rounded border bg-white p-3">
             <div className="flex items-center justify-between mb-2">
               <h2 className="font-medium">Filters</h2>
-              {(isFetching || isLoading) && <span className="text-xs text-gray-500">Loading…</span>}
+              {mapReady && (isFetching || isLoading) && <span className="text-xs text-gray-500">Loading…</span>}
             </div>
-            {availableTypes.length > 0 ? (
+            {!mapReady ? (
+              <p className="text-sm text-gray-500">Choose a location to see available filters.</p>
+            ) : availableTypes.length > 0 ? (
               <div className="flex flex-wrap gap-3">
                 {availableTypes.map((t) => (
                   <label key={t} className="inline-flex items-center gap-2 text-sm">
@@ -148,9 +295,11 @@ export default function FoodPage() {
           </div>
 
           <div className="rounded border bg-white">
-            <div className="p-3 border-b font-medium">Retailers ({items.length})</div>
+            <div className="p-3 border-b font-medium">Retailers{mapReady ? ` (${items.length})` : ""}</div>
             <div className="divide-y">
-              {isLoading ? (
+              {!mapReady ? (
+                <div className="p-3 text-sm text-gray-500">Choose a location to load nearby retailers.</div>
+              ) : isLoading ? (
                 <div className="p-3 animate-pulse space-y-3">
                   <div className="h-5 bg-gray-200 rounded" />
                   <div className="h-4 bg-gray-200 rounded w-5/6" />

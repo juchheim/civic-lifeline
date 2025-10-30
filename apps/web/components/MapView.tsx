@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { MapContainer, Marker, Popup, TileLayer, useMapEvents } from "react-leaflet";
 import type { SnapItem } from "@cl/types";
 
@@ -27,17 +27,22 @@ function ViewportListener({ onBboxChange }: { onBboxChange: (b: Bbox) => void })
   return null;
 }
 
+const DEFAULT_CENTER: [number, number] = [32.889, -90.405]; // [lat, lon] Yazoo City, MS
+const DEFAULT_ZOOM = 13;
+
 export default function MapView({
   items,
   onBboxChange,
   focus,
+  initialCenter,
 }: {
   items: SnapItem[];
   onBboxChange: (b: Bbox) => void;
   focus?: SnapItem | null;
+  initialCenter?: [number, number];
 }) {
-  const center = useMemo<[number, number]>(() => [32.889, -90.405], []); // [lat, lon] Yazoo City, MS
-  const zoom = 13;
+  const center = initialCenter ?? DEFAULT_CENTER;
+  const zoom = DEFAULT_ZOOM;
   const mapRef = useRef<any>(null);
   const popupRefs = useRef<Record<string, any>>({});
   useEffect(() => {
@@ -75,6 +80,13 @@ export default function MapView({
       popup.openOn(map);
     }
   }, [focus]);
+
+  useEffect(() => {
+    if (!mapRef.current || !initialCenter) return;
+    const map = mapRef.current;
+    const [lat, lon] = initialCenter;
+    map.setView([lat, lon], map.getZoom(), { animate: false });
+  }, [initialCenter]);
 
   return (
     <MapContainer
