@@ -1,5 +1,9 @@
 import { chromium, type Browser } from 'playwright';
 
+if (!process.env.PLAYWRIGHT_BROWSERS_PATH) {
+  process.env.PLAYWRIGHT_BROWSERS_PATH = '0';
+}
+
 declare global {
   // eslint-disable-next-line no-var
   var __RESUME_BROWSER__: Browser | undefined;

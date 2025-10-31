@@ -1,5 +1,21 @@
 {
   "/_not-found/page": "app/_not-found/page.js",
   "/api/food/snap/route": "app/api/food/snap/route.js",
-  "/food/page": "app/food/page.js"
+  "/api/housing/fmr/route": "app/api/housing/fmr/route.js",
+  "/api/jobs/unemployment/route": "app/api/jobs/unemployment/route.js",
+  "/api/broadband/summary/route": "app/api/broadband/summary/route.js",
+  "/api/housing/counselors/route": "app/api/housing/counselors/route.js",
+  "/api/resources/route": "app/api/resources/route.js",
+  "/food/page": "app/food/page.js",
+  "/api/resources/[id]/verify/route": "app/api/resources/[id]/verify/route.js",
+  "/broadband/page": "app/broadband/page.js",
+  "/housing/page": "app/housing/page.js",
+  "/moderate/page": "app/moderate/page.js",
+  "/jobs/page": "app/jobs/page.js",
+  "/resources/page": "app/resources/page.js",
+  "/page": "app/page.js",
+  "/submit/page": "app/submit/page.js",
+  "/resume/page": "app/resume/page.js",
+  "/api/geocode/route": "app/api/geocode/route.js",
+  "/api/pdf/route": "app/api/pdf/route.js"
 }
