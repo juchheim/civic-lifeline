@@ -5,7 +5,6 @@ const nextConfig = {
     outputFileTracingIncludes: {
       "/api/pdf": [
         "./resume/templates/**/*",
-        "./node_modules/.cache/ms-playwright/**/*",
       ],
     },
   },

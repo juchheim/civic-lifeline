@@ -1,8 +1,5 @@
-import { chromium, type Browser } from 'playwright';
-
-if (!process.env.PLAYWRIGHT_BROWSERS_PATH) {
-  process.env.PLAYWRIGHT_BROWSERS_PATH = '0';
-}
+import puppeteer, { type Browser } from 'puppeteer-core';
+import chromium from '@sparticuz/chromium';
 
 declare global {
   // eslint-disable-next-line no-var
@@ -13,15 +10,14 @@ const LAUNCH_ARGS = [
   '--no-sandbox',
   '--disable-setuid-sandbox',
   '--disable-dev-shm-usage',
-  '--single-process',
-  '--no-zygote',
   '--disable-gpu',
   '--font-render-hinting=medium',
 ] as const;
 
 async function launchBrowser() {
-  const browser = await chromium.launch({
-    args: [...LAUNCH_ARGS],
+  const browser = await puppeteer.launch({
+    args: [...chromium.args, ...LAUNCH_ARGS],
+    executablePath: await chromium.executablePath(),
     headless: true,
   });
   const close = async () => {
@@ -46,7 +42,7 @@ export async function getBrowser() {
 export async function renderHtmlToPdf(html: string) {
   const browser = await getBrowser();
   const page = await browser.newPage();
-  await page.setContent(html, { waitUntil: 'networkidle', timeout: 10000 });
+  await page.setContent(html, { waitUntil: 'networkidle0', timeout: 10000 });
   const pdf = await page.pdf({
     format: 'A4',
     printBackground: true,

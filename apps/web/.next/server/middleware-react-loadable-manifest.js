@@ -1,1 +1,1 @@
-self.__REACT_LOADABLE_MANIFEST="{}"
+self.__REACT_LOADABLE_MANIFEST='{"app/food/page.tsx -> @/components/MapView":{"id":47616,"files":["static/chunks/fe69a73d.180b9110e4cdf2ed.js","static/chunks/616.1cad099fe55d6828.js"]},"app/jobs/page.tsx -> @/components/TimeSeriesChart":{"id":85794,"files":["static/chunks/692.1274b7335a0c449b.js","static/chunks/794.5d6cb05f3177e0cc.js"]},"components/MapView.tsx -> leaflet":{"id":59753,"files":[]}}';
