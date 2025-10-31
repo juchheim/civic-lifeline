@@ -2,11 +2,10 @@
 const nextConfig = {
   transpilePackages: ["@cl/types", "@cl/utils", "@cl/db"],
   experimental: {
-    serverComponentsExternalPackages: ["@sparticuz/chromium"],
+    serverComponentsExternalPackages: ["@sparticuz/chromium-min", "puppeteer-core"],
     outputFileTracingIncludes: {
       "/api/pdf": [
         "./resume/templates/**/*",
-        "../../node_modules/.pnpm/@sparticuz+chromium@141.0.0/node_modules/@sparticuz/chromium/bin/**/*",
       ],
     },
   },
