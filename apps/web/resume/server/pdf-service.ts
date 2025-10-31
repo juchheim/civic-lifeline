@@ -14,8 +14,8 @@ const LAUNCH_ARGS = [
   '--font-render-hinting=medium',
 ] as const;
 
-// Externally hosted Chromium binary for serverless environments
-const CHROMIUM_PACK_URL = 'https://github.com/Sparticuz/chromium/releases/download/v141.0.0/chromium-v141.0.0-pack.tar';
+// Externally hosted Chromium binary for serverless environments (x64 architecture)
+const CHROMIUM_PACK_URL = 'https://github.com/Sparticuz/chromium/releases/download/v141.0.0/chromium-pack.x64.tar';
 
 async function launchBrowser() {
   // Set chromium font config for serverless environment
