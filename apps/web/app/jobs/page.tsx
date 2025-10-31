@@ -82,23 +82,6 @@ export default function JobsPage() {
         ) : (
           <>
             <TimeSeriesChart points={points} />
-            <table className="sr-only">
-              <caption>Unemployment rate time series</caption>
-              <thead>
-                <tr>
-                  <th scope="col">Month</th>
-                  <th scope="col">Rate</th>
-                </tr>
-              </thead>
-              <tbody>
-                {points.map((p) => (
-                  <tr key={p.date}>
-                    <td>{p.date}</td>
-                    <td>{p.value}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
           </>
         )}
       </section>
