@@ -18,6 +18,7 @@ export function ResumeBuilderSection() {
   const [payload, setPayload] = useState<ResumePayload>(DEFAULT_PAYLOAD);
   const [template, setTemplate] = useState<TemplateName>('classic');
   const [status, setStatus] = useState<string | null>(null);
+  const [skillsInput, setSkillsInput] = useState<string>('');
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -26,6 +27,7 @@ export function ResumeBuilderSection() {
       if (raw) {
         const parsed = JSON.parse(raw) as ResumePayload;
         setPayload({ ...DEFAULT_PAYLOAD, ...parsed });
+        setSkillsInput((parsed.skills ?? []).join(', '));
       }
     } catch {
       // ignore corrupted storage
@@ -39,6 +41,14 @@ export function ResumeBuilderSection() {
     }, 600);
     return () => window.clearTimeout(timer);
   }, [payload]);
+
+  // Sync skills input when payload changes externally (e.g., reset), but only if it differs
+  useEffect(() => {
+    const serialized = (payload.skills ?? []).join(', ');
+    if (serialized !== skillsInput) {
+      setSkillsInput(serialized);
+    }
+  }, [payload.skills]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const hasRequiredFields = useMemo(() => payload.name.trim() && payload.email.trim(), [payload]);
 
@@ -59,6 +69,7 @@ export function ResumeBuilderSection() {
 
   const handleReset = () => {
     setPayload(DEFAULT_PAYLOAD);
+    setSkillsInput('');
     setStatus('Cleared the draft.');
     if (typeof window !== 'undefined') {
       window.localStorage.removeItem(STORAGE_KEY);
@@ -123,18 +134,23 @@ export function ResumeBuilderSection() {
         <label className="flex flex-col gap-1">
           <span className="text-sm font-medium">Skills (comma separated)</span>
           <input
+            type="text"
             className="rounded border border-neutral-300 px-3 py-2 text-sm"
-            value={(payload.skills ?? []).join(', ')}
-            onChange={event =>
+            value={skillsInput}
+            onChange={event => {
+              const rawValue = event.target.value;
+              setSkillsInput(rawValue);
+              // Parse skills from input (split on comma, trim whitespace)
+              const skills = rawValue
+                .split(',')
+                .map(skill => skill.trim())
+                .filter(Boolean);
               setPayload(prev => ({
                 ...prev,
-                skills: event.target.value
-                  .split(',')
-                  .map(skill => skill.trim())
-                  .filter(Boolean),
-              }))
-            }
-            placeholder="React, Node.js, Accessibility"
+                skills,
+              }));
+            }}
+            placeholder="React, Node.js, Machine Learning"
           />
         </label>
       </div>
