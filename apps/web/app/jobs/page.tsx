@@ -73,7 +73,7 @@ export default function JobsPage() {
         </div>
       )}
 
-      <section className="rounded border bg-white p-3">
+      <section className="rounded border bg-white p-3 overflow-hidden">
         {isLoading ? (
           <div className="h-64 animate-pulse bg-gray-100 rounded" />
         ) : points.length === 0 ? (
