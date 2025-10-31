@@ -18,29 +18,46 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
-                // Prevent body height extension - monitor and constrain body height
-                var lastBodyHeight = 0;
-                var checkHeight = function() {
+                // Aggressively constrain body and html height to prevent any extension
+                function enforceHeightConstraints() {
                   var body = document.body;
                   var html = document.documentElement;
-                  var contentHeight = Math.max(
+                  
+                  // Get the actual content height (not including any off-screen elements)
+                  var actualContentHeight = Math.max(
                     body.scrollHeight,
-                    body.offsetHeight,
-                    html.clientHeight,
-                    html.scrollHeight,
-                    html.offsetHeight
+                    html.scrollHeight
                   );
-                  // If body height suddenly increases dramatically, reset it
-                  if (lastBodyHeight > 0 && contentHeight > lastBodyHeight + 5000) {
+                  
+                  // Force body to match actual content height, never exceed it
+                  if (body.style.height !== actualContentHeight + 'px') {
                     body.style.height = 'auto';
                     body.style.minHeight = '0';
+                    body.style.maxHeight = 'none';
+                  }
+                  
+                  if (html.style.height !== actualContentHeight + 'px') {
                     html.style.height = 'auto';
                     html.style.minHeight = '0';
+                    html.style.maxHeight = 'none';
                   }
-                  lastBodyHeight = contentHeight;
-                };
+                  
+                  // Check for any absolutely positioned elements that might be extending height
+                  var allElements = document.querySelectorAll('*');
+                  for (var i = 0; i < allElements.length; i++) {
+                    var el = allElements[i];
+                    var style = window.getComputedStyle(el);
+                    if (style.position === 'absolute' && style.top && parseFloat(style.top) < -1000) {
+                      el.style.position = 'fixed';
+                      el.style.top = '0';
+                      el.style.left = '-9999px';
+                      el.style.width = '1px';
+                      el.style.height = '1px';
+                    }
+                  }
+                }
                 
-                // Fix Recharts measurement span that causes page height extension
+                // Fix Recharts measurement span
                 function fixRechartsSpan() {
                   var spans = document.querySelectorAll('[id^="recharts_measurement_span"], [id*="recharts_measurement"]');
                   spans.forEach(function(span) {
@@ -64,30 +81,38 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                       el.style.pointerEvents = 'none';
                     }
                   });
-                  checkHeight();
                 }
                 
-                // Run immediately
+                // Run immediately and continuously
+                enforceHeightConstraints();
+                fixRechartsSpan();
+                
                 if (document.readyState === 'loading') {
                   document.addEventListener('DOMContentLoaded', function() {
+                    enforceHeightConstraints();
                     fixRechartsSpan();
-                    checkHeight();
                   });
-                } else {
-                  fixRechartsSpan();
-                  checkHeight();
                 }
                 
-                // Watch for new spans and height changes
+                // Watch for any changes
                 var observer = new MutationObserver(function() {
+                  enforceHeightConstraints();
                   fixRechartsSpan();
-                  checkHeight();
                 });
-                observer.observe(document.body || document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'class'] });
+                observer.observe(document.body || document.documentElement, { 
+                  childList: true, 
+                  subtree: true, 
+                  attributes: true,
+                  attributeFilter: ['style', 'class', 'height']
+                });
                 
-                // Monitor height periodically
-                setInterval(checkHeight, 100);
+                // Aggressive monitoring
+                setInterval(enforceHeightConstraints, 50);
                 setInterval(fixRechartsSpan, 50);
+                
+                // Also on window resize and scroll
+                window.addEventListener('resize', enforceHeightConstraints);
+                window.addEventListener('scroll', enforceHeightConstraints);
               })();
             `,
           }}
