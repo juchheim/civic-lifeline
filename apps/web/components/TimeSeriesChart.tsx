@@ -17,7 +17,7 @@ export default function TimeSeriesChart({ points }: { points: SeriesPoint[] }) {
         const computedTop = window.getComputedStyle(el).top;
         const inlineTop = el.style.top;
         if (computedTop.includes("-20000") || inlineTop.includes("-20000") || computedTop === "-20000px") {
-          el.style.cssText = "position: fixed !important; top: 0px !important; left: -9999px !important; width: 1px !important; height: 1px !important; margin: 0 !important; padding: 0 !important; border: none !important; overflow: hidden !important; clip: rect(0, 0, 0, 0) !important; visibility: hidden !important; pointer-events: none !important; z-index: -9999 !important;";
+          el.style.cssText = "position: fixed !important; top: 0px !important; left: -9999px !important; width: 1px !important; height: 1px !important; margin: 0 !important; padding: 0 !important; border: none !important; white-space: normal !important; font-size: 0 !important; letter-spacing: normal !important; line-height: 0 !important; overflow: hidden !important; clip: rect(0, 0, 0, 0) !important; visibility: hidden !important; pointer-events: none !important; z-index: -9999 !important;";
         }
       });
     };

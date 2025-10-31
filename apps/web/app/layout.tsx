@@ -29,6 +29,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                       el.style.left = '-9999px';
                       el.style.width = '1px';
                       el.style.height = '1px';
+                      el.style.margin = '0';
+                      el.style.padding = '0';
+                      el.style.border = 'none';
+                      el.style.whiteSpace = 'normal';
+                      el.style.fontSize = '0';
+                      el.style.letterSpacing = 'normal';
+                      el.style.lineHeight = '0';
                       el.style.overflow = 'hidden';
                       el.style.visibility = 'hidden';
                       el.style.pointerEvents = 'none';

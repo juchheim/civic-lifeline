@@ -35,6 +35,9 @@ body[data-cl-app="true"] *[id*="measurement"][id*="recharts"] {
   margin: 0 !important;
   padding: 0 !important;
   border: none !important;
+  white-space: normal !important;
+  font-size: 0 !important;
+  letter-spacing: normal !important;
   overflow: hidden !important;
   clip: rect(0, 0, 0, 0) !important;
   pointer-events: none !important;
@@ -43,4 +46,5 @@ body[data-cl-app="true"] *[id*="measurement"][id*="recharts"] {
   isolation: isolate !important;
   z-index: -9999 !important;
   transform: translateZ(0) !important;
+  line-height: 0 !important;
 }
