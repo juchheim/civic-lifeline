@@ -51,7 +51,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           }}
         />
       </head>
-      <body className="bg-slate-100 text-slate-900 antialiased">
+      <body className="bg-slate-100 text-slate-900 antialiased" data-cl-app="true">
         <Providers>
           <div className="flex flex-col">
             <header className="border-b border-slate-200 bg-white/80 backdrop-blur">

@@ -3,6 +3,7 @@
 @tailwind utilities;
 
 /* Prevent Recharts measurement span from affecting page height */
+/* High specificity selectors to override Recharts inline styles */
 html {
   height: auto !important;
   overflow-y: visible !important;
@@ -12,16 +13,20 @@ body {
   position: relative !important;
   height: auto !important;
   min-height: 0 !important;
-  max-height: 100vh !important;
   overflow-x: hidden !important;
   overflow-y: visible !important;
 }
 
-/* Aggressively fix any Recharts measurement spans - multiple selectors for compatibility */
-[id^="recharts_measurement_span"],
-span[id*="recharts_measurement"],
-[id*="recharts_measurement_span"],
-*[id*="measurement"][id*="recharts"] {
+/* Highest specificity selectors for Recharts measurement spans */
+/* Using body[data-cl-app] for maximum specificity override */
+html body[data-cl-app="true"] [id^="recharts_measurement_span"],
+html body[data-cl-app="true"] span[id*="recharts_measurement"],
+html body[data-cl-app="true"] [id*="recharts_measurement_span"],
+html body[data-cl-app="true"] *[id*="measurement"][id*="recharts"],
+body[data-cl-app="true"] [id^="recharts_measurement_span"],
+body[data-cl-app="true"] span[id*="recharts_measurement"],
+body[data-cl-app="true"] [id*="recharts_measurement_span"],
+body[data-cl-app="true"] *[id*="measurement"][id*="recharts"] {
   position: fixed !important;
   top: 0 !important;
   left: -9999px !important;
@@ -37,4 +42,5 @@ span[id*="recharts_measurement"],
   contain: strict !important;
   isolation: isolate !important;
   z-index: -9999 !important;
+  transform: translateZ(0) !important;
 }
