@@ -2,8 +2,8 @@
 
 Provide a single source of truth for colors, typography, spacing, borders, and print rules used by:
 
-- the frontend preview and
-- the server-rendered templates (Classic, Modern, Minimal).
+- the frontend preview components, and
+- the server-rendered templates (Classic, Modern, Minimal) under `apps/web/resume/templates`.
 
 This keeps all three templates visually distinct yet coherent, and ensures print-safe output in PDFs.
 
@@ -69,7 +69,7 @@ Print note: use border.hairline (0.75pt) or thin (1pt); avoid sub‑hairline bor
 
 ## CSS Variables (to share across client + server)
 
-Add the following to a shared stylesheet loaded by both the preview and the server templates. Apply a template class on the `<body>`: `.template-classic`, `.template-modern`, `.template-minimal`.
+Add the following to `apps/web/resume/templates/partials/tokens-css.hbs` so both the preview (future) and server templates stay in sync. Apply a template class on the `<body>`: `.template-classic`, `.template-modern`, `.template-minimal`.
 
 ```css
 :root {
@@ -172,6 +172,8 @@ export const TOKENS = {
   }
 } as const;
 ```
+
+> Consider placing a canonical `TOKENS` export in `apps/web/resume/shared/tokens.ts` when the preview UI grows.
 
 ## Versioning & Governance
 

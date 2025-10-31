@@ -1,17 +1,17 @@
 PROMPT 01 — Project context & plan
-You are GPT-5 Codex. You will modify my existing Node/Express repo to add a server-side resume PDF builder.
+
+
+“Target: single Koyeb service running the existing Next.js app. Add a Playwright-powered PDF route + templates inside the @web workspace. No extra services.”
+
+You are GPT-5 Codex. You will extend the existing Next.js monorepo to add the resume PDF builder feature.
 
 Context:
-- I will provide a file called `12-overrides.md` that contains all drop-in file contents and patch instructions.
-- We will apply those overrides exactly, with idempotent changes.
-- This is a single Koyeb service (no worker).
+- I will provide `12-overrides.md` with drop-in file contents and patch instructions tailored for the Next.js app.
+- Apply those overrides exactly, with idempotent changes.
+- Everything must run within the existing @web workspace (no extra services).
 
 Tasks:
-1) Read the repository structure and detect:
-   - Server entry (e.g., server.js or src/index.ts),
-   - Existing routes folder,
-   - templates directory (create if missing),
-   - package manager (npm or pnpm or yarn).
-2) Confirm Node version and OS assumptions for Playwright.
-3) Output a short plan: which files will be added/replaced/updated per `12-overrides.md`.
+1) Inspect `apps/web` to confirm it's a Next.js app and note the package manager (pnpm) and Node baseline.
+2) Locate relevant directories (`apps/web/app`, `apps/web/lib`, `apps/web/resume`) or note if they need to be created.
+3) Output a short plan summarizing which files from `12-overrides.md` will be added or replaced.
 4) Stop and wait.

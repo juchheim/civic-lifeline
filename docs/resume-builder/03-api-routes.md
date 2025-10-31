@@ -13,6 +13,7 @@ Body: ResumePayload (see 02-data-contract.md)
 
 - Cache-Control: no-store (PDF contains PII)
 - X-Request-Id (nanoid)
+- Content-Disposition: attachment; filename="resume-<template>.pdf"
 
 ## Curl Example
 
@@ -23,39 +24,11 @@ curl -X POST 'https://<host>/api/pdf?template=modern' \
   --output resume-modern.pdf
 ```
 
-## Rate Limiting (optional MVP)
+## Implementation Notes
 
-- Simple IP-based sliding window (e.g., 30/min)
-- Return 429 Too Many Requests
+- Route lives at `apps/web/app/api/pdf/route.ts` (Next.js app router).
+- Uses `globalThis.__RESUME_BROWSER__` to reuse one Playwright browser per process.
+- Logs only request id, template, duration (and optional error message) via pino.
+- Validate payloads with `ResumeSchema` before compiling Handlebars templates.
 
----
-
-# 04-templates.md
-
-## Files
-
-- `templates/classic.hbs` – Serif, conservative
-- `templates/modern.hbs` – Sans, blue accents
-- `templates/minimal.hbs` – Monospace minimal
-- `templates/partials/` – shared helpers (e.g., header, footer)
-
-## Using Google Fonts
-
-Add `<link href="https://fonts.googleapis.com/css2?..." rel="stylesheet">` in `<head>`.
-
-Playwright will fetch and embed into PDF.
-
-## Self-Host Option (recommended for reliability)
-
-- Download font subsets (e.g., woff2) at build-time.
-- Serve from /public/fonts and reference with absolute URLs.
-
-## CSS & Pagination
-
-- Use `@page { margin: 20mm }` for consistent print margins.
-- Use `.page-break { page-break-before: always; }` for multi-page control.
-- Avoid very light weights; ensure sufficient print contrast.
-
-## Helpers (optional)
-
-Register Handlebars helpers for join, formatDate, safeUrl.
+See `04-templates.md` for template structure and shared partials.

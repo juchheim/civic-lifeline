@@ -1,0 +1,25 @@
+:root {
+  --c-n-0:#fff; --c-n-50:#fafafa; --c-n-100:#f2f2f2; --c-n-200:#e6e6e6;
+  --c-n-300:#d4d4d4; --c-n-400:#a3a3a3; --c-n-500:#737373; --c-n-600:#525252;
+  --c-n-700:#404040; --c-n-800:#262626; --c-n-900:#171717; --c-black:#000;
+
+  --space-0:0; --space-1:4px; --space-2:8px; --space-3:12px; --space-4:16px;
+  --space-5:24px; --space-6:32px; --space-7:40px; --space-8:48px;
+
+  --border-hairline:0.75pt; --border-thin:1pt; --radius-sm:2px; --radius-md:4px;
+
+  --fs-xs:12px; --fs-sm:13px; --fs-base:14px; --fs-lg:16px; --fs-xl:20px;
+  --fs-h2:16px; --fs-h1:28px;
+}
+
+/* Template variables (set by body class) */
+.template-classic { --font-family:"Libre Baskerville", serif; --brand-primary:#2C2C2C; --brand-accent:#6B7280; --weight-heading:700; --weight-body:400; }
+.template-modern { --font-family:"Inter", system-ui, -apple-system, Segoe UI, Roboto, sans-serif; --brand-primary:#1B4DB1; --brand-accent:#0F172A; --weight-heading:600; --weight-body:400; }
+.template-minimal { --font-family:"IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace; --brand-primary:#374151; --brand-accent:#9CA3AF; --weight-heading:600; --weight-body:400; }
+
+/* Common usage */
+body { font-family: var(--font-family); color: var(--c-n-900); font-size: var(--fs-base); margin: 40px; }
+h1 { font-size: var(--fs-h1); font-weight: var(--weight-heading); margin: 0 0 var(--space-2); }
+h2 { font-size: var(--fs-h2); font-weight: var(--weight-heading); color: var(--brand-primary); margin: var(--space-5) 0 var(--space-2); border-bottom: var(--border-hairline) solid var(--c-n-300); }
+p, li { font-weight: var(--weight-body); line-height: 1.45; }
+ul { margin: 0; padding-left: 16px; }

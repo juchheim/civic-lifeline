@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { MS_COUNTIES } from "@/data/ms-counties";
 import SourceChip from "@/components/SourceChip";
 import { zUnemploymentResponse } from "@cl/types";
+import { ResumeBuilderSection } from "@/components/resume/ResumeBuilderSection";
 
 const TimeSeriesChart = dynamic(() => import("@/components/TimeSeriesChart"), { ssr: false });
 
@@ -95,7 +96,8 @@ export default function JobsPage() {
           </>
         )}
       </section>
+
+      <ResumeBuilderSection />
     </main>
   );
 }
-

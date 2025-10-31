@@ -32,8 +32,7 @@ export type ResumePayload = {
 ## Zod Schema (runtime validation)
 
 ```typescript
-import { z } from 'zod';
-
+// apps/web/resume/server/validation.ts
 export const ResumeSchema = z.object({
   name: z.string().min(2),
   email: z.string().email(),
@@ -87,3 +86,5 @@ export const ResumeSchema = z.object({
   ]
 }
 ```
+
+> Tip: the schema powers both the API route and the frontend type via `apps/web/lib/resume/types.ts`.

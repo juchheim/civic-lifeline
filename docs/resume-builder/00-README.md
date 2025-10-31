@@ -1,29 +1,36 @@
 # Project Goal
 
-Build a server-side resume PDF builder integrated into the existing Koyeb Express API (no separate worker). Users fill a form on /jobs (or /resume), select a template (Classic, Modern, Minimal), and receive a print-quality PDF generated via Playwright (Chromium) from HTML templates (Handlebars).
+Ship a server-side resume PDF builder inside the existing Next.js app (deployed on Koyeb). Job seekers visit `/jobs` (scroll to “Build Your Resume”), fill in their details, choose Classic / Modern / Minimal, and receive a print-ready PDF rendered by Playwright (Chromium) from Handlebars templates.
 
-## Why this design
+## Why Next.js + Playwright
 
-- Consistency: server controls fonts, pagination, headers/footers.
-- Simplicity: single service; no queues, no workers.
-- Extensibility: easy to add templates, email delivery, storage.
+- Single deployment: the API route (`/api/pdf`) sits next to the frontend, so there is no extra service to manage.
+- Full control over typography and pagination via Playwright-generated PDFs.
+- Extensible: new templates, email delivery, or storage can be layered on without changing hosting topology.
 
 ## Quick Start (Dev)
 
 ```bash
-npm i express playwright handlebars zod pino nanoid
-npx playwright install --with-deps chromium
+pnpm install            # installs workspaces + Playwright Chromium (postinstall)
+pnpm --filter @web dev  # runs Next.js locally on http://localhost:3000
 ```
 
-Run dev API: `node server.js` (or your existing dev script)
+Generate a PDF:
 
-POST to `POST /api/pdf?template=modern` with JSON body (see 02-data-contract.md).
+```bash
+curl -X POST 'http://localhost:3000/api/pdf?template=modern' \
+  -H 'Content-Type: application/json' \
+  --data @apps/web/resume/fixtures/resume-sample.json \
+  --output resume-modern.pdf
+```
+
+See `02-data-contract.md` for the payload shape.
 
 ## Deliverables
 
-- API route: POST /api/pdf
-- Three templates: classic.hbs, modern.hbs, minimal.hbs
-- Fonts: Google Fonts (with option to self-host)
-- PDF renderer service (Playwright)
-- Validation (Zod) + basic rate limiting
-- Dockerfile additions + Koyeb notes
+- Next.js API route: `POST /api/pdf`
+- Three templates: `classic.hbs`, `modern.hbs`, `minimal.hbs`
+- Shared partials + design tokens for typography/spacing
+- Playwright renderer with Chromium caching + graceful shutdown
+- Zod validation + privacy-safe logging (request id, template, duration)
+- Dockerfile additions for Chromium dependencies and Koyeb deployment tips

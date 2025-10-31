@@ -1,6 +1,6 @@
 # Goal
 
-Design a resume builder UI that posts to POST /api/pdf?template=... and gives users a clear, accessible way to enter data, pick one of three templates, preview the look, and download a print‑quality PDF.
+Deliver an accessible resume builder section within `/jobs` that posts to `POST /api/pdf?template=...`, lets users pick a template, and downloads a Playwright-rendered PDF. Future iterations can layer on richer preview and editing tools.
 
 ## User Stories
 
@@ -11,55 +11,22 @@ Design a resume builder UI that posts to POST /api/pdf?template=... and gives us
 
 ## Routes & IA
 
-/resume (or /jobs#resume-builder) — single page with two‑column layout.
-
-### Layout Wireframes (ASCII)
-
-**Desktop (≥1024px)**
-
-```
-+--------------------------------------------------------------+
-| Title & Intro                                                |
-+-----------------------+--------------------------------------+
-| Form (scrollable)    | Preview Pane                          |
-| - Contact            | [Template: Classic ⌄]                 |
-| - Summary            | ┌──────────────────────────────┐     |
-| - Experience [+]     | │ Live Preview (approx.)        │     |
-| - Education [+]      | └──────────────────────────────┘     |
-| - Skills (tags)      | [Generate PDF] [Reset]               |
-| - Links [+]          |                                       |
-+-----------------------+--------------------------------------+
-```
-
-**Mobile (<1024px)**
-
-```
-Title & Intro
-[Template: Classic ⌄]
-Preview (collapsible)
-Form (stacked sections)
-[Generate PDF] [Reset]
-```
+- `/jobs` — see `apps/web/app/jobs/page.tsx`; the resume builder renders beneath the unemployment chart inside `<ResumeBuilderSection />`.
+- Optional future enhancement: add a second column or modal preview when templates grow.
 
 ## Components
 
-- ResumeBuilderPage
-- TemplateSelector
-- ResumeForm
-- ContactFields
-- SummaryField
-- ExperienceList (repeatable items with bullets)
-- EducationList
-- SkillsInput (token/tag input)
-- LinksList
-- PreviewPane (approximate client-side preview using shared CSS tokens)
-- ActionsBar (Generate / Reset)
+- `apps/web/components/resume/ResumeBuilderSection.tsx` — main UI, stores payload/template, handles localStorage + status messaging.
+- `apps/web/app/resume/page.tsx` — lightweight redirect to `/jobs#resume-builder` for legacy links.
+- `apps/web/lib/resume/download-pdf.ts` — browser helper that posts to `/api/pdf` and triggers downloads.
+- `apps/web/resume/shared/templates.ts` — authoritative template list for both client & server.
+- Future: extract sub-forms (experience, education, links) once full data entry is added.
 
 ## State Management
 
-- Zustand store: resume (payload), template, dirty, autoSave.
-- Persist resume + template to localStorage (throttled every 1s).
-- Clear on Reset.
+- Local React state holds `ResumePayload` + selected template.
+- Draft auto-saves to `localStorage` (`resume.draft`) with a 600 ms debounce.
+- Reset clears state and removes the storage key.
 
 ## Data Model (client)
 
@@ -72,19 +39,15 @@ Mirror ResumePayload (see 02-data-contract.md).
 
 ## Template Selector
 
-- Options: classic, modern, minimal.
-- Show small font specimen under each option (e.g., Libre Baskerville, Inter, IBM Plex Mono).
-- Changes update preview immediately.
+- Options: classic, modern, minimal (derived from `TEMPLATES` constant).
+- Selector drives both the API querystring and output filename.
+- Enhancement ideas: display font specimens or screenshot thumbnails.
 
-## Preview Strategy
+## Preview Strategy (Future)
 
-- Approximate preview client‑side using the same fonts and simplified CSS.
-- Use <iframe> or a styled <div>; avoid Playwright in the browser.
-- Note: final PDF comes from server; preview is visually close but not authoritative.
-
-### (Optional) Server HTML Preview
-
-Add GET /api/preview-html?template=... that returns compiled HTML for iframe. (Can be Phase 3.)
+- MVP ships without a live preview; users inspect the downloaded PDF.
+- To add a preview later, reuse the shared tokens partial for consistent typography.
+- Optional Phase 3: expose `/api/preview-html?template=...` for iframe-based previews.
 
 ## API Integration
 
@@ -119,9 +82,8 @@ export async function downloadPdf(payload: ResumePayload, template: string) {
 
 ## Error Handling
 
-- 400: show validation errors mapping (field list).
-- 422: unsupported template → reset selector to classic.
-- 500: generic error with retry and support link (logs include request id).
+- Non-2xx responses set an inline status message (e.g., validation errors, unsupported template).
+- TODO: surface field-level validation feedback once the form is fully built out.
 
 ## Privacy & Consent
 
@@ -134,8 +96,8 @@ Track template switches, PDF generation success/failure, time‑to‑first‑PDF
 
 ## Tests
 
-- RTL tests: add/remove experience items; tag input; template switching.
-- E2E (Playwright): fill form → download PDF; verify response headers and >1KB file.
+- Component tests (future): cover localStorage sync and disabled state when required fields missing.
+- E2E (Playwright): fill form → click “Generate PDF” → assert download name/size (>1 KB).
 
 ## Responsive Rules
 

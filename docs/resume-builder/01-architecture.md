@@ -14,12 +14,15 @@ F --> G[HTTP Response attachment]
 
 ## Modules
 
-- `routes/resume.js` → Express route handler
-- `services/pdfService.js` → Playwright/Chromium wrapper
-- `templates/` → Handlebars templates + shared partials
-- `lib/validation.js` → Zod schema
-- `lib/fonts.js` → font helpers (optional, for self-hosting URLs)
-- `lib/logger.js` → pino logger
+- `apps/web/app/api/pdf/route.ts` → Next.js (app router) API route
+- `apps/web/resume/server/compile.ts` → Handlebars compiler w/ partial registration
+- `apps/web/resume/server/pdf-service.ts` → Playwright wrapper & Chromium lifecycle
+- `apps/web/resume/server/validation.ts` → Zod schema (shared w/ frontend types)
+- `apps/web/resume/server/logger.ts` → pino logger
+- `apps/web/resume/templates/` → Handlebars templates + shared partials
+- `apps/web/lib/resume/download-pdf.ts` → browser helper to fetch + download PDFs
+- `apps/web/components/resume/ResumeBuilderSection.tsx` → client UI with local persistence (embedded on /jobs)
+- `apps/web/app/jobs/page.tsx` → renders chart + resume builder section
 
 ## Non-Goals (MVP)
 
@@ -27,6 +30,6 @@ No persistence; no email sending; no queues. (Add later.)
 
 ## Performance Notes
 
-- Launch Chromium per request for simplicity; optimize later with a shared browser instance/pool.
+- Playwright chromium launches once and reuses a single browser per process (see `globalThis.__RESUME_BROWSER__`).
 - Set a hard timeout (e.g., 10s) on PDF generation.
 - Limit HTML size (guard against abuse).

@@ -1,0 +1,21 @@
+{
+  "name": "Ernest Juchheim",
+  "email": "ernest@example.com",
+  "phone": "(555) 555-5555",
+  "location": "Yazoo City, MS",
+  "summary": "Front-end developer focused on accessible civic apps.",
+  "skills": ["React", "Node.js", "TypeScript", "Playwright"],
+  "experience": [
+    {
+      "title": "Web Developer",
+      "company": "Civic Lifeline",
+      "years": "2023 – Present",
+      "bullets": [
+        "Built unemployment visualizations",
+        "Integrated server-side PDF generation"
+      ]
+    }
+  ],
+  "education": [{ "degree": "B.S. Computer Science", "school": "MS State" }],
+  "links": [{ "label": "GitHub", "url": "https://github.com/ernest" }]
+}

@@ -1,0 +1,5 @@
+### Resume PDF Smoke Test
+POST http://localhost:3000/api/pdf?template=modern
+Content-Type: application/json
+
+< ../fixtures/resume-sample.json

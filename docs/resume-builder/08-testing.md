@@ -5,8 +5,9 @@
 
 # Integration Tests
 
-- Hit POST /api/pdf with fixture payloads for each template.
+- Hit POST /api/pdf with fixture payloads for each template (see `apps/web/resume/fixtures/resume-sample.json`).
 - Assert 200 and application/pdf with a minimum byte size.
+- `apps/web/resume/scripts/smoke-test.http` can be used in VS Code or via `curl` for manual checks.
 
 # Visual/Manual Checks
 
@@ -16,4 +17,4 @@
 
 # Load Smoke Test
 
-10 consecutive requests → ensure memory stable and latency acceptable.
+10 consecutive requests → ensure memory stable and latency acceptable. Watch the `resume-pdf` pino logs for duration spikes.

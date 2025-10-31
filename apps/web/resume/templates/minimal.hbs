@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+{{> head}}
+<!-- Minimal font -->
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet" />
+</head>
+<body class="template-{{templateName}}">
+<h1>{{name}}</h1>
+<p>{{email}} {{#if phone}}| {{phone}}{{/if}} {{#if location}}| {{location}}{{/if}}</p>
+
+{{#if summary}}<h2>Summary</h2><p>{{summary}}</p>{{/if}}
+{{#if experience}}
+<h2>Experience</h2>
+<ul>
+{{#each experience}}
+<li>{{title}} at {{company}} {{#if years}}({{years}}){{/if}}
+{{#if bullets}}<ul>{{#each bullets}}<li>{{this}}</li>{{/each}}</ul>{{/if}}
+</li>
+{{/each}}
+</ul>
+{{/if}}
+
+{{#if education}}<h2>Education</h2><ul>{{#each education}}<li>{{degree}} — {{school}} {{#if graduationYear}}({{graduationYear}}){{/if}}</li>{{/each}}</ul>{{/if}}
+{{#if skills}}<h2>Skills</h2><p>{{#each skills}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}</p>{{/if}}
+{{#if links}}<h2>Links</h2><ul>{{#each links}}<li>{{label}} — {{url}}</li>{{/each}}</ul>{{/if}}
+</body>
+</html>

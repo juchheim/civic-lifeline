@@ -1,21 +1,38 @@
-# services/pdfService.js
+# Playwright Renderer (`apps/web/resume/server/pdf-service.ts`)
 
-```javascript
-import { chromium } from 'playwright';
+```typescript
+import { chromium, type Browser } from 'playwright';
 
-let browser; // simple reuse; close on process exit
+declare global {
+  // eslint-disable-next-line no-var
+  var __RESUME_BROWSER__: Browser | undefined;
+}
 
-export async function getBrowser() {
-  if (!browser) {
-    browser = await chromium.launch({ args: ['--no-sandbox'] });
-  }
+async function launchBrowser() {
+  const browser = await chromium.launch({ args: ['--no-sandbox'] });
+  const close = async () => {
+    try {
+      await browser.close();
+    } catch {
+      // ignore shutdown race
+    }
+  };
+  process.on('SIGINT', close);
+  process.on('SIGTERM', close);
   return browser;
 }
 
-export async function renderHtmlToPdf(html) {
-  const b = await getBrowser();
-  const page = await b.newPage();
-  await page.setContent(html, { waitUntil: 'networkidle', timeout: 10000 });
+export async function getBrowser() {
+  if (!globalThis.__RESUME_BROWSER__) {
+    globalThis.__RESUME_BROWSER__ = await launchBrowser();
+  }
+  return globalThis.__RESUME_BROWSER__;
+}
+
+export async function renderHtmlToPdf(html: string) {
+  const browser = await getBrowser();
+  const page = await browser.newPage();
+  await page.setContent(html, { waitUntil: 'networkidle', timeout: 10_000 });
   const pdf = await page.pdf({
     format: 'A4',
     printBackground: true,
@@ -26,51 +43,85 @@ export async function renderHtmlToPdf(html) {
 }
 ```
 
-# HTML Compilation
+# Handlebars Compilation (`apps/web/resume/server/compile.ts`)
 
-```javascript
-import { readFileSync } from 'fs';
+```typescript
+import { readFileSync, readdirSync } from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import Handlebars from 'handlebars';
+import type { ResumePayload } from './validation';
 
-export function compileTemplate(templateName, data) {
-  const templatePath = `./templates/${templateName}.hbs`;
+const moduleDir = path.dirname(fileURLToPath(import.meta.url));
+const templatesDir = path.resolve(moduleDir, '../templates');
+let partialsRegistered = false;
+
+function registerPartialsOnce() {
+  if (partialsRegistered) return;
+  const partialDir = path.join(templatesDir, 'partials');
+  try {
+    const files = readdirSync(partialDir).filter(file => file.endsWith('.hbs'));
+    for (const file of files) {
+      const name = path.basename(file, '.hbs');
+      Handlebars.registerPartial(name, readFileSync(path.join(partialDir, file), 'utf8'));
+    }
+  } catch {
+    // partials directory optional during early dev
+  }
+  partialsRegistered = true;
+}
+
+export function compileTemplate(templateName: string, data: ResumePayload) {
+  registerPartialsOnce();
+  const templatePath = path.join(templatesDir, `${templateName}.hbs`);
   const source = readFileSync(templatePath, 'utf8');
   const template = Handlebars.compile(source, { noEscape: true });
-  return template(data);
+  return template({ ...data, templateName });
 }
 ```
 
-# Route Handler
+# Next.js API Route (`apps/web/app/api/pdf/route.ts`)
 
-```javascript
-import { ResumeSchema } from '../lib/validation.js';
-import { compileTemplate } from '../services/compile.js';
-import { renderHtmlToPdf } from '../services/pdfService.js';
-import { nanoid } from 'nanoid';
+```typescript
+export const runtime = 'nodejs';
 
-const ALLOWED = new Set(['classic','modern','minimal']);
+const ALLOWED_TEMPLATES = new Set(['classic', 'modern', 'minimal'] as const);
 
-export async function handlePostPdf(req, res) {
+export async function POST(request: NextRequest) {
   const reqId = nanoid();
-  res.setHeader('X-Request-Id', reqId);
+  const url = new URL(request.url);
+  const requestedTemplate = (url.searchParams.get('template') ?? 'classic').toLowerCase();
+  const template = ALLOWED_TEMPLATES.has(requestedTemplate as any) ? (requestedTemplate as TemplateName) : undefined;
+  const headers = new Headers({
+    'X-Request-Id': reqId,
+    'Cache-Control': 'no-store',
+  });
+  const startedAt = process.hrtime.bigint();
+
+  if (!template) {
+    logRequest({ reqId, template: requestedTemplate, startedAt, level: 'warn' });
+    return NextResponse.json({ error: 'Unsupported template' }, { status: 422, headers });
+  }
+
+  let payload: ResumePayload;
+  try {
+    payload = ResumeSchema.parse(await request.json());
+  } catch (error) {
+    logRequest({ reqId, template, startedAt, level: 'warn', error });
+    return NextResponse.json({ error: 'Validation failed' }, { status: 400, headers });
+  }
 
   try {
-    const template = String(req.query.template || 'classic');
-    if (!ALLOWED.has(template)) return res.status(422).json({ error: 'Unsupported template' });
-
-    const payload = ResumeSchema.parse(req.body);
     const html = compileTemplate(template, payload);
-
     const pdf = await renderHtmlToPdf(html);
-    res
-      .status(200)
-      .contentType('application/pdf')
-      .setHeader('Content-Disposition', `attachment; filename="resume-${template}.pdf"`)
-      .setHeader('Cache-Control', 'no-store')
-      .send(pdf);
-  } catch (err) {
-    const status = err.name === 'ZodError' ? 400 : 500;
-    res.status(status).json({ error: 'PDF generation failed', details: err?.message });
+    const response = new NextResponse(pdf, { status: 200, headers });
+    response.headers.set('Content-Type', 'application/pdf');
+    response.headers.set('Content-Disposition', `attachment; filename="resume-${template}.pdf"`);
+    logRequest({ reqId, template, startedAt, level: 'info' });
+    return response;
+  } catch (error) {
+    logRequest({ reqId, template, startedAt, level: 'error', error });
+    return NextResponse.json({ error: 'PDF generation failed' }, { status: 500, headers });
   }
 }
 ```

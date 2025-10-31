@@ -11,11 +11,11 @@
 
 ### Deliverables
 
-- POST /api/pdf?template=classic|modern|minimal route.
+- Next.js API route: POST /api/pdf?template=classic|modern|minimal.
 - 3 Handlebars templates with Google Fonts.
 - Playwright renderer with printBackground: true and A4 margins.
-- Zod validation + basic IP rate limit (e.g., 30/min).
-- Dockerfile with Chromium deps; healthcheck route /healthz.
+- Zod validation + optional IP rate limit (e.g., 30/min).
+- Dockerfile with Chromium deps; optional `/api/health` endpoint if monitoring needs it.
 
 ### Acceptance Criteria
 
