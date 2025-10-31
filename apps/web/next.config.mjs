@@ -6,6 +6,13 @@ const nextConfig = {
       "/api/pdf": ["./resume/templates/**/*"],
     },
   },
+  webpack(config) {
+    config.module.rules.push({
+      test: /\.hbs$/i,
+      type: 'asset/source',
+    });
+    return config;
+  },
 };
 
 export default nextConfig;

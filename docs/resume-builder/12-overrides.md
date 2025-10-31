@@ -200,7 +200,18 @@ export const TEMPLATES = ['classic', 'modern', 'minimal'] as const;
 export type TemplateName = (typeof TEMPLATES)[number];
 ```
 
-### 4. Next.js API route
+### 4. Type declarations
+
+Add `apps/web/types/handlebars.d.ts`:
+
+```typescript
+declare module '*.hbs' {
+  const content: string;
+  export default content;
+}
+```
+
+### 5. Next.js API route
 
 `apps/web/app/api/pdf/route.ts`
 
@@ -290,7 +301,7 @@ function logRequest({
 }
 ```
 
-### 5. Browser helper + types
+### 6. Browser helper + types
 
 - `apps/web/lib/resume/types.ts`
 
@@ -351,13 +362,13 @@ function logRequest({
   }
   ```
 
-### 6. Client UI integration
+### 7. Client UI integration
 
 - `apps/web/components/resume/ResumeBuilderSection.tsx` — copy the client-side form (localStorage, template selector, CTA buttons).
 - `apps/web/app/jobs/page.tsx` — import `ResumeBuilderSection` and render it beneath the unemployment chart.
 - `apps/web/app/resume/page.tsx` — optional redirect stub to `/jobs#resume-builder` for legacy bookmarks.
 
-### 7. Next config tweaks
+### 8. Next config tweaks
 
 Update `apps/web/next.config.mjs` so templates are bundled during output tracing:
 
@@ -369,17 +380,24 @@ const nextConfig = {
       "/api/pdf": ["./resume/templates/**/*"],
     },
   },
+  webpack(config) {
+    config.module.rules.push({
+      test: /\.hbs$/i,
+      type: 'asset/source',
+    });
+    return config;
+  },
 };
 
 export default nextConfig;
 ```
 
-### 8. Fixture & REST client snippets
+### 9. Fixture & REST client snippets
 
 - `apps/web/resume/fixtures/resume-sample.json` — canonical sample payload.
 - `apps/web/resume/scripts/smoke-test.http` — VS Code REST client file for integration testing.
 
-### 9. Package updates (`apps/web/package.json`)
+### 10. Package updates (`apps/web/package.json`)
 
 ```json
 "scripts": {
@@ -402,11 +420,11 @@ export default nextConfig;
 
 > Ensure `pnpm-lock.yaml` is updated by running `pnpm install` after adding dependencies.
 
-### 10. Dockerfile
+### 11. Dockerfile
 
 Update the root `Dockerfile` to use `node:18-slim`, install Chromium dependencies (`apt-get install ...`), run `pnpm install --frozen-lockfile` (postinstall pulls Chromium), build, and start with `pnpm --filter @web start`. Set `ENV PLAYWRIGHT_BROWSERS_PATH=0` so Playwright uses the bundled binary at runtime.
 
-### 11. Smoke test command
+### 12. Smoke test command
 
 ```
 curl -X POST "http://localhost:3000/api/pdf?template=modern" \

@@ -1,23 +1,23 @@
-import { readFileSync } from 'fs';
 import Handlebars from 'handlebars';
 import type { ResumePayload } from './validation';
+import headPartial from '../templates/partials/head.hbs';
+import tokensCssPartial from '../templates/partials/tokens-css.hbs';
+import classicTemplate from '../templates/classic.hbs';
+import modernTemplate from '../templates/modern.hbs';
+import minimalTemplate from '../templates/minimal.hbs';
 
 const PARTIALS: Record<string, string> = {
-  head: readFile('../templates/partials/head.hbs'),
-  'tokens-css': readFile('../templates/partials/tokens-css.hbs'),
+  head: headPartial,
+  'tokens-css': tokensCssPartial,
 };
 
 const TEMPLATES: Record<string, string> = {
-  classic: readFile('../templates/classic.hbs'),
-  modern: readFile('../templates/modern.hbs'),
-  minimal: readFile('../templates/minimal.hbs'),
+  classic: classicTemplate,
+  modern: modernTemplate,
+  minimal: minimalTemplate,
 };
 
 let partialsRegistered = false;
-
-function readFile(relativePath: string) {
-  return readFileSync(new URL(relativePath, import.meta.url), 'utf8');
-}
 
 function registerPartialsOnce() {
   if (partialsRegistered) return;
