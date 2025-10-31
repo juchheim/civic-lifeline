@@ -1,5 +1,15 @@
 import { z } from 'zod';
 
+const ISO_DATE_REGEX = /^\d{4}(-\d{2}){0,2}$/;
+
+const TimelineString = z
+  .string()
+  .min(1)
+  .refine(
+    value => ISO_DATE_REGEX.test(value) || value.toLowerCase() === 'present',
+    { message: 'Use YYYY, YYYY-MM, YYYY-MM-DD, or "present".' },
+  );
+
 export const ResumeSchema = z.object({
   name: z.string().min(2),
   email: z.string().email(),
@@ -12,9 +22,9 @@ export const ResumeSchema = z.object({
       z.object({
         title: z.string(),
         company: z.string(),
-        startDate: z.string().optional(),
-        endDate: z.string().optional(),
-        years: z.string().optional(),
+        startDate: TimelineString.optional(),
+        endDate: TimelineString.optional(),
+        years: z.string().max(60).optional(),
         bullets: z.array(z.string()).max(8).optional(),
       }),
     )

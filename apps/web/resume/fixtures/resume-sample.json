@@ -9,6 +9,8 @@
     {
       "title": "Web Developer",
       "company": "Civic Lifeline",
+      "startDate": "2023-01",
+      "endDate": "present",
       "years": "2023 – Present",
       "bullets": [
         "Built unemployment visualizations",
@@ -16,6 +18,6 @@
       ]
     }
   ],
-  "education": [{ "degree": "B.S. Computer Science", "school": "MS State" }],
+  "education": [{ "degree": "B.S. Computer Science", "school": "MS State", "graduationYear": "2020" }],
   "links": [{ "label": "GitHub", "url": "https://github.com/ernest" }]
 }
