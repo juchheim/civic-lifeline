@@ -27,6 +27,7 @@ export function ResumeBuilderSection() {
   const [template, setTemplate] = useState<TemplateName>('classic');
   const [status, setStatus] = useState<string | null>(null);
   const [skillsInput, setSkillsInput] = useState<string>('');
+  const [bulletsInputs, setBulletsInputs] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -36,6 +37,14 @@ export function ResumeBuilderSection() {
         const parsed = JSON.parse(raw) as ResumePayload;
         setPayload({ ...DEFAULT_PAYLOAD, ...parsed });
         setSkillsInput((parsed.skills ?? []).join(', '));
+        // Initialize bullets inputs from stored experience entries
+        const bulletsState: Record<string, string> = {};
+        (parsed.experience ?? []).forEach((exp, idx) => {
+          if (exp.bullets) {
+            bulletsState[`exp-${idx}`] = exp.bullets.join('\n');
+          }
+        });
+        setBulletsInputs(bulletsState);
       }
     } catch {
       // ignore corrupted storage
@@ -62,7 +71,7 @@ export function ResumeBuilderSection() {
   const experience = payload.experience ?? [];
   const education = payload.education ?? [];
 
-  const addExperience = () =>
+  const addExperience = () => {
     setPayload(prev => {
       const current = prev.experience ?? [];
       if (current.length >= EXPERIENCE_LIMIT) return prev;
@@ -71,8 +80,12 @@ export function ResumeBuilderSection() {
         experience: [...current, createExperienceEntry()],
       };
     });
+    // Initialize bullets input for new entry
+    const newIndex = experience.length;
+    setBulletsInputs(prev => ({ ...prev, [`exp-${newIndex}`]: '' }));
+  };
 
-  const removeExperience = (index: number) =>
+  const removeExperience = (index: number) => {
     setPayload(prev => {
       const current = [...(prev.experience ?? [])];
       current.splice(index, 1);
@@ -81,6 +94,28 @@ export function ResumeBuilderSection() {
         experience: current,
       };
     });
+    // Clean up bullets input state for removed entry
+    const key = `exp-${index}`;
+    setBulletsInputs(prev => {
+      const updated = { ...prev };
+      delete updated[key];
+      // Shift keys for entries after removed one
+      const newState: Record<string, string> = {};
+      Object.keys(prev).forEach(k => {
+        if (k.startsWith('exp-')) {
+          const idx = parseInt(k.split('-')[1], 10);
+          if (idx < index) {
+            newState[k] = prev[k];
+          } else if (idx > index) {
+            newState[`exp-${idx - 1}`] = prev[k];
+          }
+        } else {
+          newState[k] = prev[k];
+        }
+      });
+      return newState;
+    });
+  };
 
   const updateExperienceField = (index: number, field: keyof ExperienceEntry, value: string) =>
     setPayload(prev => {
@@ -88,6 +123,11 @@ export function ResumeBuilderSection() {
       const entry: ExperienceEntry = { ...createExperienceEntry(), ...(current[index] ?? {}) };
 
       if (field === 'bullets') {
+        // Store raw input value to preserve newlines during typing
+        const key = `exp-${index}`;
+        setBulletsInputs(prev => ({ ...prev, [key]: value }));
+        
+        // Parse bullets from input (split on newlines, trim each line, filter empty)
         const bullets = value
           .split('\n')
           .map(bullet => bullet.trim())
@@ -99,11 +139,12 @@ export function ResumeBuilderSection() {
           delete entry.bullets;
         }
       } else {
-        const trimmed = value.trim();
-        if (!trimmed && field !== 'title' && field !== 'company') {
+        // Preserve spaces during typing; only validate empty fields
+        if (!value.trim() && field !== 'title' && field !== 'company') {
           delete entry[field];
         } else {
-          (entry as Record<keyof ExperienceEntry, unknown>)[field] = trimmed;
+          // Store the value as-is to preserve spaces (title/company can have spaces)
+          (entry as Record<keyof ExperienceEntry, unknown>)[field] = value;
         }
       }
 
@@ -138,12 +179,13 @@ export function ResumeBuilderSection() {
     setPayload(prev => {
       const current = [...(prev.education ?? [])];
       const entry: EducationEntry = { ...createEducationEntry(), ...(current[index] ?? {}) };
-      const trimmed = value.trim();
 
-      if (!trimmed && field === 'graduationYear') {
+      // Preserve spaces during typing (degree and school can have spaces)
+      if (!value.trim() && field === 'graduationYear') {
         delete entry[field];
       } else {
-        (entry as Record<keyof EducationEntry, unknown>)[field] = trimmed;
+        // Store the value as-is to preserve spaces
+        (entry as Record<keyof EducationEntry, unknown>)[field] = value;
       }
 
       current[index] = entry;
@@ -336,6 +378,7 @@ export function ResumeBuilderSection() {
               <label className="flex flex-col gap-1">
                 <span className="text-xs font-medium uppercase tracking-wide text-neutral-500">Title</span>
                 <input
+                  type="text"
                   className="rounded border border-neutral-300 px-3 py-2 text-sm"
                   value={entry.title ?? ''}
                   onChange={event => updateExperienceField(index, 'title', event.target.value)}
@@ -345,6 +388,7 @@ export function ResumeBuilderSection() {
               <label className="flex flex-col gap-1">
                 <span className="text-xs font-medium uppercase tracking-wide text-neutral-500">Company</span>
                 <input
+                  type="text"
                   className="rounded border border-neutral-300 px-3 py-2 text-sm"
                   value={entry.company ?? ''}
                   onChange={event => updateExperienceField(index, 'company', event.target.value)}
@@ -354,6 +398,7 @@ export function ResumeBuilderSection() {
               <label className="flex flex-col gap-1">
                 <span className="text-xs font-medium uppercase tracking-wide text-neutral-500">Start Date</span>
                 <input
+                  type="text"
                   className="rounded border border-neutral-300 px-3 py-2 text-sm"
                   value={entry.startDate ?? ''}
                   onChange={event => updateExperienceField(index, 'startDate', event.target.value)}
@@ -363,6 +408,7 @@ export function ResumeBuilderSection() {
               <label className="flex flex-col gap-1">
                 <span className="text-xs font-medium uppercase tracking-wide text-neutral-500">End Date</span>
                 <input
+                  type="text"
                   className="rounded border border-neutral-300 px-3 py-2 text-sm"
                   value={entry.endDate ?? ''}
                   onChange={event => updateExperienceField(index, 'endDate', event.target.value)}
@@ -374,6 +420,7 @@ export function ResumeBuilderSection() {
                   Display Years (optional)
                 </span>
                 <input
+                  type="text"
                   className="rounded border border-neutral-300 px-3 py-2 text-sm"
                   value={entry.years ?? ''}
                   onChange={event => updateExperienceField(index, 'years', event.target.value)}
@@ -386,9 +433,25 @@ export function ResumeBuilderSection() {
                 </span>
                 <textarea
                   className="h-32 rounded border border-neutral-300 px-3 py-2 text-sm"
-                  value={(entry.bullets ?? []).join('\n')}
+                  value={bulletsInputs[`exp-${index}`] ?? (entry.bullets ?? []).join('\n')}
                   onChange={event => updateExperienceField(index, 'bullets', event.target.value)}
                   placeholder={'Coordinate volunteer recruitment\nShip weekly jobs newsletter'}
+                  onBlur={() => {
+                    // Sync bullets input when user leaves field
+                    const key = `exp-${index}`;
+                    const currentValue = bulletsInputs[key];
+                    if (currentValue !== undefined) {
+                      const bullets = currentValue
+                        .split('\n')
+                        .map(bullet => bullet.trim())
+                        .filter(Boolean)
+                        .slice(0, MAX_BULLETS);
+                      const normalized = bullets.join('\n');
+                      if (normalized !== currentValue) {
+                        setBulletsInputs(prev => ({ ...prev, [key]: normalized }));
+                      }
+                    }
+                  }}
                 />
                 <span className="text-xs text-neutral-500">
                   Keep each bullet concise and action-oriented. Lines beyond the first {MAX_BULLETS} are ignored.
@@ -432,6 +495,7 @@ export function ResumeBuilderSection() {
               <label className="flex flex-col gap-1">
                 <span className="text-xs font-medium uppercase tracking-wide text-neutral-500">Degree</span>
                 <input
+                  type="text"
                   className="rounded border border-neutral-300 px-3 py-2 text-sm"
                   value={entry.degree ?? ''}
                   onChange={event => updateEducationField(index, 'degree', event.target.value)}
@@ -441,6 +505,7 @@ export function ResumeBuilderSection() {
               <label className="flex flex-col gap-1">
                 <span className="text-xs font-medium uppercase tracking-wide text-neutral-500">School</span>
                 <input
+                  type="text"
                   className="rounded border border-neutral-300 px-3 py-2 text-sm"
                   value={entry.school ?? ''}
                   onChange={event => updateEducationField(index, 'school', event.target.value)}
