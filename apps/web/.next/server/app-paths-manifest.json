@@ -1,4 +1,3 @@
 {
-  "/api/jobs/unemployment/route": "app/api/jobs/unemployment/route.js",
   "/jobs/page": "app/jobs/page.js"
 }

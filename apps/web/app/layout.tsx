@@ -18,6 +18,28 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
+                // Prevent body height extension - monitor and constrain body height
+                var lastBodyHeight = 0;
+                var checkHeight = function() {
+                  var body = document.body;
+                  var html = document.documentElement;
+                  var contentHeight = Math.max(
+                    body.scrollHeight,
+                    body.offsetHeight,
+                    html.clientHeight,
+                    html.scrollHeight,
+                    html.offsetHeight
+                  );
+                  // If body height suddenly increases dramatically, reset it
+                  if (lastBodyHeight > 0 && contentHeight > lastBodyHeight + 5000) {
+                    body.style.height = 'auto';
+                    body.style.minHeight = '0';
+                    html.style.height = 'auto';
+                    html.style.minHeight = '0';
+                  }
+                  lastBodyHeight = contentHeight;
+                };
+                
                 // Fix Recharts measurement span that causes page height extension
                 function fixRechartsSpan() {
                   var spans = document.querySelectorAll('[id^="recharts_measurement_span"], [id*="recharts_measurement"]');
@@ -42,17 +64,29 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                       el.style.pointerEvents = 'none';
                     }
                   });
+                  checkHeight();
                 }
+                
                 // Run immediately
                 if (document.readyState === 'loading') {
-                  document.addEventListener('DOMContentLoaded', fixRechartsSpan);
+                  document.addEventListener('DOMContentLoaded', function() {
+                    fixRechartsSpan();
+                    checkHeight();
+                  });
                 } else {
                   fixRechartsSpan();
+                  checkHeight();
                 }
-                // Watch for new spans
-                var observer = new MutationObserver(fixRechartsSpan);
-                observer.observe(document.body || document.documentElement, { childList: true, subtree: true });
-                // Fallback interval
+                
+                // Watch for new spans and height changes
+                var observer = new MutationObserver(function() {
+                  fixRechartsSpan();
+                  checkHeight();
+                });
+                observer.observe(document.body || document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'class'] });
+                
+                // Monitor height periodically
+                setInterval(checkHeight, 100);
                 setInterval(fixRechartsSpan, 50);
               })();
             `,
