@@ -8,8 +8,19 @@ declare global {
   var __RESUME_BROWSER__: Browser | undefined;
 }
 
+const LAUNCH_ARGS = [
+  '--no-sandbox',
+  '--disable-setuid-sandbox',
+  '--disable-dev-shm-usage',
+  '--disable-gpu',
+  '--font-render-hinting=medium',
+];
+
 async function launchBrowser() {
-  const browser = await chromium.launch({ args: ['--no-sandbox'] });
+  const browser = await chromium.launch({
+    args: LAUNCH_ARGS,
+    headless: true,
+  });
   const close = async () => {
     try {
       await browser.close();

@@ -47,6 +47,7 @@ export async function POST(request: NextRequest) {
     return response;
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('[resume-pdf] render failure', error);
     logRequest({ reqId, template, startedAt, level: 'error', error });
     return NextResponse.json({ error: 'PDF generation failed', details: message }, { status: 500, headers });
   }
@@ -76,7 +77,11 @@ function logRequest({
     requestId: reqId,
     template,
     durationMs,
-    ...(error instanceof Error ? { error: error.message } : {}),
+    ...(error instanceof Error
+      ? { error: error.message, errorStack: error.stack }
+      : error
+        ? { error: String(error) }
+        : {}),
   };
   const log = typeof logger[level] === 'function' ? logger[level].bind(logger) : logger.info.bind(logger);
   log(payload, 'resume-pdf');

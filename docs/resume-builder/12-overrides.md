@@ -387,7 +387,7 @@ function logRequest({
 
 ### 9. Dockerfile
 
-Update the root `Dockerfile` to use `node:18-slim`, install Chromium dependencies (`apt-get install ...`), run `pnpm install --frozen-lockfile`, execute the Playwright `postinstall`, and finally `pnpm --filter @web start`.
+Update the root `Dockerfile` to use `node:18-slim`, install Chromium dependencies (`apt-get install ...`), run `pnpm install --frozen-lockfile` (postinstall pulls Chromium), build, and start with `pnpm --filter @web start`. Set `ENV PLAYWRIGHT_BROWSERS_PATH=0` so Playwright uses the bundled binary at runtime.
 
 ### 10. Smoke test command
 
