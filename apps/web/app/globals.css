@@ -5,27 +5,33 @@
 /* Prevent Recharts measurement span from affecting page height */
 html {
   height: auto !important;
-  min-height: 0 !important;
-  max-height: none !important;
+  overflow-y: visible !important;
 }
 
 body {
-  position: relative;
+  position: relative !important;
   height: auto !important;
   min-height: 0 !important;
-  max-height: none !important;
-  overflow-x: hidden;
+  overflow-x: hidden !important;
+  overflow-y: visible !important;
 }
 
+/* Aggressively fix any Recharts measurement spans */
 [id^="recharts_measurement_span"],
-span[id*="recharts_measurement"] {
-  position: absolute !important;
+span[id*="recharts_measurement"],
+[id*="recharts_measurement_span"] {
+  position: fixed !important;
   top: 0 !important;
   left: -9999px !important;
   width: 1px !important;
   height: 1px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
   overflow: hidden !important;
   clip: rect(0, 0, 0, 0) !important;
   pointer-events: none !important;
+  visibility: hidden !important;
   contain: strict !important;
+  isolation: isolate !important;
 }

@@ -11,27 +11,41 @@ export default function TimeSeriesChart({ points }: { points: SeriesPoint[] }) {
   // Fix Recharts measurement span positioning after render
   useEffect(() => {
     const fixMeasurementSpan = () => {
-      const spans = document.querySelectorAll('[id^="recharts_measurement_span"]');
+      const spans = document.querySelectorAll('[id^="recharts_measurement_span"], [id*="recharts_measurement"]');
       spans.forEach((span) => {
         const el = span as HTMLElement;
-        if (el.style.top === "-20000px" || el.style.top.includes("-20000")) {
+        const computedTop = window.getComputedStyle(el).top;
+        if (computedTop.includes("-20000") || el.style.top.includes("-20000")) {
+          el.style.position = "fixed";
           el.style.top = "0px";
           el.style.left = "-9999px";
-          el.style.position = "absolute";
           el.style.width = "1px";
           el.style.height = "1px";
+          el.style.margin = "0";
+          el.style.padding = "0";
+          el.style.border = "none";
           el.style.overflow = "hidden";
           el.style.clip = "rect(0, 0, 0, 0)";
+          el.style.visibility = "hidden";
+          el.style.pointerEvents = "none";
         }
       });
     };
 
     // Fix immediately and on any DOM changes
     fixMeasurementSpan();
-    const observer = new MutationObserver(fixMeasurementSpan);
-    observer.observe(document.body, { childList: true, subtree: true });
+    const observer = new MutationObserver(() => {
+      requestAnimationFrame(fixMeasurementSpan);
+    });
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'id'] });
 
-    return () => observer.disconnect();
+    // Also run on intervals as a fallback
+    const interval = setInterval(fixMeasurementSpan, 100);
+    
+    return () => {
+      observer.disconnect();
+      clearInterval(interval);
+    };
   }, []);
 
   return (
