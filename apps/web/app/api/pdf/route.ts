@@ -49,7 +49,14 @@ export async function POST(request: NextRequest) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('[resume-pdf] render failure', error);
     logRequest({ reqId, template, startedAt, level: 'error', error });
-    return NextResponse.json({ error: 'PDF generation failed', details: message }, { status: 500, headers });
+    return NextResponse.json(
+      {
+        error: 'PDF generation failed',
+        details: message,
+        stack: error instanceof Error ? error.stack : undefined,
+      },
+      { status: 500, headers },
+    );
   }
 }
 

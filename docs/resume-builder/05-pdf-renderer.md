@@ -12,6 +12,8 @@ const LAUNCH_ARGS = [
   '--no-sandbox',
   '--disable-setuid-sandbox',
   '--disable-dev-shm-usage',
+  '--single-process',
+  '--no-zygote',
   '--disable-gpu',
   '--font-render-hinting=medium',
 ];
@@ -125,14 +127,22 @@ export async function POST(request: NextRequest) {
   try {
     const html = compileTemplate(template, payload);
     const pdf = await renderHtmlToPdf(html);
-    const response = new NextResponse(pdf, { status: 200, headers });
+    const response = new NextResponse(new Uint8Array(pdf), { status: 200, headers });
     response.headers.set('Content-Type', 'application/pdf');
     response.headers.set('Content-Disposition', `attachment; filename="resume-${template}.pdf"`);
     logRequest({ reqId, template, startedAt, level: 'info' });
     return response;
   } catch (error) {
+    console.error('[resume-pdf] render failure', error);
     logRequest({ reqId, template, startedAt, level: 'error', error });
-    return NextResponse.json({ error: 'PDF generation failed' }, { status: 500, headers });
+    return NextResponse.json(
+      {
+        error: 'PDF generation failed',
+        details: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+      },
+      { status: 500, headers },
+    );
   }
 }
 ```

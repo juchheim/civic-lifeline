@@ -357,12 +357,29 @@ function logRequest({
 - `apps/web/app/jobs/page.tsx` — import `ResumeBuilderSection` and render it beneath the unemployment chart.
 - `apps/web/app/resume/page.tsx` — optional redirect stub to `/jobs#resume-builder` for legacy bookmarks.
 
-### 7. Fixture & REST client snippets
+### 7. Next config tweaks
+
+Update `apps/web/next.config.mjs` so templates are bundled during output tracing:
+
+```javascript
+const nextConfig = {
+  transpilePackages: ["@cl/types", "@cl/utils", "@cl/db"],
+  experimental: {
+    outputFileTracingIncludes: {
+      "/api/pdf": ["./resume/templates/**/*"],
+    },
+  },
+};
+
+export default nextConfig;
+```
+
+### 8. Fixture & REST client snippets
 
 - `apps/web/resume/fixtures/resume-sample.json` — canonical sample payload.
 - `apps/web/resume/scripts/smoke-test.http` — VS Code REST client file for integration testing.
 
-### 8. Package updates (`apps/web/package.json`)
+### 9. Package updates (`apps/web/package.json`)
 
 ```json
 "scripts": {
@@ -385,11 +402,11 @@ function logRequest({
 
 > Ensure `pnpm-lock.yaml` is updated by running `pnpm install` after adding dependencies.
 
-### 9. Dockerfile
+### 10. Dockerfile
 
 Update the root `Dockerfile` to use `node:18-slim`, install Chromium dependencies (`apt-get install ...`), run `pnpm install --frozen-lockfile` (postinstall pulls Chromium), build, and start with `pnpm --filter @web start`. Set `ENV PLAYWRIGHT_BROWSERS_PATH=0` so Playwright uses the bundled binary at runtime.
 
-### 10. Smoke test command
+### 11. Smoke test command
 
 ```
 curl -X POST "http://localhost:3000/api/pdf?template=modern" \

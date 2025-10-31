@@ -11,11 +11,15 @@ import { ResumeBuilderSection } from "@/components/resume/ResumeBuilderSection";
 const TimeSeriesChart = dynamic(() => import("@/components/TimeSeriesChart"), { ssr: false });
 
 export default function JobsPage() {
+  const isBrowser = typeof window !== "undefined";
   const [countyFips, setCountyFips] = useState<string>(MS_COUNTIES[0]?.fips ?? "28163");
   const start = 2018;
   const end = 2025;
 
   const fetcher = async () => {
+    if (!isBrowser) {
+      throw new Error("Window is undefined");
+    }
     const url = new URL("/api/jobs/unemployment", window.location.origin);
     url.searchParams.set("countyFips", countyFips);
     url.searchParams.set("start", String(start));
@@ -32,6 +36,7 @@ export default function JobsPage() {
     staleTime: 300_000,
     retry: 1,
     placeholderData: (prev) => prev as any,
+    enabled: isBrowser,
   });
 
   const points = data?.points ?? [];
