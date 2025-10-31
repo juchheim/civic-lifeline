@@ -15,6 +15,9 @@ RUN pnpm install --frozen-lockfile
 
 COPY . .
 
+# Reinstall to ensure workspace dependencies are properly linked
+RUN pnpm install --frozen-lockfile
+
 RUN pnpm build
 
 ENV NODE_ENV=production

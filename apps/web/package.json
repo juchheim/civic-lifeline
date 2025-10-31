@@ -7,7 +7,7 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "postinstall": "playwright install --with-deps chromium"
+    "postinstall": "if command -v apt-get >/dev/null 2>&1; then playwright install --with-deps chromium; else playwright install chromium; fi"
   },
   "dependencies": {
     "@cl/types": "workspace:*",
