@@ -15,9 +15,14 @@ const LAUNCH_ARGS = [
 ] as const;
 
 async function launchBrowser() {
+  // Set chromium font config for serverless environment
+  if (process.env.AWS_REGION || process.env.VERCEL) {
+    chromium.setGraphicsMode = false;
+  }
+
   const browser = await puppeteer.launch({
     args: [...chromium.args, ...LAUNCH_ARGS],
-    executablePath: await chromium.executablePath(),
+    executablePath: await chromium.executablePath('/tmp'),
     headless: true,
   });
   const close = async () => {
