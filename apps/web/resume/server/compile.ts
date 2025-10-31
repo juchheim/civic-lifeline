@@ -1,32 +1,38 @@
-import { readFileSync, readdirSync } from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import { readFileSync } from 'fs';
 import Handlebars from 'handlebars';
 import type { ResumePayload } from './validation';
 
-const moduleDir = path.dirname(fileURLToPath(import.meta.url));
-const templatesDir = path.resolve(moduleDir, '../templates');
+const PARTIALS: Record<string, string> = {
+  head: readFile('../templates/partials/head.hbs'),
+  'tokens-css': readFile('../templates/partials/tokens-css.hbs'),
+};
+
+const TEMPLATES: Record<string, string> = {
+  classic: readFile('../templates/classic.hbs'),
+  modern: readFile('../templates/modern.hbs'),
+  minimal: readFile('../templates/minimal.hbs'),
+};
+
 let partialsRegistered = false;
+
+function readFile(relativePath: string) {
+  return readFileSync(new URL(relativePath, import.meta.url), 'utf8');
+}
 
 function registerPartialsOnce() {
   if (partialsRegistered) return;
-  const partialDir = path.join(templatesDir, 'partials');
-  try {
-    const files = readdirSync(partialDir).filter(file => file.endsWith('.hbs'));
-    for (const file of files) {
-      const name = path.basename(file, '.hbs');
-      Handlebars.registerPartial(name, readFileSync(path.join(partialDir, file), 'utf8'));
-    }
-  } catch (error) {
-    // Partials directory is optional; ignore if missing.
+  for (const [name, source] of Object.entries(PARTIALS)) {
+    Handlebars.registerPartial(name, source);
   }
   partialsRegistered = true;
 }
 
 export function compileTemplate(templateName: string, data: ResumePayload) {
   registerPartialsOnce();
-  const templatePath = path.join(templatesDir, `${templateName}.hbs`);
-  const source = readFileSync(templatePath, 'utf8');
+  const source = TEMPLATES[templateName];
+  if (!source) {
+    throw new Error(`Unknown template: ${templateName}`);
+  }
   const template = Handlebars.compile(source, { noEscape: true });
   return template({ ...data, templateName });
 }
