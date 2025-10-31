@@ -24,7 +24,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <MainNav />
               </div>
             </header>
-            <div role="main" className="flex-1">
+            <div role="main">
               <div className="mx-auto w-full max-w-6xl px-4 py-6">{children}</div>
             </div>
             <footer className="border-t border-slate-200 bg-white/70">
