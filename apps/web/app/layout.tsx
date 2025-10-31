@@ -15,7 +15,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body className="min-h-screen bg-slate-100 text-slate-900 antialiased">
         <Providers>
-          <div className="flex min-h-screen flex-col">
+          <div className="flex flex-col">
             <header className="border-b border-slate-200 bg-white/80 backdrop-blur">
               <div className="mx-auto flex w-full max-w-6xl flex-col gap-3 px-4 py-4 md:flex-row md:items-center md:justify-between">
                 <Link href="/" className="text-lg font-semibold text-blue-700 hover:text-blue-800">
