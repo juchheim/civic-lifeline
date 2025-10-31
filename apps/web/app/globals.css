@@ -3,7 +3,22 @@
 @tailwind utilities;
 
 /* Prevent Recharts measurement span from affecting page height */
-[id^="recharts_measurement_span"] {
+html {
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+}
+
+body {
+  position: relative;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow-x: hidden;
+}
+
+[id^="recharts_measurement_span"],
+span[id*="recharts_measurement"] {
   position: absolute !important;
   top: 0 !important;
   left: -9999px !important;
@@ -11,4 +26,6 @@
   height: 1px !important;
   overflow: hidden !important;
   clip: rect(0, 0, 0, 0) !important;
+  pointer-events: none !important;
+  contain: strict !important;
 }
