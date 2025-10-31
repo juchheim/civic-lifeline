@@ -8,41 +8,34 @@ export interface SeriesPoint { date: string; value: number }
 export default function TimeSeriesChart({ points }: { points: SeriesPoint[] }) {
   const data = points.map((p) => ({ date: p.date, value: p.value }));
 
-  // Fix Recharts measurement span positioning after render
+  // Fix Recharts measurement span positioning after render (backup to inline script)
   useEffect(() => {
     const fixMeasurementSpan = () => {
-      const spans = document.querySelectorAll('[id^="recharts_measurement_span"], [id*="recharts_measurement"]');
+      const spans = document.querySelectorAll('[id^="recharts_measurement_span"], [id*="recharts_measurement"], [id*="measurement"][id*="recharts"]');
       spans.forEach((span) => {
         const el = span as HTMLElement;
         const computedTop = window.getComputedStyle(el).top;
-        if (computedTop.includes("-20000") || el.style.top.includes("-20000")) {
-          el.style.position = "fixed";
-          el.style.top = "0px";
-          el.style.left = "-9999px";
-          el.style.width = "1px";
-          el.style.height = "1px";
-          el.style.margin = "0";
-          el.style.padding = "0";
-          el.style.border = "none";
-          el.style.overflow = "hidden";
-          el.style.clip = "rect(0, 0, 0, 0)";
-          el.style.visibility = "hidden";
-          el.style.pointerEvents = "none";
+        const inlineTop = el.style.top;
+        if (computedTop.includes("-20000") || inlineTop.includes("-20000") || computedTop === "-20000px") {
+          el.style.cssText = "position: fixed !important; top: 0px !important; left: -9999px !important; width: 1px !important; height: 1px !important; margin: 0 !important; padding: 0 !important; border: none !important; overflow: hidden !important; clip: rect(0, 0, 0, 0) !important; visibility: hidden !important; pointer-events: none !important; z-index: -9999 !important;";
         }
       });
     };
 
-    // Fix immediately and on any DOM changes
+    // Fix immediately
     fixMeasurementSpan();
+    // Also after a short delay for any async rendering
+    const timeout = setTimeout(fixMeasurementSpan, 10);
     const observer = new MutationObserver(() => {
       requestAnimationFrame(fixMeasurementSpan);
     });
     observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'id'] });
 
-    // Also run on intervals as a fallback
-    const interval = setInterval(fixMeasurementSpan, 100);
+    // Fallback interval
+    const interval = setInterval(fixMeasurementSpan, 50);
     
     return () => {
+      clearTimeout(timeout);
       observer.disconnect();
       clearInterval(interval);
     };

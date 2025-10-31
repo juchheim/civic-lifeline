@@ -12,14 +12,16 @@ body {
   position: relative !important;
   height: auto !important;
   min-height: 0 !important;
+  max-height: 100vh !important;
   overflow-x: hidden !important;
   overflow-y: visible !important;
 }
 
-/* Aggressively fix any Recharts measurement spans */
+/* Aggressively fix any Recharts measurement spans - multiple selectors for compatibility */
 [id^="recharts_measurement_span"],
 span[id*="recharts_measurement"],
-[id*="recharts_measurement_span"] {
+[id*="recharts_measurement_span"],
+*[id*="measurement"][id*="recharts"] {
   position: fixed !important;
   top: 0 !important;
   left: -9999px !important;
@@ -34,4 +36,5 @@ span[id*="recharts_measurement"],
   visibility: hidden !important;
   contain: strict !important;
   isolation: isolate !important;
+  z-index: -9999 !important;
 }

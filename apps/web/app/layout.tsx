@@ -13,6 +13,44 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                function fixRechartsSpan() {
+                  var spans = document.querySelectorAll('[id^="recharts_measurement_span"], [id*="recharts_measurement"]');
+                  spans.forEach(function(span) {
+                    var el = span;
+                    var style = window.getComputedStyle(el);
+                    if (style.top.includes('-20000') || el.style.top.includes('-20000')) {
+                      el.style.position = 'fixed';
+                      el.style.top = '0px';
+                      el.style.left = '-9999px';
+                      el.style.width = '1px';
+                      el.style.height = '1px';
+                      el.style.overflow = 'hidden';
+                      el.style.visibility = 'hidden';
+                      el.style.pointerEvents = 'none';
+                    }
+                  });
+                }
+                // Run immediately
+                if (document.readyState === 'loading') {
+                  document.addEventListener('DOMContentLoaded', fixRechartsSpan);
+                } else {
+                  fixRechartsSpan();
+                }
+                // Watch for new spans
+                var observer = new MutationObserver(fixRechartsSpan);
+                observer.observe(document.body || document.documentElement, { childList: true, subtree: true });
+                // Fallback interval
+                setInterval(fixRechartsSpan, 50);
+              })();
+            `,
+          }}
+        />
+      </head>
       <body className="bg-slate-100 text-slate-900 antialiased">
         <Providers>
           <div className="flex flex-col">
