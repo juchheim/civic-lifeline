@@ -2,12 +2,7 @@
 const nextConfig = {
   transpilePackages: ["@cl/types", "@cl/utils", "@cl/db"],
   experimental: {
-    serverComponentsExternalPackages: ["@sparticuz/chromium-min", "puppeteer-core"],
-    outputFileTracingIncludes: {
-      "/api/pdf": [
-        "./resume/templates/**/*",
-      ],
-    },
+    serverComponentsExternalPackages: ["@sparticuz/chromium", "puppeteer-core"],
   },
   webpack(config) {
     config.module.rules.push({

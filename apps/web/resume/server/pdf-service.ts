@@ -1,5 +1,5 @@
 import puppeteer, { type Browser } from 'puppeteer-core';
-import chromium from '@sparticuz/chromium-min';
+import chromium from '@sparticuz/chromium';
 
 declare global {
   // eslint-disable-next-line no-var
@@ -14,9 +14,6 @@ const LAUNCH_ARGS = [
   '--font-render-hinting=medium',
 ] as const;
 
-// Externally hosted Chromium binary for serverless environments (x64 architecture)
-const CHROMIUM_PACK_URL = 'https://github.com/Sparticuz/chromium/releases/download/v141.0.0/chromium-pack.x64.tar';
-
 async function launchBrowser() {
   // Set chromium font config for serverless environment
   if (process.env.AWS_REGION || process.env.VERCEL) {
@@ -25,7 +22,7 @@ async function launchBrowser() {
 
   const browser = await puppeteer.launch({
     args: [...chromium.args, ...LAUNCH_ARGS],
-    executablePath: await chromium.executablePath(CHROMIUM_PACK_URL),
+    executablePath: await chromium.executablePath(),
     headless: true,
   });
   const close = async () => {
