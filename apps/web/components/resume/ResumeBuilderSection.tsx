@@ -60,9 +60,11 @@ export function ResumeBuilderSection() {
   }, [payload]);
 
   // Sync skills input when payload changes externally (e.g., reset), but only if it differs
+  // Don't sync during active typing - only on external changes like reset or load
   useEffect(() => {
     const serialized = (payload.skills ?? []).join(', ');
-    if (serialized !== skillsInput) {
+    // Only update if the serialized version doesn't match and it's not just whitespace differences
+    if (serialized !== skillsInput && serialized.replace(/\s*,\s*/g, ', ') !== skillsInput.replace(/\s*,\s*/g, ', ')) {
       setSkillsInput(serialized);
     }
   }, [payload.skills]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -140,7 +142,10 @@ export function ResumeBuilderSection() {
         }
       } else {
         // Preserve spaces during typing; only validate empty fields
-        if (!value.trim() && field !== 'title' && field !== 'company') {
+        // Skip 'years' field since it's been removed
+        if (field === 'years') {
+          delete entry.years;
+        } else if (!value.trim() && field !== 'title' && field !== 'company') {
           delete entry[field];
         } else {
           // Store the value as-is to preserve spaces (title/company can have spaces)
@@ -205,7 +210,6 @@ export function ResumeBuilderSection() {
         };
         const startDate = normalizeTimeline(original.startDate);
         const endDate = normalizeTimeline(original.endDate);
-        const years = original.years?.trim();
         const bullets = original.bullets
           ?.map(bullet => bullet.trim())
           .filter(Boolean)
@@ -213,7 +217,6 @@ export function ResumeBuilderSection() {
 
         if (startDate) normalized.startDate = startDate;
         if (endDate) normalized.endDate = endDate;
-        if (years) normalized.years = years;
         if (bullets?.length) normalized.bullets = bullets;
 
         return normalized;
@@ -329,8 +332,10 @@ export function ResumeBuilderSection() {
             value={skillsInput}
             onChange={event => {
               const rawValue = event.target.value;
+              // Always preserve the raw input value to allow commas and spaces
               setSkillsInput(rawValue);
-              // Parse skills from input (split on comma, trim whitespace)
+              // Parse skills from input (split on comma, trim whitespace) for payload
+              // But keep raw input for display
               const skills = rawValue
                 .split(',')
                 .map(skill => skill.trim())
@@ -339,6 +344,22 @@ export function ResumeBuilderSection() {
                 ...prev,
                 skills,
               }));
+            }}
+            onBlur={() => {
+              // Normalize on blur: remove trailing commas, ensure clean format
+              const cleaned = skillsInput
+                .split(',')
+                .map(skill => skill.trim())
+                .filter(Boolean)
+                .join(', ');
+              if (cleaned !== skillsInput && cleaned) {
+                setSkillsInput(cleaned);
+                const skills = cleaned.split(',').map(s => s.trim()).filter(Boolean);
+                setPayload(prev => ({
+                  ...prev,
+                  skills,
+                }));
+              }
             }}
             placeholder="React, Node.js, Machine Learning"
           />
@@ -413,18 +434,6 @@ export function ResumeBuilderSection() {
                   value={entry.endDate ?? ''}
                   onChange={event => updateExperienceField(index, 'endDate', event.target.value)}
                   placeholder="present"
-                />
-              </label>
-              <label className="md:col-span-2 flex flex-col gap-1">
-                <span className="text-xs font-medium uppercase tracking-wide text-neutral-500">
-                  Display Years (optional)
-                </span>
-                <input
-                  type="text"
-                  className="rounded border border-neutral-300 px-3 py-2 text-sm"
-                  value={entry.years ?? ''}
-                  onChange={event => updateExperienceField(index, 'years', event.target.value)}
-                  placeholder="2021 – Present"
                 />
               </label>
               <label className="md:col-span-2 flex flex-col gap-1">

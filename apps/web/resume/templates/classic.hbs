@@ -15,7 +15,7 @@
 <h2>Experience</h2>
 <ul>
 {{#each experience}}
-<li><b>{{title}}</b>, {{company}} {{#if years}}— {{years}}{{/if}}
+<li><b>{{title}}</b>, {{company}}{{#if startDate}} — {{startDate}}{{#if endDate}} to {{endDate}}{{/if}}{{else}}{{#if endDate}} — {{endDate}}{{/if}}{{/if}}
 {{#if bullets}}<ul>{{#each bullets}}<li>{{this}}</li>{{/each}}</ul>{{/if}}
 </li>
 {{/each}}
