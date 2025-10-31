@@ -42,13 +42,13 @@ export default function JobsPage() {
   const points = data?.points ?? [];
 
   return (
-    <main className="flex flex-col gap-4 p-4 md:p-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-6">
+      <header className="flex items-center justify-between">
         <h1 className="text-xl md:text-2xl font-semibold">Jobs — Unemployment</h1>
         <div className="text-sm text-gray-600">
           <SourceChip source="BLS LAUS" lastUpdated={data?.lastUpdated ?? new Date().toISOString()} />
         </div>
-      </div>
+      </header>
 
       <div className="flex items-center gap-3">
         <label className="text-sm">County</label>
@@ -103,6 +103,6 @@ export default function JobsPage() {
       </section>
 
       <ResumeBuilderSection />
-    </main>
+    </div>
   );
 }
