@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { downloadPdf, type TemplateName } from '@/lib/resume/download-pdf';
 import type { ResumePayload } from '@/lib/resume/types';
 import { TEMPLATES } from '@/resume/shared/templates';
@@ -28,6 +28,7 @@ export function ResumeBuilderSection() {
   const [status, setStatus] = useState<string | null>(null);
   const [skillsInput, setSkillsInput] = useState<string>('');
   const [bulletsInputs, setBulletsInputs] = useState<Record<string, string>>({});
+  const skillsRef = useRef(false); // Track if user is currently typing in skills field
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -35,6 +36,7 @@ export function ResumeBuilderSection() {
       const raw = window.localStorage.getItem(STORAGE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw) as ResumePayload;
+        skillsRef.current = false; // Allow sync on load
         setPayload({ ...DEFAULT_PAYLOAD, ...parsed });
         setSkillsInput((parsed.skills ?? []).join(', '));
         // Initialize bullets inputs from stored experience entries
@@ -59,13 +61,15 @@ export function ResumeBuilderSection() {
     return () => window.clearTimeout(timer);
   }, [payload]);
 
-  // Sync skills input when payload changes externally (e.g., reset), but only if it differs
-  // Don't sync during active typing - only on external changes like reset or load
+  // Only sync skills input from payload when loading from storage or resetting
+  // Don't sync during active typing to preserve commas and spaces
   useEffect(() => {
-    const serialized = (payload.skills ?? []).join(', ');
-    // Only update if the serialized version doesn't match and it's not just whitespace differences
-    if (serialized !== skillsInput && serialized.replace(/\s*,\s*/g, ', ') !== skillsInput.replace(/\s*,\s*/g, ', ')) {
-      setSkillsInput(serialized);
+    if (!skillsRef.current) {
+      // Only sync if user is not currently typing (external change like reset/load)
+      const serialized = (payload.skills ?? []).join(', ');
+      if (serialized !== skillsInput) {
+        setSkillsInput(serialized);
+      }
     }
   }, [payload.skills]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -250,9 +254,25 @@ export function ResumeBuilderSection() {
       setStatus('Please add your name and email first.');
       return;
     }
+    // Ensure skills are synced from input before generating
+    skillsRef.current = false;
+    const cleaned = skillsInput
+      .split(',')
+      .map(skill => skill.trim())
+      .filter(Boolean)
+      .join(', ');
+    if (cleaned !== skillsInput) {
+      setSkillsInput(cleaned);
+    }
+    const skills = cleaned.split(',').map(s => s.trim()).filter(Boolean);
+    const payloadWithSkills = {
+      ...payload,
+      skills,
+    };
+    
     setStatus('Generating PDF...');
     try {
-      await downloadPdf(buildSubmissionPayload(payload), template);
+      await downloadPdf(buildSubmissionPayload(payloadWithSkills), template);
       setStatus('PDF downloaded to your device.');
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to generate PDF.';
@@ -261,6 +281,7 @@ export function ResumeBuilderSection() {
   };
 
   const handleReset = () => {
+    skillsRef.current = false; // Allow sync on reset
     setPayload(DEFAULT_PAYLOAD);
     setSkillsInput('');
     setStatus('Cleared the draft.');
@@ -332,34 +353,30 @@ export function ResumeBuilderSection() {
             value={skillsInput}
             onChange={event => {
               const rawValue = event.target.value;
+              // Mark that user is actively typing
+              skillsRef.current = true;
               // Always preserve the raw input value to allow commas and spaces
               setSkillsInput(rawValue);
-              // Parse skills from input (split on comma, trim whitespace) for payload
-              // But keep raw input for display
-              const skills = rawValue
-                .split(',')
-                .map(skill => skill.trim())
-                .filter(Boolean);
-              setPayload(prev => ({
-                ...prev,
-                skills,
-              }));
+              // Don't update payload during typing - only on blur or submit
             }}
             onBlur={() => {
-              // Normalize on blur: remove trailing commas, ensure clean format
+              // User finished typing - now parse and update payload
+              skillsRef.current = false;
               const cleaned = skillsInput
                 .split(',')
                 .map(skill => skill.trim())
                 .filter(Boolean)
                 .join(', ');
-              if (cleaned !== skillsInput && cleaned) {
+              // Update input to cleaned version if needed
+              if (cleaned !== skillsInput) {
                 setSkillsInput(cleaned);
-                const skills = cleaned.split(',').map(s => s.trim()).filter(Boolean);
-                setPayload(prev => ({
-                  ...prev,
-                  skills,
-                }));
               }
+              // Update payload with parsed skills
+              const skills = cleaned.split(',').map(s => s.trim()).filter(Boolean);
+              setPayload(prev => ({
+                ...prev,
+                skills,
+              }));
             }}
             placeholder="React, Node.js, Machine Learning"
           />
