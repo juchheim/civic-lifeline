@@ -1,6 +1,6 @@
 PROMPT 04 — Dependencies & scripts
 
-Require "postinstall": "playwright install --with-deps chromium"
+Require "postinstall": "cross-env PLAYWRIGHT_BROWSERS_PATH=0 playwright install chromium"
 
 Update package.json:
 
@@ -13,7 +13,7 @@ Update package.json:
    (Add types only if missing.)
 
 2) Add an install step for Chromium:
-   - Either a `postinstall` script: `"postinstall": "playwright install --with-deps chromium"`
+   - Either a `postinstall` script: `"postinstall": "cross-env PLAYWRIGHT_BROWSERS_PATH=0 playwright install chromium"`
    - Or document a one-time step in README (choose postinstall if safe for CI).
 
 3) Keep existing Next.js scripts (`dev`, `build`, `start`); add the postinstall without breaking them.

@@ -7,7 +7,7 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "postinstall": "if command -v apt-get >/dev/null 2>&1; then playwright install --with-deps chromium; else playwright install chromium; fi"
+    "postinstall": "cross-env PLAYWRIGHT_BROWSERS_PATH=0 playwright install chromium"
   },
   "dependencies": {
     "@cl/types": "workspace:*",
@@ -40,6 +40,7 @@
     "prettier-plugin-tailwindcss": "^0.6.8",
     "tailwindcss": "^3.4.13",
     "tailwindcss-animate": "^1.0.7",
-    "typescript": "^5.6.3"
+    "typescript": "^5.6.3",
+    "cross-env": "^7.0.3"
   }
 }

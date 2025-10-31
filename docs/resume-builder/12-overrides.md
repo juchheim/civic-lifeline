@@ -406,7 +406,7 @@ export default nextConfig;
   "start": "next start",
   "lint": "next lint",
   "typecheck": "tsc --noEmit",
-  "postinstall": "playwright install --with-deps chromium"
+  "postinstall": "cross-env PLAYWRIGHT_BROWSERS_PATH=0 playwright install chromium"
 },
 "dependencies": {
   "handlebars": "^4.7.8",
@@ -414,7 +414,10 @@ export default nextConfig;
   "pino": "^9.4.0",
   "playwright": "^1.48.2",
   "zod": "^3.23.8"
-  /* plus existing deps */
+},
+"devDependencies": {
+  "cross-env": "^7.0.3"
+  /* plus existing dev deps */
 }
 ```
 
