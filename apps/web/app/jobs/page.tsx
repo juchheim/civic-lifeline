@@ -73,6 +73,7 @@ export default function JobsPage() {
         </div>
       )}
 
+      {/* Chart section with overflow containment */}
       <section className="rounded border bg-white p-3 overflow-hidden">
         {isLoading ? (
           <div className="h-64 animate-pulse bg-gray-100 rounded" />

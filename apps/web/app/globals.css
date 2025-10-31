@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 /* Prevent Recharts measurement span from affecting page height */
-/* High specificity selectors to override Recharts inline styles */
+/* High specificity selectors to override Recharts inline styles - v2 */
 html {
   height: auto !important;
   overflow-y: visible !important;

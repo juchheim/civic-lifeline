@@ -8,7 +8,7 @@ export interface SeriesPoint { date: string; value: number }
 export default function TimeSeriesChart({ points }: { points: SeriesPoint[] }) {
   const data = points.map((p) => ({ date: p.date, value: p.value }));
 
-  // Fix Recharts measurement span positioning after render (backup to inline script)
+  // Fix Recharts measurement span positioning after render (backup to inline script) - v2
   useEffect(() => {
     const fixMeasurementSpan = () => {
       const spans = document.querySelectorAll('[id^="recharts_measurement_span"], [id*="recharts_measurement"], [id*="measurement"][id*="recharts"]');

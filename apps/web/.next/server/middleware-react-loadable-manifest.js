@@ -1,1 +1,1 @@
-self.__REACT_LOADABLE_MANIFEST="{}"
+self.__REACT_LOADABLE_MANIFEST="{\"app/jobs/page.tsx -> @/components/TimeSeriesChart\":{\"id\":\"app/jobs/page.tsx -> @/components/TimeSeriesChart\",\"files\":[\"static/chunks/_app-pages-browser_components_TimeSeriesChart_tsx.js\"]}}"
