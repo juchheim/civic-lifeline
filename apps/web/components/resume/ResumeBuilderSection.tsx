@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { downloadPdf, type TemplateName } from '@/lib/resume/download-pdf';
+import { rewriteSummary } from '@/lib/resume/rewrite-summary';
 import type { ResumePayload } from '@/lib/resume/types';
 import { TEMPLATES } from '@/resume/shared/templates';
 
@@ -9,6 +10,7 @@ const STORAGE_KEY = 'resume.draft';
 const EXPERIENCE_LIMIT = 20;
 const EDUCATION_LIMIT = 10;
 const MAX_BULLETS = 8;
+const SUMMARY_MIN_CHARS = 12;
 
 type ExperienceEntry = NonNullable<ResumePayload['experience']>[number];
 type EducationEntry = NonNullable<ResumePayload['education']>[number];
@@ -28,6 +30,8 @@ export function ResumeBuilderSection() {
   const [status, setStatus] = useState<string | null>(null);
   const [skillsInput, setSkillsInput] = useState<string>('');
   const [bulletsInputs, setBulletsInputs] = useState<Record<string, string>>({});
+  const [isSummaryRewriting, setIsSummaryRewriting] = useState(false);
+  const [summaryStatus, setSummaryStatus] = useState<{ kind: 'success' | 'error'; message: string } | null>(null);
   const skillsRef = useRef(false); // Track if user is currently typing in skills field
 
   useEffect(() => {
@@ -76,6 +80,62 @@ export function ResumeBuilderSection() {
   const hasRequiredFields = useMemo(() => payload.name.trim() && payload.email.trim(), [payload]);
   const experience = payload.experience ?? [];
   const education = payload.education ?? [];
+  const canRewriteSummary = useMemo(
+    () => (payload.summary ?? '').trim().length >= SUMMARY_MIN_CHARS,
+    [payload.summary],
+  );
+
+  const handleRewriteSummary = async () => {
+    const draft = (payload.summary ?? '').trim();
+    if (!draft) {
+      setSummaryStatus({ kind: 'error', message: 'Add a few notes so the assistant has something to rewrite.' });
+      return;
+    }
+    if (draft.length < SUMMARY_MIN_CHARS) {
+      setSummaryStatus({
+        kind: 'error',
+        message: `Add a bit more detail (at least ${SUMMARY_MIN_CHARS} characters) so we have something to polish.`,
+      });
+      return;
+    }
+
+    setSummaryStatus(null);
+    setIsSummaryRewriting(true);
+
+    const skills = (payload.skills ?? []).map(skill => skill.trim()).filter(Boolean).slice(0, 12);
+    const experienceForAi = (payload.experience ?? [])
+      .map(entry => {
+        const title = entry.title?.trim();
+        const company = entry.company?.trim();
+        const bullets = (entry.bullets ?? []).map(bullet => bullet.trim()).filter(Boolean).slice(0, 2);
+        if (!title && !company && bullets.length === 0) return null;
+        return {
+          ...(title ? { title } : {}),
+          ...(company ? { company } : {}),
+          ...(bullets.length ? { bullets } : {}),
+        };
+      })
+      .filter((entry): entry is { title?: string; company?: string; bullets?: string[] } => entry !== null)
+      .slice(0, 3);
+
+    try {
+      const rewritten = await rewriteSummary({
+        summary: draft,
+        name: payload.name.trim() || undefined,
+        skills,
+        experience: experienceForAi.length ? experienceForAi : undefined,
+      });
+      setPayload(prev => ({ ...prev, summary: rewritten }));
+      setSummaryStatus({ kind: 'success', message: 'Summary polished for resume voice.' });
+    } catch (error) {
+      setSummaryStatus({
+        kind: 'error',
+        message: error instanceof Error ? error.message : 'Something went wrong while rewriting.',
+      });
+    } finally {
+      setIsSummaryRewriting(false);
+    }
+  };
 
   const addExperience = () => {
     setPayload(prev => {
@@ -285,6 +345,8 @@ export function ResumeBuilderSection() {
     setPayload(DEFAULT_PAYLOAD);
     setSkillsInput('');
     setStatus('Cleared the draft.');
+    setSummaryStatus(null);
+    setIsSummaryRewriting(false);
     if (typeof window !== 'undefined') {
       window.localStorage.removeItem(STORAGE_KEY);
     }
@@ -336,13 +398,36 @@ export function ResumeBuilderSection() {
         </label>
 
         <label className="flex flex-col gap-1">
-          <span className="text-sm font-medium">Summary</span>
+          <span className="flex items-center justify-between">
+            <span className="text-sm font-medium">Summary</span>
+            <button
+              type="button"
+              className="text-xs font-semibold uppercase tracking-wide text-neutral-600 disabled:cursor-not-allowed disabled:text-neutral-400"
+              onClick={handleRewriteSummary}
+              disabled={isSummaryRewriting || !canRewriteSummary}
+            >
+              {isSummaryRewriting ? 'Rewriting...' : 'Rewrite with AI'}
+            </button>
+          </span>
           <textarea
             className="h-32 rounded border border-neutral-300 px-3 py-2 text-sm"
             value={payload.summary ?? ''}
-            onChange={event => setPayload(prev => ({ ...prev, summary: event.target.value }))}
+            onChange={event => {
+              setSummaryStatus(null);
+              setPayload(prev => ({ ...prev, summary: event.target.value }));
+            }}
             placeholder="Highlight your skills, experience, and mission."
+            aria-busy={isSummaryRewriting}
           />
+          {summaryStatus && (
+            <span
+              className={`text-xs ${summaryStatus.kind === 'error' ? 'text-red-600' : 'text-neutral-600'}`}
+              role="status"
+              aria-live="polite"
+            >
+              {summaryStatus.message}
+            </span>
+          )}
         </label>
 
         <label className="flex flex-col gap-1">

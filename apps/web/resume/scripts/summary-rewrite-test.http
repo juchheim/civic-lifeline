@@ -1,0 +1,22 @@
+### Resume Summary Rewrite Smoke Test
+POST http://localhost:3000/api/resume/summary
+Content-Type: application/json
+
+{
+  "summary": "I worked at walmart for 3 years. I was good at helping customers and stocking shelves. I'm looking for a new job where I can use my people skills and help out",
+  "name": "John Doe",
+  "skills": ["Customer Service", "Retail", "Stocking", "Communication"],
+  "experience": [
+    {
+      "title": "Sales Associate",
+      "company": "Walmart",
+      "bullets": [
+        "Helped customers find products",
+        "Maintained clean and organized store"
+      ]
+    }
+  ]
+}
+
+###
+
