@@ -463,7 +463,7 @@ export function ResumeBuilderSection() {
                 skills,
               }));
             }}
-            placeholder="React, Node.js, Machine Learning"
+            placeholder="Customer Service, Cash Handling, Food Service"
           />
         </label>
       </div>
@@ -505,7 +505,7 @@ export function ResumeBuilderSection() {
                   className="rounded border border-neutral-300 px-3 py-2 text-sm"
                   value={entry.title ?? ''}
                   onChange={event => updateExperienceField(index, 'title', event.target.value)}
-                  placeholder="Community Outreach Coordinator"
+                  placeholder="Cashier"
                 />
               </label>
               <label className="flex flex-col gap-1">
@@ -515,7 +515,7 @@ export function ResumeBuilderSection() {
                   className="rounded border border-neutral-300 px-3 py-2 text-sm"
                   value={entry.company ?? ''}
                   onChange={event => updateExperienceField(index, 'company', event.target.value)}
-                  placeholder="City of Jackson"
+                  placeholder="Walmart"
                 />
               </label>
               <label className="flex flex-col gap-1">
@@ -546,7 +546,7 @@ export function ResumeBuilderSection() {
                   className="h-32 rounded border border-neutral-300 px-3 py-2 text-sm"
                   value={bulletsInputs[`exp-${index}`] ?? (entry.bullets ?? []).join('\n')}
                   onChange={event => updateExperienceField(index, 'bullets', event.target.value)}
-                  placeholder={'Coordinate volunteer recruitment\nShip weekly jobs newsletter'}
+                  placeholder={'Served customers at checkout\nMaintained clean dining area\nRestocked shelves'}
                   onBlur={() => {
                     // Sync bullets input when user leaves field
                     const key = `exp-${index}`;
