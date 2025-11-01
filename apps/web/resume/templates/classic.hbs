@@ -7,15 +7,27 @@
 </head>
 <body class="template-{{templateName}}">
 <h1>{{name}}</h1>
-<p>{{email}} {{#if phone}}| {{phone}}{{/if}} {{#if location}}| {{location}}{{/if}}</p>
+<p class="contact-line">
+  {{#if location}}<span>{{location}}</span>{{/if}}
+  {{#if phone}}<span>{{phone}}</span>{{/if}}
+  {{#if email}}<span>{{email}}</span>{{/if}}
+</p>
 
-{{#if summary}}<h2>Summary</h2><p>{{summary}}</p>{{/if}}
+{{#if summary}}
+<h2>Summary</h2>
+<p>{{summary}}</p>
+{{/if}}
+
+{{#if skills}}
+<h2>Skills</h2>
+<ul class="skills-list">{{#each skills}}<li>{{this}}</li>{{/each}}</ul>
+{{/if}}
 
 {{#if experience}}
 <h2>Experience</h2>
 <ul>
 {{#each experience}}
-<li><b>{{title}}</b>, {{company}}{{#if startDate}} — {{startDate}}{{#if endDate}} to {{endDate}}{{/if}}{{else}}{{#if endDate}} — {{endDate}}{{/if}}{{/if}}
+<li><b>{{title}}</b>, {{company}}{{#with (formatTimelineRange startDate endDate) as |timeline|}}{{#if timeline}} — {{{timeline}}}{{/if}}{{/with}}
 {{#if bullets}}<ul>{{#each bullets}}<li>{{this}}</li>{{/each}}</ul>{{/if}}
 </li>
 {{/each}}
@@ -30,8 +42,6 @@
 {{/each}}
 </ul>
 {{/if}}
-
-{{#if skills}}<h2>Skills</h2><p>{{#each skills}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}</p>{{/if}}
 
 {{#if links}}
 <h2>Links</h2>

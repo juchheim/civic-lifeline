@@ -5,6 +5,7 @@ import { renderHtmlToPdf } from '@/resume/server/pdf-service';
 import { ResumeSchema, type ResumePayload } from '@/resume/server/validation';
 import { logger } from '@/resume/server/logger';
 import { TEMPLATES, type TemplateName } from '@/resume/shared/templates';
+import { buildResumeFilename } from '@/resume/shared/filename';
 
 export const runtime = 'nodejs';
 
@@ -42,7 +43,7 @@ export async function POST(request: NextRequest) {
 
     const response = new NextResponse(new Uint8Array(pdf), { status: 200, headers });
     response.headers.set('Content-Type', 'application/pdf');
-    response.headers.set('Content-Disposition', `attachment; filename="resume-${template}.pdf"`);
+    response.headers.set('Content-Disposition', `attachment; filename="${buildResumeFilename(payload.name, template)}"`);
     logRequest({ reqId, template, startedAt, level: 'info' });
     return response;
   } catch (error) {

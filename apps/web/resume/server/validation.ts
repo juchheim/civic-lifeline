@@ -13,8 +13,8 @@ const TimelineString = z
 export const ResumeSchema = z.object({
   name: z.string().min(2),
   email: z.string().email(),
-  phone: z.string().optional(),
-  location: z.string().optional(),
+  phone: z.string().min(7),
+  location: z.string().min(2),
   summary: z.string().max(800).optional(),
   skills: z.array(z.string()).max(50).optional(),
   experience: z

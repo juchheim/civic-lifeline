@@ -1,4 +1,5 @@
 import type { TemplateName } from '@/resume/shared/templates';
+import { buildResumeFilename } from '@/resume/shared/filename';
 import type { ResumePayload } from './types';
 
 export type { TemplateName } from '@/resume/shared/templates';
@@ -31,7 +32,7 @@ export async function downloadPdf(payload: ResumePayload, template: TemplateName
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement('a');
   anchor.href = url;
-  anchor.download = `resume-${template}.pdf`;
+  anchor.download = buildResumeFilename(payload.name, template);
   anchor.rel = 'noopener';
   anchor.click();
   URL.revokeObjectURL(url);
