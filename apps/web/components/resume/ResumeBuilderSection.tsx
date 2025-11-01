@@ -134,7 +134,14 @@ export function ResumeBuilderSection() {
       const raw = window.localStorage.getItem(STORAGE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw) as ResumePayload;
-        setPayload({ ...DEFAULT_PAYLOAD, ...parsed });
+        const normalized: ResumePayload = {
+          ...DEFAULT_PAYLOAD,
+          ...parsed,
+        };
+        if (parsed.phone) {
+          normalized.phone = formatPhoneNumber(parsed.phone);
+        }
+        setPayload(normalized);
         setSkillDraft('');
         // Initialize bullets inputs from stored experience entries
         const bulletsState: string[] = [];
@@ -516,7 +523,7 @@ export function ResumeBuilderSection() {
   const buildSubmissionPayload = (draft: ResumePayload): ResumePayload => {
     const name = draft.name.trim();
     const email = draft.email.trim();
-    const phone = draft.phone?.trim() ?? '';
+    const phone = formatPhoneNumber(draft.phone ?? '');
     const location = draft.location?.trim() ?? '';
     const summary = draft.summary?.trim();
 
@@ -599,6 +606,16 @@ export function ResumeBuilderSection() {
         draftForSubmit = updated;
       }
       setSkillDraft('');
+    }
+
+    const formattedPhone = formatPhoneNumber(draftForSubmit.phone ?? '');
+    if (formattedPhone !== (draftForSubmit.phone ?? '')) {
+      const updated = {
+        ...draftForSubmit,
+        phone: formattedPhone,
+      };
+      setPayload(updated);
+      draftForSubmit = updated;
     }
 
     setStatus('Generating PDF...');
@@ -709,6 +726,12 @@ export function ResumeBuilderSection() {
                 className="rounded border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-500/20"
                 value={payload.phone ?? ''}
                 onChange={event => setPayload(prev => ({ ...prev, phone: event.target.value }))}
+                onBlur={() =>
+                  setPayload(prev => ({
+                    ...prev,
+                    phone: formatPhoneNumber(prev.phone ?? ''),
+                  }))
+                }
                 placeholder="(555) 123-4567"
                 autoComplete="tel"
                 inputMode="tel"
@@ -1400,6 +1423,31 @@ function normalizeSkillLabel(label: string) {
         .join(''),
     )
     .join(' ');
+}
+
+function formatPhoneNumber(value: string | undefined): string {
+  if (!value) return '';
+  const trimmed = value.trim();
+  if (!trimmed) return '';
+  const digits = trimmed.replace(/\D+/g, '');
+  if (digits.length === 11 && digits.startsWith('1')) {
+    const area = digits.slice(1, 4);
+    const prefix = digits.slice(4, 7);
+    const line = digits.slice(7);
+    return `+1 (${area}) ${prefix}-${line}`;
+  }
+  if (digits.length === 10) {
+    const area = digits.slice(0, 3);
+    const prefix = digits.slice(3, 6);
+    const line = digits.slice(6);
+    return `(${area}) ${prefix}-${line}`;
+  }
+  if (digits.length === 7) {
+    const prefix = digits.slice(0, 3);
+    const line = digits.slice(3);
+    return `${prefix}-${line}`;
+  }
+  return trimmed;
 }
 
 function diffWords(original: string, revised: string): DiffSegment[] {
