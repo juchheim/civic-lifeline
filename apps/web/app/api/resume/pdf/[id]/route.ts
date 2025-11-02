@@ -15,8 +15,8 @@ export async function GET(
     return NextResponse.json({ error: 'PDF not found or expired' }, { status: 404, headers });
   }
 
-  const response = new NextResponse(record.buffer, { status: 200, headers });
-  response.headers.set('Content-Type', 'application/pdf');
-  response.headers.set('Content-Disposition', `inline; filename="${record.filename}"`);
-  return response;
+  headers.set('Content-Type', 'application/pdf');
+  headers.set('Content-Disposition', `inline; filename="${record.filename}"`);
+  const arrayBuffer = record.buffer.buffer.slice(record.buffer.byteOffset, record.buffer.byteOffset + record.buffer.byteLength) as ArrayBuffer;
+  return new Response(arrayBuffer, { status: 200, headers });
 }
