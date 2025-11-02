@@ -1535,7 +1535,7 @@ return (
     </div>
     <nav className="sticky bottom-0 z-20 -mx-6 mt-8 border-t border-neutral-200 bg-white/95 px-6 py-5 backdrop-blur">
       <div className="flex flex-col gap-4">
-        <div className="flex flex-nowrap items-center gap-3 overflow-x-auto pb-1">
+        <div className="flex flex-wrap items-center gap-3 pb-1 md:flex-nowrap md:pb-0">
           <button
             type="button"
             onClick={handlePreviousStep}
