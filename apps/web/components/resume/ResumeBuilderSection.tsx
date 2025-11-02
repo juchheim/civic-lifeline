@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState, useId } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useId } from 'react';
 import { rewriteSummary } from '@/lib/resume/rewrite-summary';
 import type { ResumePayload } from '@/lib/resume/types';
 import { TEMPLATES, type TemplateName } from '@/resume/shared/templates';
@@ -123,21 +123,12 @@ export function ResumeBuilderSection() {
   const [summaryComparison, setSummaryComparison] = useState<{ original: string; suggestion: string } | null>(null);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const previewWindowRef = useRef<Window | null>(null);
   const contactHelpId = useId();
   const summaryHelpId = useId();
   const skillsHelpId = useId();
   const experienceHelpId = useId();
   const buttonsHelpId = useId();
-
-  useEffect(() => {
-    if (!previewUrl) return;
-    if (typeof window === 'undefined') return;
-    try {
-      window.open(previewUrl, '_blank', 'noopener,noreferrer');
-    } catch {
-      // no-op: status messaging will guide user
-    }
-  }, [previewUrl]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -634,6 +625,16 @@ export function ResumeBuilderSection() {
     setIsPreviewLoading(true);
     setPreviewUrl(null);
 
+    let openedWindow: Window | null = null;
+    if (typeof window !== 'undefined') {
+      openedWindow = window.open('', '_blank');
+      if (openedWindow) {
+        openedWindow.document.write('<p style="font-family:system-ui; padding:16px;">Generating your resume preview...</p>');
+        openedWindow.document.title = 'Generating resume...';
+      }
+      previewWindowRef.current = openedWindow;
+    }
+
     try {
       const response = await fetch(`/api/pdf?template=${template}`, {
         method: 'POST',
@@ -658,10 +659,21 @@ export function ResumeBuilderSection() {
           ? new URL(data.previewUrl, window.location.origin).toString()
           : data.previewUrl;
       setPreviewUrl(absoluteUrl);
+
+      if (previewWindowRef.current && !previewWindowRef.current.closed) {
+        previewWindowRef.current.location.href = absoluteUrl;
+      } else if (typeof window !== 'undefined') {
+        window.open(absoluteUrl, '_blank');
+      }
+
       setStatus('Preview opened in a new tab. Use the download button if you need a copy.');
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to generate PDF.';
       setStatus(message);
+      if (previewWindowRef.current && !previewWindowRef.current.closed) {
+        previewWindowRef.current.close();
+      }
+      previewWindowRef.current = null;
     } finally {
       setIsPreviewLoading(false);
     }
@@ -678,6 +690,10 @@ export function ResumeBuilderSection() {
     setSummaryComparison(null);
     setPreviewUrl(null);
     setIsPreviewLoading(false);
+    if (previewWindowRef.current && !previewWindowRef.current.closed) {
+      previewWindowRef.current.close();
+    }
+    previewWindowRef.current = null;
     if (typeof window !== 'undefined') {
       window.localStorage.removeItem(STORAGE_KEY);
     }
