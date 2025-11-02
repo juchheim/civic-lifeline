@@ -43,28 +43,26 @@ Mirror ResumePayload (see 02-data-contract.md).
 - Selector drives both the API querystring and output filename.
 - Enhancement ideas: display font specimens or screenshot thumbnails.
 
-## Preview Strategy (Future)
+## Preview Strategy
 
-- MVP ships without a live preview; users inspect the downloaded PDF.
-- To add a preview later, reuse the shared tokens partial for consistent typography.
-- Optional Phase 3: expose `/api/preview-html?template=...` for iframe-based previews.
+- Generate request returns a signed preview URL (`/api/resume/pdf/:id`).
+- Browser opens the preview in a new tab using `window.open(url, '_blank')` so users can review before saving.
+- Provide a dedicated download button that links to the same URL with `download="<filename>"` for folks who prefer a file immediately.
 
 ## API Integration
 
 ```typescript
-// services/api.ts
-export async function downloadPdf(payload: ResumePayload, template: string) {
+export async function requestPdfPreview(payload: ResumePayload, template: string) {
   const res = await fetch(`/api/pdf?template=${template}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
-  if (!res.ok) throw new Error(`PDF failed: ${res.status}`);
-  const blob = await res.blob();
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = `resume-${template}.pdf`; a.click();
-  URL.revokeObjectURL(url);
+  if (!res.ok) {
+    const { error, details } = await res.json().catch(() => ({ }));
+    throw new Error(details ?? error ?? `PDF failed: ${res.status}`);
+  }
+  return (await res.json()) as { previewUrl: string; filename: string };
 }
 ```
 
@@ -106,5 +104,5 @@ Switch to stacked layout below 1024px; sticky ActionsBar at bottom on mobile.
 ## Copy (editable)
 
 - Title: "Build Your Resume"
-- CTA: "Generate PDF"
+- CTA: "Preview PDF"
 - Subtext: "Your data stays on this device except when generating the PDF."

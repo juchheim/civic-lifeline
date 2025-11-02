@@ -6,6 +6,7 @@ import { ResumeSchema, type ResumePayload } from '@/resume/server/validation';
 import { logger } from '@/resume/server/logger';
 import { TEMPLATES, type TemplateName } from '@/resume/shared/templates';
 import { buildResumeFilename } from '@/resume/shared/filename';
+import { savePdf } from '@/resume/server/pdf-store';
 
 export const runtime = 'nodejs';
 
@@ -19,6 +20,7 @@ export async function POST(request: NextRequest) {
   const headers = new Headers({
     'X-Request-Id': reqId,
     'Cache-Control': 'no-store',
+    'Content-Type': 'application/json',
   });
   const startedAt = process.hrtime.bigint();
 
@@ -40,12 +42,20 @@ export async function POST(request: NextRequest) {
   try {
     const html = compileTemplate(template, payload);
     const pdf = await renderHtmlToPdf(html);
+    const filename = buildResumeFilename(payload.name, template);
+    const { id } = savePdf(new Uint8Array(pdf), filename);
+    const previewPath = `/api/resume/pdf/${id}`;
+    const previewUrl = `${request.nextUrl.origin}${previewPath}`;
 
-    const response = new NextResponse(new Uint8Array(pdf), { status: 200, headers });
-    response.headers.set('Content-Type', 'application/pdf');
-    response.headers.set('Content-Disposition', `attachment; filename="${buildResumeFilename(payload.name, template)}"`);
     logRequest({ reqId, template, startedAt, level: 'info' });
-    return response;
+    return NextResponse.json(
+      {
+        pdfId: id,
+        previewUrl,
+        filename,
+      },
+      { status: 201, headers },
+    );
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('[resume-pdf] render failure', error);

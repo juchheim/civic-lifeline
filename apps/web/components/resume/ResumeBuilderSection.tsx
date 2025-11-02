@@ -1,10 +1,9 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState, useId } from 'react';
-import { downloadPdf, type TemplateName } from '@/lib/resume/download-pdf';
 import { rewriteSummary } from '@/lib/resume/rewrite-summary';
 import type { ResumePayload } from '@/lib/resume/types';
-import { TEMPLATES } from '@/resume/shared/templates';
+import { TEMPLATES, type TemplateName } from '@/resume/shared/templates';
 import { buildResumeFilename } from '@/resume/shared/filename';
 
 const STORAGE_KEY = 'resume.draft';
@@ -122,11 +121,23 @@ export function ResumeBuilderSection() {
   const [isSummaryRewriting, setIsSummaryRewriting] = useState(false);
   const [summaryStatus, setSummaryStatus] = useState<{ kind: 'success' | 'error'; message: string } | null>(null);
   const [summaryComparison, setSummaryComparison] = useState<{ original: string; suggestion: string } | null>(null);
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const contactHelpId = useId();
   const summaryHelpId = useId();
   const skillsHelpId = useId();
   const experienceHelpId = useId();
   const buttonsHelpId = useId();
+
+  useEffect(() => {
+    if (!previewUrl) return;
+    if (typeof window === 'undefined') return;
+    try {
+      window.open(previewUrl, '_blank', 'noopener,noreferrer');
+    } catch {
+      // no-op: status messaging will guide user
+    }
+  }, [previewUrl]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -618,13 +629,41 @@ export function ResumeBuilderSection() {
       draftForSubmit = updated;
     }
 
-    setStatus('Generating PDF...');
+    const submissionPayload = buildSubmissionPayload(draftForSubmit);
+    setStatus('Generating PDF preview...');
+    setIsPreviewLoading(true);
+    setPreviewUrl(null);
+
     try {
-      await downloadPdf(buildSubmissionPayload(draftForSubmit), template);
-      setStatus('PDF downloaded to your device.');
+      const response = await fetch(`/api/pdf?template=${template}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(submissionPayload),
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        const message =
+          typeof data.details === 'string'
+            ? data.details
+            : typeof data.error === 'string'
+              ? data.error
+              : `Failed to generate PDF (${response.status})`;
+        throw new Error(message);
+      }
+
+      const data = (await response.json()) as { previewUrl: string };
+      const absoluteUrl =
+        typeof window !== 'undefined'
+          ? new URL(data.previewUrl, window.location.origin).toString()
+          : data.previewUrl;
+      setPreviewUrl(absoluteUrl);
+      setStatus('Preview opened in a new tab. Use the download button if you need a copy.');
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to generate PDF.';
       setStatus(message);
+    } finally {
+      setIsPreviewLoading(false);
     }
   };
 
@@ -637,6 +676,8 @@ export function ResumeBuilderSection() {
     setSummaryStatus(null);
     setIsSummaryRewriting(false);
     setSummaryComparison(null);
+    setPreviewUrl(null);
+    setIsPreviewLoading(false);
     if (typeof window !== 'undefined') {
       window.localStorage.removeItem(STORAGE_KEY);
     }
@@ -1189,11 +1230,20 @@ export function ResumeBuilderSection() {
             type="button"
             className="w-full rounded bg-neutral-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-neutral-800 disabled:cursor-not-allowed disabled:bg-neutral-500 md:w-auto"
             onClick={handleGenerate}
-            disabled={!hasRequiredFields}
+            disabled={!hasRequiredFields || isPreviewLoading}
             aria-describedby={buttonsHelpId}
           >
-            Generate PDF
+            {isPreviewLoading ? 'Generating…' : 'Preview PDF'}
           </button>
+          {previewUrl && (
+            <a
+              href={previewUrl}
+              download={downloadFilename}
+              className="inline-flex w-full items-center justify-center rounded border border-neutral-300 px-4 py-2 text-sm font-medium text-neutral-700 transition hover:border-neutral-500 hover:text-neutral-900 md:w-auto"
+            >
+              Download PDF
+            </a>
+          )}
           <button
             type="button"
             className="w-full rounded border border-neutral-300 px-4 py-2 text-sm font-medium transition hover:border-neutral-500 hover:text-neutral-900 md:w-auto"
@@ -1204,7 +1254,7 @@ export function ResumeBuilderSection() {
         </div>
         <div className="flex flex-col gap-1 md:ml-4 md:flex-1 md:flex-row md:items-center md:justify-between">
           <p id={buttonsHelpId} className="text-xs text-neutral-500 md:text-sm">
-            Downloads as <span className="font-mono">{downloadFilename}</span>. Keep pop-up blockers off to save it.
+            Preview opens in a new tab. Download saves as <span className="font-mono">{downloadFilename}</span>.
           </p>
           {status && (
             <p className="text-sm text-neutral-600" role="status" aria-live="polite">
