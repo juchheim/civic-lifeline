@@ -156,6 +156,14 @@ export function ResumeBuilderSection() {
 
   const activeStep = WIZARD_STEPS[currentStepIndex];
 
+  useEffect(() => {
+    if (!summaryComparison) return;
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+    // Ensure the AI rewrite diff is not hidden behind the bottom overlay.
+    const scrollHeight = document.documentElement.scrollHeight || document.body.scrollHeight || 0;
+    window.scrollTo({ top: scrollHeight, behavior: 'smooth' });
+  }, [summaryComparison]);
+
   const persistDraft = useCallback(
     (draft: ResumePayload, draftTemplate: TemplateName, stepIndex: number) => {
       if (typeof window === 'undefined') return;
@@ -1526,13 +1534,13 @@ return (
       {renderStepContent()}
     </div>
     <nav className="sticky bottom-0 z-20 -mx-6 mt-8 border-t border-neutral-200 bg-white/95 px-6 py-5 backdrop-blur">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-nowrap items-center gap-3 overflow-x-auto pb-1">
           <button
             type="button"
             onClick={handlePreviousStep}
             disabled={isFirstStep}
-            className="rounded-full border-2 border-neutral-300 px-5 py-3 text-base font-semibold text-neutral-800 transition hover:border-neutral-500 focus:outline-none focus:ring-4 focus:ring-neutral-300 disabled:cursor-not-allowed disabled:border-neutral-200 disabled:text-neutral-400"
+            className="flex-shrink-0 rounded-full border-2 border-neutral-300 px-5 py-3 text-base font-semibold text-neutral-800 whitespace-nowrap transition hover:border-neutral-500 focus:outline-none focus:ring-4 focus:ring-neutral-300 disabled:cursor-not-allowed disabled:border-neutral-200 disabled:text-neutral-400"
             title="Go back to the previous step"
           >
             Back
@@ -1542,54 +1550,50 @@ return (
               type="button"
               onClick={handleNextStep}
               disabled={!isActiveStepComplete}
-              className="rounded-full bg-neutral-900 px-6 py-3 text-base font-semibold text-white shadow-sm transition hover:bg-neutral-800 focus:outline-none focus:ring-4 focus:ring-neutral-400 disabled:cursor-not-allowed disabled:bg-neutral-400"
+              className="flex-shrink-0 rounded-full bg-neutral-900 px-6 py-3 text-base font-semibold text-white whitespace-nowrap shadow-sm transition hover:bg-neutral-800 focus:outline-none focus:ring-4 focus:ring-neutral-400 disabled:cursor-not-allowed disabled:bg-neutral-400"
               title={isActiveStepComplete ? 'Continue to the next step' : 'Complete the required fields to continue'}
             >
               {nextStepLabel}
             </button>
           )}
+          <button
+            type="button"
+            onClick={handleGenerate}
+            disabled={!canPreview || isPreviewLoading}
+            className="flex-shrink-0 rounded-full bg-emerald-600 px-6 py-3 text-base font-semibold text-white whitespace-nowrap shadow-sm transition hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-200 disabled:cursor-not-allowed disabled:bg-emerald-200 disabled:text-emerald-700"
+            aria-describedby={buttonsHelpId}
+            title="Open a PDF preview in a new tab"
+          >
+            {isPreviewLoading ? 'Opening Preview…' : 'Preview Resume'}
+          </button>
+          {previewUrl && (
+            <a
+              href={previewUrl}
+              download={downloadFilename}
+              className="inline-flex flex-shrink-0 items-center justify-center rounded-full border-2 border-emerald-600 px-6 py-3 text-base font-semibold text-emerald-700 whitespace-nowrap transition hover:border-emerald-700 hover:text-emerald-900 focus:outline-none focus:ring-4 focus:ring-emerald-200"
+              title="Download the generated PDF"
+            >
+              Download PDF
+            </a>
+          )}
+          <button
+            type="button"
+            onClick={handleReset}
+            className="flex-shrink-0 rounded-full border-2 border-neutral-300 px-6 py-3 text-base font-semibold text-neutral-700 whitespace-nowrap transition hover:border-neutral-500 hover:text-neutral-900 focus:outline-none focus:ring-4 focus:ring-neutral-300"
+            title="Clear all fields and start over"
+          >
+            Reset All
+          </button>
         </div>
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-4">
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              onClick={handleGenerate}
-              disabled={!canPreview || isPreviewLoading}
-              className="rounded-full bg-emerald-600 px-6 py-3 text-base font-semibold text-white shadow-sm transition hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-200 disabled:cursor-not-allowed disabled:bg-emerald-200 disabled:text-emerald-700"
-              aria-describedby={buttonsHelpId}
-              title="Open a PDF preview in a new tab"
-            >
-              {isPreviewLoading ? 'Opening Preview…' : 'Preview Resume'}
-            </button>
-            {previewUrl && (
-              <a
-                href={previewUrl}
-                download={downloadFilename}
-                className="inline-flex items-center justify-center rounded-full border-2 border-emerald-600 px-6 py-3 text-base font-semibold text-emerald-700 transition hover:border-emerald-700 hover:text-emerald-900 focus:outline-none focus:ring-4 focus:ring-emerald-200"
-                title="Download the generated PDF"
-              >
-                Download PDF
-              </a>
-            )}
-            <button
-              type="button"
-              onClick={handleReset}
-              className="rounded-full border-2 border-neutral-300 px-6 py-3 text-base font-semibold text-neutral-700 transition hover:border-neutral-500 hover:text-neutral-900 focus:outline-none focus:ring-4 focus:ring-neutral-300"
-              title="Clear all fields and start over"
-            >
-              Reset All
-            </button>
-          </div>
-          <div className="text-sm text-neutral-600">
-            <p id={buttonsHelpId}>
-              Preview opens in a new tab. Download saves as <span className="font-mono">{downloadFilename}</span>.
+        <div className="text-sm text-neutral-600">
+          <p id={buttonsHelpId}>
+            Preview opens in a new tab. Download saves as <span className="font-mono">{downloadFilename}</span>.
+          </p>
+          {status && (
+            <p className="mt-1 text-sm text-neutral-700" role="status" aria-live="polite">
+              {status}
             </p>
-            {status && (
-              <p className="mt-1 text-sm text-neutral-700" role="status" aria-live="polite">
-                {status}
-              </p>
-            )}
-          </div>
+          )}
         </div>
       </div>
     </nav>
