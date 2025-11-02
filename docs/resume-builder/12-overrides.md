@@ -365,8 +365,9 @@ function logRequest({
 ### 7. Client UI integration
 
 - `apps/web/components/resume/ResumeBuilderSection.tsx` — copy the client-side form (localStorage, template selector, CTA buttons).
-- `apps/web/app/jobs/page.tsx` — import `ResumeBuilderSection` and render it beneath the unemployment chart.
-- `apps/web/app/resume/page.tsx` — optional redirect stub to `/jobs#resume-builder` for legacy bookmarks.
+- `apps/web/app/resume/page.tsx` — mounts the resume builder as the primary page content.
+- `apps/web/app/stats/page.tsx` — renders the unemployment chart separately.
+- `apps/web/app/jobs/page.tsx` — keep a redirect to `/resume` for legacy bookmarks.
 
 ### 8. Next config tweaks
 
@@ -442,7 +443,8 @@ Expected headers: `200 OK`, `Content-Type: application/pdf`, `Content-Dispositio
 
 - `pnpm --filter @web dev` boots on http://localhost:3000 and `/api/pdf` returns PDFs for all templates.
 - Playwright launches once; logs show `resume-pdf` entries with duration + requestId.
-- `/jobs` includes the “Build Your Resume” section with name/email/template selection and PDF download CTA.
+- `/resume` includes the “Build Your Resume” wizard with template selection, preview, and download CTAs.
+- `/stats` shows the unemployment chart with county selector and data source chip.
 - Docker image builds successfully and Chromium binaries are available at runtime.
 
 ## Notes for Codex

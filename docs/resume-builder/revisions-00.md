@@ -22,11 +22,11 @@ civic-lifeline-web.vercel.app
 
 Required Contact Fields – a typical resume needs at least a phone number and location (city, state). Adding optional contact fields (with clear privacy notes) would improve the résumé’s completeness without cluttering the UI.
 
-Responsive Design and Accessibility – ensure all buttons (like “Generate PDF” and “Add Education”) remain visible and active on smaller screens and that they have descriptive ARIA labels. Some buttons were initially hard to click due to being off‑screen; smoother scrolling or floating actions would help.
+Responsive Design and Accessibility – ensure all buttons (like “Preview Resume” and “Add Education”) remain visible and active on smaller screens and that they have descriptive ARIA labels. Some buttons were initially hard to click due to being off‑screen; smoother scrolling or floating actions would help.
 
 Generating and reviewing the résumé
 
-I filled out the form on the Jobs page with the persona of a low‑income, low‑education user (a Walmart cashier with a high‑school diploma). I used the AI rewriting feature to enhance the summary. After completing the form, I clicked Generate PDF, which triggered a download. Because downloads are disabled in this environment, I’m unable to open the PDF to inspect it directly; you can find it in your device’s downloads folder. Based on the filled‑in data, the résumé should contain:
+I filled out the form on the Resume Builder page with the persona of a low‑income, low‑education user (a Walmart cashier with a high‑school diploma). I used the AI rewriting feature to enhance the summary. After completing the form, I clicked Preview Resume, which opened a PDF preview in a new tab; the Download PDF button then became available for saving. Because downloads are disabled in this environment, I’m unable to open the PDF to inspect it directly; you can find it in your device’s downloads folder. Based on the filled‑in data, the résumé should contain:
 
 Name: James Johnson
 

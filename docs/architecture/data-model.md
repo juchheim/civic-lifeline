@@ -118,7 +118,7 @@ export interface SnapRetailer {
 
 ## 2) lausSeries — BLS County Unemployment (LAUS)
 
-**Purpose**: Time series backing Jobs/Skills chart.
+**Purpose**: Time series backing the Stats (Jobs/Skills) chart.
 
 ### Document Shape
 

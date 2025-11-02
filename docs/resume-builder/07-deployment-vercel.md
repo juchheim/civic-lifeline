@@ -119,12 +119,12 @@ if (process.env.VERCEL) {
 ### Cold Start (first request)
 - Extract & decompress binaries: ~1-2s
 - Launch Chromium: ~0.5s
-- Generate PDF: ~1-2s
+- Generate PDF/Preview: ~1-2s
 - **Total**: ~3-5 seconds
 
 ### Warm Start (cached)
 - Launch Chromium (from `/tmp`): ~0.5s
-- Generate PDF: ~1-2s
+- Generate PDF/Preview: ~1-2s
 - **Total**: ~1-2 seconds
 
 ### Resource Usage
@@ -244,4 +244,3 @@ CMD ["pnpm", "--filter", "@web", "start"]
 - Need <1s response times consistently
 - Require custom fonts
 - Need WebGL/advanced browser features
-

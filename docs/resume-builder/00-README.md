@@ -1,6 +1,6 @@
 # Project Goal
 
-Ship a server-side resume PDF builder inside the existing Next.js app (deployed on Vercel). Job seekers visit `/jobs` (scroll to "Build Your Resume"), fill in their details, choose Classic / Modern / Minimal, and receive a print-ready PDF rendered by Puppeteer (Chromium) from Handlebars templates.
+Ship a server-side resume PDF builder inside the existing Next.js app (deployed on Vercel). Job seekers visit `/resume`, follow the step-by-step wizard, choose Classic / Modern / Minimal, and receive a print-ready PDF rendered by Puppeteer (Chromium) from Handlebars templates.
 
 ## Why Next.js + Puppeteer + @sparticuz/chromium
 

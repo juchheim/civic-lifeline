@@ -27,7 +27,8 @@
 ## Key Journeys
 - **Find SNAP retailer**: Home → Food → “Near me” → List+Map → Tap → Directions.
 - **Benefits question**: Home → Coach → Ask → Get steps + links → Save letter template.
-- **Jobs pulse**: Home → Jobs → Select county → See chart → Build resume.
+- **Unemployment stats**: Home → Stats → Select county → See chart.
+- **Resume builder**: Home → Resume Builder → Complete steps → Preview resume.
 - **Broadband info**: Home → Broadband → Select county → Read summary → Find Wi-Fi tips.
 - **Housing help**: Home → Housing → Search radius → Call counselor.
 

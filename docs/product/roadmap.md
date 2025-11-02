@@ -11,8 +11,8 @@
 - **Exit**: Letter PDF generated in <5s; citations appear.
 
 ## Phase 3 — Jobs/Skills (BLS) + Resume Builder
-- County unemployment chart (last 5–10 years).
-- Resume/cover builder (user facts → AI phrasing) → PDF.
+- County unemployment chart (last 5–10 years) surfaced on the Stats page.
+- Resume/cover builder (user facts → AI phrasing) → PDF on the Resume Builder page.
 - **Exit**: Chart renders with cached series; PDF export works offline-ready.
 
 ## Phase 4 — Broadband (FCC) + Housing (HUD)

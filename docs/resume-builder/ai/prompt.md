@@ -1,6 +1,6 @@
 # Resume Summary Rewrite Prompt
 
-This prompt is for the Jobs resume builder. It assumes the writer may be a low-income job seeker with limited formal writing experience and messy, fragmentary notes. The goal is to return something that sounds professional, encouraging, and ready to paste directly into the resume summary field.
+This prompt is for the Resume Builder page. It assumes the writer may be a low-income job seeker with limited formal writing experience and messy, fragmentary notes. The goal is to return something that sounds professional, encouraging, and ready to paste directly into the resume summary field.
 
 ## Model Settings
 - Provider: OpenAI Chat Completions API

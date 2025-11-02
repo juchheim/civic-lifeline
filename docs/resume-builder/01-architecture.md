@@ -21,8 +21,9 @@ F --> G[HTTP Response attachment]
 - `apps/web/resume/server/logger.ts` → pino logger
 - `apps/web/resume/templates/` → Handlebars templates + shared partials
 - `apps/web/lib/resume/download-pdf.ts` → browser helper to fetch + download PDFs
-- `apps/web/components/resume/ResumeBuilderSection.tsx` → client UI with local persistence (embedded on /jobs)
-- `apps/web/app/jobs/page.tsx` → renders chart + resume builder section
+- `apps/web/components/resume/ResumeBuilderSection.tsx` → client UI with local persistence (rendered on `/resume`)
+- `apps/web/app/resume/page.tsx` → page shell that introduces and mounts the resume builder wizard
+- `apps/web/app/stats/page.tsx` → unemployment chart powered by the same API suite (moved off the resume flow)
 
 ## Dependencies
 

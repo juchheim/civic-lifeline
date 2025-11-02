@@ -1,6 +1,6 @@
 # Resume Summary Rewriter
 
-This document describes the end-to-end flow for the AI-backed resume summary rewrite feature on the Jobs page. It is tailored for low-literacy job seekers who may enter jumbled phrases or incomplete thoughts.
+This document describes the end-to-end flow for the AI-backed resume summary rewrite feature on the Resume Builder page. It is tailored for low-literacy job seekers who may enter jumbled phrases or incomplete thoughts.
 
 ## API Route: `POST /api/resume/summary`
 - **Runtime:** Node.js (Next.js App Router)
@@ -42,5 +42,5 @@ This document describes the end-to-end flow for the AI-backed resume summary rew
 ## Operational Notes
 - Logging: capture request id, upstream latency, and high-level error reason via the shared resume logger.
 - Rate limiting / abuse: the API should be behind whatever global throttling exists for resume routes; no additional logic is added here.
-- Local development: set `OPENAI_API_KEY` in `.env.local`. Optionally use `OPENAI_API_URL` for custom endpoints and `RESUME_SUMMARY_MODEL` to try alternate OpenAI models (default: `gpt-4o-mini`). Without a key the route returns `401`.
+- Local development: set `OPENAI_API_KEY` in `.env.local`. Optionally use `OPENAI_API_URL` for custom endpoints and `RESUME_SUMMARY_MODEL` to try alternate OpenAI models (default: `gpt-5-mini-2025-08-07`). Without a key the route returns `401`.
 - Legacy environment variables `GPT5_NANO_API_KEY` and `GPT5_NANO_API_URL` are still supported for backward compatibility.

@@ -7,11 +7,24 @@ import { TEMPLATES, type TemplateName } from '@/resume/shared/templates';
 import { buildResumeFilename } from '@/resume/shared/filename';
 
 const STORAGE_KEY = 'resume.draft';
+const STORAGE_VERSION = 2;
 const EXPERIENCE_LIMIT = 20;
 const EDUCATION_LIMIT = 10;
 const MAX_BULLETS = 8;
 const SUMMARY_MIN_CHARS = 12;
 const MAX_SKILLS = 20;
+
+type StepKey = 'template' | 'contact' | 'summary' | 'skills' | 'experience' | 'education' | 'preview';
+
+const WIZARD_STEPS: Array<{ key: StepKey; title: string; description: string }> = [
+  { key: 'template', title: 'Template', description: 'Pick the layout you like.' },
+  { key: 'contact', title: 'Contact info', description: 'Share how employers can reach you.' },
+  { key: 'summary', title: 'Summary', description: 'Describe your strengths in a few sentences.' },
+  { key: 'skills', title: 'Skills', description: 'List the abilities you want to highlight.' },
+  { key: 'experience', title: 'Experience', description: 'Add past jobs and what you did.' },
+  { key: 'education', title: 'Education', description: 'Show your schooling or training.' },
+  { key: 'preview', title: 'Preview', description: 'Check the final resume before downloading.' },
+];
 
 type ExperienceEntry = NonNullable<ResumePayload['experience']>[number];
 type EducationEntry = NonNullable<ResumePayload['education']>[number];
@@ -100,20 +113,31 @@ const SKILL_SUGGESTIONS = [
   'Basic Computer Skills',
 ] as const;
 
+const DEFAULT_SUMMARY_TEMPLATE =
+  'Dedicated [Job Title] with [X] years supporting [Customers/Teams]. Skilled in [Top Strengths]. Ready to bring dependable service to [Target Role].';
+
 const DEFAULT_PAYLOAD: ResumePayload = {
   name: '',
   email: '',
   phone: '',
   location: '',
-  summary: '',
+  summary: DEFAULT_SUMMARY_TEMPLATE,
   skills: [],
   experience: [],
   education: [],
 };
 
+const createDefaultPayload = (): ResumePayload => ({
+  ...DEFAULT_PAYLOAD,
+  skills: [],
+  experience: [],
+  education: [],
+});
+
 export function ResumeBuilderSection() {
-  const [payload, setPayload] = useState<ResumePayload>(DEFAULT_PAYLOAD);
+  const [payload, setPayload] = useState<ResumePayload>(() => createDefaultPayload());
   const [template, setTemplate] = useState<TemplateName>('classic');
+  const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [status, setStatus] = useState<string | null>(null);
   const [skillDraft, setSkillDraft] = useState<string>('');
   const [bulletsInputs, setBulletsInputs] = useState<string[]>([]);
@@ -130,40 +154,103 @@ export function ResumeBuilderSection() {
   const experienceHelpId = useId();
   const buttonsHelpId = useId();
 
+  const activeStep = WIZARD_STEPS[currentStepIndex];
+
+  const persistDraft = useCallback(
+    (draft: ResumePayload, draftTemplate: TemplateName, stepIndex: number) => {
+      if (typeof window === 'undefined') return;
+      const safeIndex = Math.min(Math.max(stepIndex, 0), WIZARD_STEPS.length - 1);
+      const record = {
+        version: STORAGE_VERSION,
+        payload: draft,
+        template: draftTemplate,
+        step: WIZARD_STEPS[safeIndex]?.key ?? 'template',
+      };
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(record));
+    },
+    [],
+  );
+
   useEffect(() => {
     if (typeof window === 'undefined') return;
     try {
       const raw = window.localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw) as ResumePayload;
-        const normalized: ResumePayload = {
-          ...DEFAULT_PAYLOAD,
-          ...parsed,
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as unknown;
+
+      let storedPayload: ResumePayload | null = null;
+      let storedTemplate: TemplateName | null = null;
+      let storedStep: StepKey | null = null;
+
+      if (parsed && typeof parsed === 'object' && parsed !== null && 'payload' in parsed) {
+        const record = parsed as {
+          payload?: ResumePayload;
+          template?: TemplateName;
+          step?: StepKey;
         };
-        if (parsed.phone) {
-          normalized.phone = formatPhoneNumber(parsed.phone);
-        }
-        setPayload(normalized);
-        setSkillDraft('');
-        // Initialize bullets inputs from stored experience entries
-        const bulletsState: string[] = [];
-        (parsed.experience ?? []).forEach((exp, idx) => {
-          bulletsState[idx] = exp.bullets ? exp.bullets.join('\n') : '';
-        });
-        setBulletsInputs(bulletsState);
-        const timelineState: TimelineDraft[] = [];
-        (parsed.experience ?? []).forEach((exp, idx) => {
-          const startParts = splitTimeline(exp.startDate);
-          const endParts = splitTimeline(exp.endDate);
-          timelineState[idx] = {
-            startMonth: startParts.month,
-            startYear: startParts.year,
-            endMonth: endParts.month,
-            endYear: endParts.year,
-            endPresent: endParts.isPresent,
+        if (record.payload && typeof record.payload === 'object') {
+          storedPayload = {
+            ...createDefaultPayload(),
+            ...record.payload,
           };
-        });
-        setTimelineInputs(timelineState);
+        }
+        if (record.template && (TEMPLATES as ReadonlyArray<string>).includes(record.template)) {
+          storedTemplate = record.template;
+        }
+        if (record.step && WIZARD_STEPS.some(step => step.key === record.step)) {
+          storedStep = record.step;
+        }
+      } else if (parsed && typeof parsed === 'object' && parsed !== null) {
+        storedPayload = {
+          ...createDefaultPayload(),
+          ...(parsed as ResumePayload),
+        };
+      }
+
+      if (!storedPayload) return;
+
+      const normalized: ResumePayload = {
+        ...createDefaultPayload(),
+        ...storedPayload,
+      };
+      if (normalized.phone) {
+        normalized.phone = formatPhoneNumber(normalized.phone);
+      }
+      if (!normalized.summary) {
+        normalized.summary = DEFAULT_SUMMARY_TEMPLATE;
+      }
+
+      setPayload(normalized);
+      setSkillDraft('');
+
+      const bulletsState: string[] = [];
+      (normalized.experience ?? []).forEach((exp, idx) => {
+        bulletsState[idx] = exp?.bullets ? exp.bullets.join('\n') : '';
+      });
+      setBulletsInputs(bulletsState);
+
+      const timelineState: TimelineDraft[] = [];
+      (normalized.experience ?? []).forEach((exp, idx) => {
+        const startParts = splitTimeline(exp?.startDate);
+        const endParts = splitTimeline(exp?.endDate);
+        timelineState[idx] = {
+          startMonth: startParts.month,
+          startYear: startParts.year,
+          endMonth: endParts.month,
+          endYear: endParts.year,
+          endPresent: endParts.isPresent,
+        };
+      });
+      setTimelineInputs(timelineState);
+
+      if (storedTemplate) {
+        setTemplate(storedTemplate);
+      }
+      if (storedStep) {
+        const index = WIZARD_STEPS.findIndex(step => step.key === storedStep);
+        if (index >= 0) {
+          setCurrentStepIndex(index);
+        }
       }
     } catch {
       // ignore corrupted storage
@@ -173,17 +260,49 @@ export function ResumeBuilderSection() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const timer = window.setTimeout(() => {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+      persistDraft(payload, template, currentStepIndex);
     }, 600);
     return () => window.clearTimeout(timer);
-  }, [payload]);
+  }, [payload, template, currentStepIndex, persistDraft]);
 
-  const hasRequiredFields = useMemo(
-    () => payload.name.trim() && payload.email.trim() && payload.phone?.trim() && payload.location?.trim(),
+  const hasRequiredContact = useMemo(
+    () =>
+      Boolean(
+        payload.name.trim() &&
+          payload.email.trim() &&
+          (payload.phone ?? '').trim() &&
+          (payload.location ?? '').trim(),
+      ),
     [payload],
   );
+  const summaryComplete = useMemo(() => {
+    const summary = (payload.summary ?? '').trim();
+    if (summary.length < SUMMARY_MIN_CHARS) return false;
+    if (summary === DEFAULT_SUMMARY_TEMPLATE.trim()) return false;
+    return true;
+  }, [payload.summary]);
+  const canPreview = hasRequiredContact && summaryComplete;
+  const stepCompletion = useMemo<Record<StepKey, boolean>>(
+    () => ({
+      template: true,
+      contact: hasRequiredContact,
+      summary: summaryComplete,
+      skills: true,
+      experience: true,
+      education: true,
+      preview: canPreview,
+    }),
+    [canPreview, hasRequiredContact, summaryComplete],
+  );
+  const progressPercent = useMemo(() => {
+    if (WIZARD_STEPS.length <= 1) return 100;
+    return Math.round((currentStepIndex / (WIZARD_STEPS.length - 1)) * 100);
+  }, [currentStepIndex]);
+  const isFirstStep = currentStepIndex === 0;
+  const isLastStep = currentStepIndex === WIZARD_STEPS.length - 1;
+  const nextStepLabel = !isLastStep ? `Next: ${WIZARD_STEPS[currentStepIndex + 1].title}` : 'Next';
+  const isActiveStepComplete = stepCompletion[activeStep.key];
   const skillValues = payload.skills ?? [];
-  const skillCount = skillValues.length;
   const experience = payload.experience ?? [];
   const education = payload.education ?? [];
   const canRewriteSummary = useMemo(
@@ -228,6 +347,41 @@ export function ResumeBuilderSection() {
     if (!skillDraft.trim()) return;
     addSkill(skillDraft);
   }, [addSkill, skillDraft]);
+
+  const handleNextStep = useCallback(() => {
+    const nextIndex = Math.min(currentStepIndex + 1, WIZARD_STEPS.length - 1);
+    const currentKey = WIZARD_STEPS[currentStepIndex]?.key;
+    if (currentKey && !stepCompletion[currentKey]) return;
+    persistDraft(payload, template, nextIndex);
+    setCurrentStepIndex(nextIndex);
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [currentStepIndex, payload, persistDraft, stepCompletion, template]);
+
+  const handlePreviousStep = useCallback(() => {
+    const prevIndex = Math.max(currentStepIndex - 1, 0);
+    if (prevIndex === currentStepIndex) return;
+    persistDraft(payload, template, prevIndex);
+    setCurrentStepIndex(prevIndex);
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [currentStepIndex, payload, persistDraft, template]);
+
+  const handleGoToStep = useCallback(
+    (index: number) => {
+      if (index < 0 || index >= WIZARD_STEPS.length) return;
+      if (index === currentStepIndex) return;
+      if (index > currentStepIndex) return;
+      persistDraft(payload, template, index);
+      setCurrentStepIndex(index);
+      if (typeof window !== 'undefined') {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    },
+    [currentStepIndex, payload, persistDraft, template],
+  );
 
   const handleRewriteSummary = async () => {
     const draft = (payload.summary ?? '').trim();
@@ -590,8 +744,8 @@ export function ResumeBuilderSection() {
   };
 
   const handleGenerate = async () => {
-    if (!hasRequiredFields) {
-      setStatus('Please add your contact information (name, email, phone, location) first.');
+    if (!canPreview) {
+      setStatus('Please complete your contact details and summary before previewing.');
       return;
     }
 
@@ -621,6 +775,7 @@ export function ResumeBuilderSection() {
     }
 
     const submissionPayload = buildSubmissionPayload(draftForSubmit);
+    persistDraft(submissionPayload, template, currentStepIndex);
     setStatus('Generating PDF preview...');
     setIsPreviewLoading(true);
     setPreviewUrl(null);
@@ -680,7 +835,9 @@ export function ResumeBuilderSection() {
   };
 
   const handleReset = () => {
-    setPayload(DEFAULT_PAYLOAD);
+    setPayload(createDefaultPayload());
+    setTemplate('classic');
+    setCurrentStepIndex(0);
     setSkillDraft('');
     setBulletsInputs([]);
     setTimelineInputs([]);
@@ -699,588 +856,745 @@ export function ResumeBuilderSection() {
     }
   };
 
-  return (
-    <section id="resume-builder" className="mt-10 flex flex-col gap-6 rounded border bg-white p-4 shadow-sm">
-      <header>
-        <h2 className="text-2xl font-semibold">Build Your Resume</h2>
-        <p className="text-sm text-neutral-500">
-          Fill in the essentials, pick a template, and generate a print-ready PDF. Your draft saves locally to this browser.
-        </p>
-      </header>
-
-      <div className="flex flex-col gap-8">
-        <div>
-          <h3 className="text-base font-semibold">Choose a template</h3>
-          <p className="mt-1 text-sm text-neutral-500">
-            Each template keeps your details the same. Pick the style that fits your audience.
-          </p>
-          <div
-            role="radiogroup"
-            aria-label="Resume template"
-            className="mt-3 grid gap-3 md:grid-cols-3"
-          >
-            {TEMPLATES.map(option => {
-              const detail = TEMPLATE_DETAILS[option];
-              const isSelected = template === option;
-              return (
-                <button
-                  key={option}
-                  type="button"
-                  role="radio"
-                  aria-checked={isSelected}
-                  onClick={() => setTemplate(option)}
-                  className={`rounded-lg border px-4 py-3 text-left transition-colors focus:outline-none focus:ring-2 focus:ring-neutral-500/40 ${
-                    isSelected
-                      ? 'border-neutral-900 bg-neutral-900/5 shadow-sm'
-                      : 'border-neutral-200 hover:border-neutral-400'
-                  }`}
-                >
-                  <div className="flex flex-col gap-3">
-                    <div>
-                      <span className="text-sm font-semibold text-neutral-900">{detail.label}</span>
-                      <p className="mt-1 text-sm text-neutral-600">{detail.description}</p>
+  const renderStepContent = () => {
+    switch (activeStep.key) {
+      case 'template':
+        return (
+          <div className="flex flex-col gap-6">
+            <p className="text-lg text-neutral-600">
+              Each template keeps your information the same. Choose the look that fits the job you want.
+            </p>
+            <div
+              role="radiogroup"
+              aria-label="Resume template"
+              className="grid gap-4 md:grid-cols-3"
+            >
+              {TEMPLATES.map(option => {
+                const detail = TEMPLATE_DETAILS[option];
+                const isSelected = template === option;
+                return (
+                  <button
+                    key={option}
+                    type="button"
+                    role="radio"
+                    aria-checked={isSelected}
+                    onClick={() => setTemplate(option)}
+                    className={`rounded-xl border-2 px-5 py-4 text-left shadow-sm transition focus:outline-none focus:ring-4 focus:ring-emerald-200 ${
+                      isSelected
+                        ? 'border-emerald-600 bg-emerald-50 text-emerald-900'
+                        : 'border-neutral-300 bg-white text-neutral-700 hover:border-emerald-400 hover:text-neutral-900'
+                    }`}
+                    title={`Use the ${detail.label} resume template`}
+                  >
+                    <div className="flex flex-col gap-4">
+                      <div>
+                        <span className="text-lg font-semibold text-neutral-900">{detail.label}</span>
+                        <p className="mt-2 text-sm text-neutral-600">{detail.description}</p>
+                      </div>
+                      <TemplatePreview template={option} />
                     </div>
-                    <TemplatePreview template={option} />
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        <div>
-          <h3 className="text-base font-semibold">Contact</h3>
-          <p id={contactHelpId} className="mt-1 text-sm text-neutral-500">
-            We only use this info to build the PDF. It never leaves your browser.
-          </p>
-          <div className="mt-3 grid gap-4 md:grid-cols-2">
-            <label className="flex flex-col gap-1">
-              <span className="text-sm font-medium">Name</span>
-              <input
-                className="rounded border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-500/20"
-                value={payload.name}
-                onChange={event => setPayload(prev => ({ ...prev, name: event.target.value }))}
-                placeholder="James Johnson"
-                autoComplete="name"
-                aria-describedby={contactHelpId}
-              />
-            </label>
-            <label className="flex flex-col gap-1">
-              <span className="text-sm font-medium">Email</span>
-              <input
-                className="rounded border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-500/20"
-                value={payload.email}
-                onChange={event => setPayload(prev => ({ ...prev, email: event.target.value }))}
-                placeholder="james.johnson@example.com"
-                autoComplete="email"
-                inputMode="email"
-                aria-describedby={contactHelpId}
-              />
-            </label>
-            <label className="flex flex-col gap-1">
-              <span className="text-sm font-medium">Phone</span>
-              <input
-                className="rounded border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-500/20"
-                value={payload.phone ?? ''}
-                onChange={event => setPayload(prev => ({ ...prev, phone: event.target.value }))}
-                onBlur={() =>
-                  setPayload(prev => ({
-                    ...prev,
-                    phone: formatPhoneNumber(prev.phone ?? ''),
-                  }))
-                }
-                placeholder="(555) 123-4567"
-                autoComplete="tel"
-                inputMode="tel"
-                aria-describedby={contactHelpId}
-              />
-            </label>
-            <label className="flex flex-col gap-1">
-              <span className="text-sm font-medium">Location</span>
-              <input
-                className="rounded border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-500/20"
-                value={payload.location ?? ''}
-                onChange={event => setPayload(prev => ({ ...prev, location: event.target.value }))}
-                placeholder="Greenwood, MS"
-                autoComplete="address-level2"
-                aria-describedby={contactHelpId}
-              />
-              <span className="text-xs text-neutral-500">Include your city and state so employers know you are nearby.</span>
-            </label>
-          </div>
-        </div>
-
-        <div>
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <h3 className="text-base font-semibold">Summary</h3>
-              <p id={summaryHelpId} className="mt-1 text-sm text-neutral-500">
-                Write 2-3 sentences about your experience, strengths, and the role you want.
-              </p>
+                  </button>
+                );
+              })}
             </div>
-            <button
-              type="button"
-              className="text-xs font-semibold uppercase tracking-wide text-neutral-600 underline-offset-4 hover:underline disabled:cursor-not-allowed disabled:text-neutral-400"
-              onClick={handleRewriteSummary}
-              disabled={isSummaryRewriting || !canRewriteSummary}
-            >
-              {isSummaryRewriting ? 'Rewriting...' : 'Rewrite with AI'}
-            </button>
           </div>
-          <textarea
-            className="mt-3 h-36 w-full rounded border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-500/20"
-            value={payload.summary ?? ''}
-            onChange={event => {
-              setSummaryStatus(null);
-              setSummaryComparison(null);
-              setPayload(prev => ({ ...prev, summary: event.target.value }));
-            }}
-            placeholder="Reliable customer-service worker with 3+ years handling cash, helping shoppers, and keeping the checkout running smoothly. Looking for a full-time cashier or customer service associate role with steady hours."
-            aria-busy={isSummaryRewriting}
-            aria-describedby={summaryHelpId}
-            maxLength={800}
-          />
-          {summaryStatus && (
-            <span
-              className={`mt-2 block text-xs ${summaryStatus.kind === 'error' ? 'text-red-600' : 'text-neutral-600'}`}
-              role="status"
-              aria-live="polite"
-            >
-              {summaryStatus.message}
-            </span>
-          )}
-          <p className="mt-2 text-xs text-neutral-500">Tip: Mention your years of experience, key strengths, and the job you are targeting.</p>
-          {summaryComparison && (
-            <SummaryReview
-              original={summaryComparison.original}
-              suggestion={summaryComparison.suggestion}
-              onKeep={() => handleKeepOriginalSummary(summaryComparison.original)}
-              onAccept={() => handleAcceptSummarySuggestion(summaryComparison.suggestion)}
-            />
-          )}
-        </div>
-
-        <div>
-          <h3 className="text-base font-semibold">Skills</h3>
-          <p id={skillsHelpId} className="mt-1 text-sm text-neutral-500">
-            Add short phrases such as Cash Handling or POS/Register. Press Enter after each skill.
-          </p>
-          <div
-            className={`mt-3 flex flex-wrap items-center gap-2 rounded border px-2 py-2 ${
-              skillCount ? 'border-neutral-300 bg-white' : 'border-dashed border-neutral-300 bg-neutral-50'
-            }`}
-          >
-            {skillValues.map(skill => (
-              <span
-                key={skill}
-                className="group inline-flex items-center gap-1 rounded-full bg-neutral-200 px-3 py-1 text-sm text-neutral-800"
-              >
-                {skill}
-                <button
-                  type="button"
-                  className="rounded-full bg-neutral-300 px-1 text-xs font-semibold text-neutral-700 transition hover:bg-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-500/40"
-                  onClick={() => removeSkill(skill)}
-                  aria-label={`Remove skill ${skill}`}
-                >
-                  <span aria-hidden="true">&times;</span>
-                </button>
-              </span>
-            ))}
-            <input
-              type="text"
-              className="flex-1 min-w-[140px] border-none bg-transparent px-2 py-1 text-sm focus:outline-none focus:ring-0 disabled:cursor-not-allowed"
-              value={skillDraft}
-              onChange={event => {
-                const value = event.target.value;
-                if (value.includes(',')) {
-                  const parts = value.split(',');
-                  parts.slice(0, -1).forEach(part => addSkill(part));
-                  setSkillDraft(parts[parts.length - 1] ?? '');
-                } else {
-                  setSkillDraft(value);
-                }
-              }}
-              onKeyDown={event => {
-                if (event.key === 'Enter') {
-                  event.preventDefault();
-                  handleSkillDraftCommit();
-                } else if (event.key === 'Tab' && skillDraft.trim()) {
-                  handleSkillDraftCommit();
-                } else if (event.key === 'Backspace' && !skillDraft.trim() && skillCount) {
-                  event.preventDefault();
-                  const lastSkill = skillValues[skillValues.length - 1];
-                  if (lastSkill) removeSkill(lastSkill);
-                }
-              }}
-              onBlur={() => handleSkillDraftCommit()}
-              placeholder={skillCount ? 'Add another skill' : 'Add a skill'}
-              aria-describedby={skillsHelpId}
-              disabled={skillCount >= MAX_SKILLS}
-            />
-          </div>
-          <p className="mt-1 text-xs text-neutral-500">
-            Up to {MAX_SKILLS} skills. Choose the ones that match job postings you are applying to.
-          </p>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {SKILL_SUGGESTIONS.map(suggestion => {
-              const hasSkill = skillValues.some(skill => skill.toLowerCase() === suggestion.toLowerCase());
-              return (
-                <button
-                  key={suggestion}
-                  type="button"
-                  className="rounded-full border border-neutral-300 px-3 py-1 text-xs font-medium text-neutral-700 transition hover:border-neutral-500 hover:text-neutral-900 disabled:cursor-not-allowed disabled:border-neutral-200 disabled:text-neutral-400"
-                  onClick={() => addSkill(suggestion)}
-                  disabled={hasSkill || skillCount >= MAX_SKILLS}
-                >
-                  {suggestion}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
-          <div>
-            <div className="flex items-center gap-2">
-              <h3 className="text-lg font-semibold">Experience</h3>
-              <span className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
-                {experience.length}/{EXPERIENCE_LIMIT}
-              </span>
-            </div>
-            <p id={experienceHelpId} className="text-sm text-neutral-500">
-              Add your roles with the most recent first. Use numbers or outcomes to show impact.
+        );
+      case 'contact':
+        return (
+          <div className="flex flex-col gap-6">
+            <p id={contactHelpId} className="text-lg text-neutral-600">
+              We only use this information to build the PDF. It stays on this device.
             </p>
-          </div>
-          <button
-            type="button"
-            className="self-start rounded border border-neutral-300 px-3 py-1 text-sm font-medium transition hover:border-neutral-500 hover:text-neutral-900 disabled:cursor-not-allowed disabled:border-neutral-200 disabled:text-neutral-400 md:self-auto"
-            onClick={addExperience}
-            disabled={experience.length >= EXPERIENCE_LIMIT}
-            aria-describedby={experienceHelpId}
-          >
-            Add Experience
-          </button>
-        </div>
-
-        {experience.length === 0 && (
-          <p className="rounded border border-dashed border-neutral-300 bg-neutral-50 p-3 text-sm text-neutral-500">
-            Start with your latest job. Think about money handled, customers helped, speed, safety, or any way you made work smoother.
-          </p>
-        )}
-
-        {experience.map((entry, index) => {
-          const timelineDraft = timelineInputs[index] ?? createTimelineDraft();
-          return (
-            <div key={`experience-${index}`} className="flex flex-col gap-3 rounded border border-neutral-200 p-3 shadow-sm">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className="text-sm font-medium">Experience #{index + 1}</span>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    className="flex h-8 w-8 items-center justify-center rounded border border-neutral-300 text-sm text-neutral-600 transition hover:border-neutral-500 hover:text-neutral-900 disabled:cursor-not-allowed disabled:border-neutral-200 disabled:text-neutral-300"
-                    onClick={() => moveExperience(index, -1)}
-                    disabled={index === 0}
-                    aria-label="Move experience up"
-                  >
-                    <span aria-hidden="true">&uarr;</span>
-                  </button>
-                  <button
-                    type="button"
-                    className="flex h-8 w-8 items-center justify-center rounded border border-neutral-300 text-sm text-neutral-600 transition hover:border-neutral-500 hover:text-neutral-900 disabled:cursor-not-allowed disabled:border-neutral-200 disabled:text-neutral-300"
-                    onClick={() => moveExperience(index, 1)}
-                    disabled={index === experience.length - 1}
-                    aria-label="Move experience down"
-                  >
-                    <span aria-hidden="true">&darr;</span>
-                  </button>
-                  <button
-                    type="button"
-                    className="rounded border border-transparent px-3 py-1 text-sm text-neutral-500 transition hover:border-neutral-300 hover:text-neutral-800"
-                    onClick={() => removeExperience(index)}
-                  >
-                    Remove
-                  </button>
-                </div>
-              </div>
-              <div className="grid gap-3 md:grid-cols-2">
-                <label className="flex flex-col gap-1">
-                  <span className="text-xs font-medium uppercase tracking-wide text-neutral-500">Title</span>
-                  <input
-                    type="text"
-                    className="rounded border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-500/20"
-                    value={entry.title ?? ''}
-                    onChange={event => updateExperienceField(index, 'title', event.target.value)}
-                    placeholder="Cashier"
-                  />
-                </label>
-                <label className="flex flex-col gap-1">
-                  <span className="text-xs font-medium uppercase tracking-wide text-neutral-500">Company</span>
-                  <input
-                    type="text"
-                    className="rounded border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-500/20"
-                    value={entry.company ?? ''}
-                    onChange={event => updateExperienceField(index, 'company', event.target.value)}
-                    placeholder="Walmart, Greenwood, MS"
-                  />
-                </label>
-                <fieldset className="flex flex-col gap-1">
-                  <span className="text-xs font-medium uppercase tracking-wide text-neutral-500">Start Date</span>
-                  <div className="grid grid-cols-2 gap-2">
-                    <select
-                      value={timelineDraft.startMonth}
-                      onChange={event => updateTimelineInput(index, 'start', 'month', event.target.value)}
-                      className="rounded border border-neutral-300 px-2 py-2 text-sm focus:border-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-500/20"
-                    >
-                      <option value="">Month</option>
-                      {MONTH_OPTIONS.map(option => (
-                        <option key={`start-month-${option.value}`} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                    <select
-                      value={timelineDraft.startYear}
-                      onChange={event => updateTimelineInput(index, 'start', 'year', event.target.value)}
-                      className="rounded border border-neutral-300 px-2 py-2 text-sm focus:border-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-500/20"
-                    >
-                      <option value="">Year</option>
-                      {YEAR_OPTIONS.map(year => (
-                        <option key={`start-year-${year}`} value={year}>
-                          {year}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </fieldset>
-                <fieldset className="flex flex-col gap-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium uppercase tracking-wide text-neutral-500">End Date</span>
-                    <label className="flex items-center gap-1 text-[11px] font-medium text-neutral-600">
-                      <input
-                        type="checkbox"
-                        className="h-4 w-4 rounded border border-neutral-300 text-neutral-900 focus:border-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-500/30"
-                        checked={timelineDraft.endPresent}
-                        onChange={event => updateTimelineInput(index, 'end', 'present', event.target.checked)}
-                      />
-                      Present
-                    </label>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <select
-                      value={timelineDraft.endMonth}
-                      onChange={event => updateTimelineInput(index, 'end', 'month', event.target.value)}
-                      disabled={timelineDraft.endPresent}
-                      className={`rounded border px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-500/20 ${
-                        timelineDraft.endPresent
-                          ? 'border-neutral-200 bg-neutral-100 text-neutral-400'
-                          : 'border-neutral-300 focus:border-neutral-500'
-                      }`}
-                    >
-                      <option value="">Month</option>
-                      {MONTH_OPTIONS.map(option => (
-                        <option key={`end-month-${option.value}`} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                    <select
-                      value={timelineDraft.endYear}
-                      onChange={event => updateTimelineInput(index, 'end', 'year', event.target.value)}
-                      disabled={timelineDraft.endPresent}
-                      className={`rounded border px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-500/20 ${
-                        timelineDraft.endPresent
-                          ? 'border-neutral-200 bg-neutral-100 text-neutral-400'
-                          : 'border-neutral-300 focus:border-neutral-500'
-                      }`}
-                    >
-                      <option value="">Year</option>
-                      {YEAR_OPTIONS.map(year => (
-                        <option key={`end-year-${year}`} value={year}>
-                          {year}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </fieldset>
-                <label className="md:col-span-2 flex flex-col gap-1">
-                  <span className="text-xs font-medium uppercase tracking-wide text-neutral-500">
-                    Bullets (one per line, max {MAX_BULLETS})
-                  </span>
-                  <textarea
-                    className="h-32 rounded border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-500/20"
-                    value={bulletsInputs[index] ?? (entry.bullets ?? []).join('\n')}
-                    onChange={event => updateExperienceField(index, 'bullets', event.target.value)}
-                    placeholder={'Balanced the cash drawer with 0-1 errors per shift\nHelped 80+ shoppers daily by solving checkout issues quickly\nTrained 2 new cashiers on POS steps and safety rules'}
-                    onBlur={() => {
-                      const currentValue = bulletsInputs[index];
-                      if (currentValue !== undefined) {
-                        const bullets = currentValue
-                          .split('\n')
-                          .map(bullet => bullet.trim())
-                          .filter(Boolean)
-                          .slice(0, MAX_BULLETS);
-                        const normalized = bullets.join('\n');
-                        if (normalized !== currentValue) {
-                          setBulletsInputs(prev => {
-                            const next = [...prev];
-                            next[index] = normalized;
-                            return next;
-                          });
-                        }
-                      }
-                    }}
-                  />
-                  <span className="text-xs text-neutral-500">
-                    Lead with an action verb and the result (speed, accuracy, customers, savings). Only the first {MAX_BULLETS} bullets will appear in the PDF.
-                  </span>
-                </label>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
-          <div>
-            <div className="flex items-center gap-2">
-              <h3 className="text-lg font-semibold">Education</h3>
-              <span className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
-                {education.length}/{EDUCATION_LIMIT}
-              </span>
-            </div>
-            <p className="text-sm text-neutral-500">
-              Include diplomas, GED, certificates, or training programs that support your next role.
-            </p>
-          </div>
-          <button
-            type="button"
-            className="self-start rounded border border-neutral-300 px-3 py-1 text-sm font-medium transition hover:border-neutral-500 hover:text-neutral-900 disabled:cursor-not-allowed disabled:border-neutral-200 disabled:text-neutral-400 md:self-auto"
-            onClick={addEducation}
-            disabled={education.length >= EDUCATION_LIMIT}
-          >
-            Add Education
-          </button>
-        </div>
-
-        {education.length === 0 && (
-          <p className="rounded border border-dashed border-neutral-300 bg-neutral-50 p-3 text-sm text-neutral-500">
-            Share your highest level of schooling or any certifications like ServSafe, forklift training, or customer service certificates.
-          </p>
-        )}
-
-        {education.map((entry, index) => (
-          <div key={`education-${index}`} className="flex flex-col gap-3 rounded border border-neutral-200 p-3 shadow-sm">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <span className="text-sm font-medium">Education #{index + 1}</span>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  className="flex h-8 w-8 items-center justify-center rounded border border-neutral-300 text-sm text-neutral-600 transition hover:border-neutral-500 hover:text-neutral-900 disabled:cursor-not-allowed disabled:border-neutral-200 disabled:text-neutral-300"
-                  onClick={() => moveEducation(index, -1)}
-                  disabled={index === 0}
-                  aria-label="Move education up"
-                >
-                  <span aria-hidden="true">&uarr;</span>
-                </button>
-                <button
-                  type="button"
-                  className="flex h-8 w-8 items-center justify-center rounded border border-neutral-300 text-sm text-neutral-600 transition hover:border-neutral-500 hover:text-neutral-900 disabled:cursor-not-allowed disabled:border-neutral-200 disabled:text-neutral-300"
-                  onClick={() => moveEducation(index, 1)}
-                  disabled={index === education.length - 1}
-                  aria-label="Move education down"
-                >
-                  <span aria-hidden="true">&darr;</span>
-                </button>
-                <button
-                  type="button"
-                  className="rounded border border-transparent px-3 py-1 text-sm text-neutral-500 transition hover:border-neutral-300 hover:text-neutral-800"
-                  onClick={() => removeEducation(index)}
-                >
-                  Remove
-                </button>
-              </div>
-            </div>
-            <div className="grid gap-3 md:grid-cols-2">
-              <label className="flex flex-col gap-1">
-                <span className="text-xs font-medium uppercase tracking-wide text-neutral-500">Degree or Program</span>
-                <input
-                  type="text"
-                  className="rounded border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-500/20"
-                  value={entry.degree ?? ''}
-                  onChange={event => updateEducationField(index, 'degree', event.target.value)}
-                  placeholder="High School Diploma"
-                />
-              </label>
-              <label className="flex flex-col gap-1">
-                <span className="text-xs font-medium uppercase tracking-wide text-neutral-500">School</span>
-                <input
-                  type="text"
-                  className="rounded border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-500/20"
-                  value={entry.school ?? ''}
-                  onChange={event => updateEducationField(index, 'school', event.target.value)}
-                  placeholder="Greenwood High School"
-                />
-              </label>
-              <label className="flex flex-col gap-1">
-                <span className="text-xs font-medium uppercase tracking-wide text-neutral-500">
-                  Graduation Year (optional)
+            <div className="grid gap-5 md:grid-cols-2">
+              <label className="flex flex-col gap-2" title="Required field">
+                <span className="text-sm font-semibold uppercase tracking-wide text-neutral-900">
+                  Name{' '}
+                  <abbr title="Required" className="text-lg text-red-600 no-underline">
+                    *
+                  </abbr>
                 </span>
                 <input
-                  className="rounded border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-500/20"
-                  value={entry.graduationYear ?? ''}
-                  onChange={event => updateEducationField(index, 'graduationYear', event.target.value)}
-                  placeholder="2020"
+                  className="rounded-lg border-2 border-neutral-300 px-4 py-3 text-base text-neutral-900 shadow-sm transition focus:border-emerald-600 focus:outline-none focus:ring-4 focus:ring-emerald-200"
+                  value={payload.name}
+                  onChange={event => setPayload(prev => ({ ...prev, name: event.target.value }))}
+                  placeholder="Full name"
+                  autoComplete="name"
+                  aria-describedby={contactHelpId}
+                  required
                 />
+              </label>
+              <label className="flex flex-col gap-2" title="Required field">
+                <span className="text-sm font-semibold uppercase tracking-wide text-neutral-900">
+                  Email{' '}
+                  <abbr title="Required" className="text-lg text-red-600 no-underline">
+                    *
+                  </abbr>
+                </span>
+                <input
+                  className="rounded-lg border-2 border-neutral-300 px-4 py-3 text-base text-neutral-900 shadow-sm transition focus:border-emerald-600 focus:outline-none focus:ring-4 focus:ring-emerald-200"
+                  value={payload.email}
+                  onChange={event => setPayload(prev => ({ ...prev, email: event.target.value }))}
+                  placeholder="email@example.com"
+                  autoComplete="email"
+                  inputMode="email"
+                  aria-describedby={contactHelpId}
+                  required
+                />
+              </label>
+              <label className="flex flex-col gap-2" title="Required field">
+                <span className="text-sm font-semibold uppercase tracking-wide text-neutral-900">
+                  Phone{' '}
+                  <abbr title="Required" className="text-lg text-red-600 no-underline">
+                    *
+                  </abbr>
+                </span>
+                <input
+                  className="rounded-lg border-2 border-neutral-300 px-4 py-3 text-base text-neutral-900 shadow-sm transition focus:border-emerald-600 focus:outline-none focus:ring-4 focus:ring-emerald-200"
+                  value={payload.phone ?? ''}
+                  onChange={event => setPayload(prev => ({ ...prev, phone: event.target.value }))}
+                  onBlur={() =>
+                    setPayload(prev => ({
+                      ...prev,
+                      phone: formatPhoneNumber(prev.phone ?? ''),
+                    }))
+                  }
+                  placeholder="(555) 123-4567"
+                  autoComplete="tel"
+                  inputMode="tel"
+                  aria-describedby={contactHelpId}
+                  required
+                />
+                <span className="text-sm text-neutral-500">Include the area code so employers can call you.</span>
+              </label>
+              <label className="flex flex-col gap-2" title="Required field">
+                <span className="text-sm font-semibold uppercase tracking-wide text-neutral-900">
+                  City &amp; State{' '}
+                  <abbr title="Required" className="text-lg text-red-600 no-underline">
+                    *
+                  </abbr>
+                </span>
+                <input
+                  className="rounded-lg border-2 border-neutral-300 px-4 py-3 text-base text-neutral-900 shadow-sm transition focus:border-emerald-600 focus:outline-none focus:ring-4 focus:ring-emerald-200"
+                  value={payload.location ?? ''}
+                  onChange={event => setPayload(prev => ({ ...prev, location: event.target.value }))}
+                  placeholder="City, ST"
+                  autoComplete="address-level2"
+                  aria-describedby={contactHelpId}
+                  required
+                />
+                <span className="text-sm text-neutral-500">A city and state tells employers you are nearby.</span>
               </label>
             </div>
           </div>
-        ))}
-      </div>
+        );
+      case 'summary':
+        return (
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <p id={summaryHelpId} className="text-lg text-neutral-600">
+                  Use this space to tell employers what you bring to the job. Replace the bracketed phrases with your details.
+                </p>
+              </div>
+              <button
+                type="button"
+                className="rounded-full bg-neutral-900 px-4 py-2 text-sm font-semibold uppercase tracking-wide text-white transition hover:bg-neutral-800 focus:outline-none focus:ring-4 focus:ring-neutral-300 disabled:cursor-not-allowed disabled:bg-neutral-400"
+                onClick={handleRewriteSummary}
+                disabled={isSummaryRewriting || !canRewriteSummary}
+                title="Let the assistant polish your summary"
+              >
+                {isSummaryRewriting ? 'Rewriting…' : 'Rewrite with AI'}
+              </button>
+            </div>
+            <textarea
+              className="h-48 w-full rounded-lg border-2 border-neutral-300 px-4 py-3 text-base text-neutral-900 shadow-sm transition focus:border-emerald-600 focus:outline-none focus:ring-4 focus:ring-emerald-200"
+              value={payload.summary ?? ''}
+              onChange={event => {
+                setSummaryStatus(null);
+                setSummaryComparison(null);
+                setPayload(prev => ({ ...prev, summary: event.target.value }));
+              }}
+              placeholder={DEFAULT_SUMMARY_TEMPLATE}
+              aria-busy={isSummaryRewriting}
+              aria-describedby={summaryHelpId}
+              maxLength={800}
+              title="Write 2-3 sentences about your experience"
+            />
+            {summaryStatus && (
+              <span
+                className={`text-sm ${summaryStatus.kind === 'error' ? 'text-red-600' : 'text-neutral-700'}`}
+                role="status"
+                aria-live="polite"
+              >
+                {summaryStatus.message}
+              </span>
+            )}
+            <p className="text-sm text-neutral-500">
+              Tip: Mention how many years you have worked, the skills you rely on, and the type of job you want next.
+            </p>
+            {summaryComparison && (
+              <SummaryReview
+                original={summaryComparison.original}
+                suggestion={summaryComparison.suggestion}
+                onKeep={() => handleKeepOriginalSummary(summaryComparison.original)}
+                onAccept={() => handleAcceptSummarySuggestion(summaryComparison.suggestion)}
+              />
+            )}
+          </div>
+        );
+      case 'skills':
+        return (
+          <div className="flex flex-col gap-5">
+            <p id={skillsHelpId} className="text-lg text-neutral-600">
+              Add short phrases like Cash Handling or Teamwork. Press Enter after each skill or pick from the suggestions.
+            </p>
+            <div
+              className={`flex flex-wrap items-center gap-2 rounded-lg border-2 px-3 py-3 ${
+                skillValues.length ? 'border-neutral-300 bg-white' : 'border-dashed border-neutral-300 bg-neutral-50'
+              }`}
+            >
+              {skillValues.map(skill => (
+                <span
+                  key={skill}
+                  className="group inline-flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-sm font-medium text-emerald-900"
+                >
+                  {skill}
+                  <button
+                    type="button"
+                    className="rounded-full bg-emerald-200 px-2 text-xs font-bold text-emerald-800 transition hover:bg-emerald-300 focus:outline-none focus:ring-4 focus:ring-emerald-200"
+                    onClick={() => removeSkill(skill)}
+                    aria-label={`Remove skill ${skill}`}
+                    title="Remove this skill"
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+              <input
+                type="text"
+                className="min-w-[140px] flex-1 border-none bg-transparent px-2 py-1 text-base text-neutral-900 focus:outline-none focus:ring-0 disabled:cursor-not-allowed"
+                value={skillDraft}
+                onChange={event => {
+                  const value = event.target.value;
+                  if (value.includes(',')) {
+                    const parts = value.split(',');
+                    parts.slice(0, -1).forEach(part => addSkill(part));
+                    setSkillDraft(parts[parts.length - 1] ?? '');
+                    return;
+                  }
+                  setSkillDraft(value);
+                }}
+                onKeyDown={event => {
+                  if (event.key === 'Enter') {
+                    event.preventDefault();
+                    handleSkillDraftCommit();
+                  }
+                }}
+                placeholder="Type a skill and press Enter"
+                aria-describedby={skillsHelpId}
+                title="Type a skill and press Enter to add it"
+              />
+            </div>
+            <div className="flex flex-wrap items-center gap-2" aria-label="Suggested skills">
+              {SKILL_SUGGESTIONS.map(skill => {
+                const alreadyAdded = skillValues.some(
+                  existing => existing.toLowerCase() === skill.toLowerCase(),
+                );
+                return (
+                  <button
+                    key={skill}
+                    type="button"
+                    onClick={() => addSkill(skill)}
+                    className={`rounded-full px-4 py-2 text-sm font-semibold transition focus:outline-none focus:ring-4 focus:ring-emerald-200 ${
+                      alreadyAdded
+                        ? 'bg-neutral-200 text-neutral-500'
+                        : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                    }`}
+                    disabled={alreadyAdded}
+                    title={alreadyAdded ? 'Skill already added' : `Add ${skill} to your skills`}
+                  >
+                    {skill}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-sm text-neutral-500">Need ideas? Start with customer service, reliability, or any tools you use every day.</p>
+          </div>
+        );
+      case 'experience':
+        return (
+          <div className="flex flex-col gap-6" aria-describedby={experienceHelpId}>
+            <p id={experienceHelpId} className="text-lg text-neutral-600">
+              List your recent jobs or volunteer work. Focus on the tasks that show reliability and people skills.
+            </p>
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                className="rounded bg-neutral-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-neutral-800 focus:outline-none focus:ring-4 focus:ring-neutral-300 disabled:cursor-not-allowed"
+                onClick={addExperience}
+                disabled={experience.length >= EXPERIENCE_LIMIT}
+              >
+                Add a job
+              </button>
+              <span className="text-sm text-neutral-500">
+                {experience.length
+                  ? `You can add up to ${EXPERIENCE_LIMIT - experience.length} more ${experience.length === EXPERIENCE_LIMIT - 1 ? 'role' : 'roles'}.`
+                  : 'Start with your most recent role.'}
+              </span>
+            </div>
+            {!experience.length && (
+              <div className="rounded-lg border border-dashed border-neutral-200 bg-neutral-50 p-4 text-sm text-neutral-600">
+                Add your first job to show employers what you have done and how you helped.
+              </div>
+            )}
+            <div className="flex flex-col gap-6">
+              {experience.map((entry, index) => {
+                const timelineDraft = timelineInputs[index] ?? createTimelineDraft();
+                return (
+                  <div key={`experience-${index}`} className="rounded-lg border border-neutral-200 bg-white p-4 shadow-sm">
+                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-200 pb-3">
+                      <span className="text-lg font-semibold text-neutral-900">Role {index + 1}</span>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => moveExperience(index, -1)}
+                          className="rounded border border-neutral-300 px-3 py-1 text-sm font-medium text-neutral-700 transition hover:border-neutral-500 hover:text-neutral-900 focus:outline-none focus:ring-4 focus:ring-neutral-200 disabled:cursor-not-allowed disabled:text-neutral-400"
+                          disabled={index === 0}
+                          title="Move this role up"
+                        >
+                          Move up
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => moveExperience(index, 1)}
+                          className="rounded border border-neutral-300 px-3 py-1 text-sm font-medium text-neutral-700 transition hover:border-neutral-500 hover:text-neutral-900 focus:outline-none focus:ring-4 focus:ring-neutral-200 disabled:cursor-not-allowed disabled:text-neutral-400"
+                          disabled={index === experience.length - 1}
+                          title="Move this role down"
+                        >
+                          Move down
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => removeExperience(index)}
+                          className="rounded bg-red-600 px-3 py-1 text-sm font-semibold text-white transition hover:bg-red-700 focus:outline-none focus:ring-4 focus:ring-red-200"
+                          title="Remove this role"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                    <div className="mt-4 grid gap-4 md:grid-cols-2">
+                      <label className="flex flex-col gap-2">
+                        <span className="text-xs font-semibold uppercase tracking-wide text-neutral-600">
+                          Job Title
+                        </span>
+                        <input
+                          className="rounded border border-neutral-300 px-3 py-2 text-base focus:border-emerald-600 focus:outline-none focus:ring-4 focus:ring-emerald-200"
+                          value={entry.title ?? ''}
+                          onChange={event => updateExperienceField(index, 'title', event.target.value)}
+                          placeholder="Shift Lead"
+                        />
+                      </label>
+                      <label className="flex flex-col gap-2">
+                        <span className="text-xs font-semibold uppercase tracking-wide text-neutral-600">
+                          Employer
+                        </span>
+                        <input
+                          className="rounded border border-neutral-300 px-3 py-2 text-base focus:border-emerald-600 focus:outline-none focus:ring-4 focus:ring-emerald-200"
+                          value={entry.company ?? ''}
+                          onChange={event => updateExperienceField(index, 'company', event.target.value)}
+                          placeholder="Riverfront Grocery"
+                        />
+                      </label>
+                      <div className="flex flex-col gap-2">
+                        <span className="text-xs font-semibold uppercase tracking-wide text-neutral-600">Start date</span>
+                        <div className="grid grid-cols-2 gap-2">
+                          <select
+                            className="rounded border border-neutral-300 px-2 py-2 text-sm focus:border-emerald-600 focus:outline-none focus:ring-4 focus:ring-emerald-200"
+                            value={timelineDraft.startMonth}
+                            onChange={event => updateTimelineInput(index, 'start', 'month', event.target.value)}
+                          >
+                            <option value="">Month</option>
+                            {MONTH_OPTIONS.map(option => (
+                              <option key={option.value} value={option.value}>
+                                {option.label}
+                              </option>
+                            ))}
+                          </select>
+                          <select
+                            className="rounded border border-neutral-300 px-2 py-2 text-sm focus:border-emerald-600 focus:outline-none focus:ring-4 focus:ring-emerald-200"
+                            value={timelineDraft.startYear}
+                            onChange={event => updateTimelineInput(index, 'start', 'year', event.target.value)}
+                          >
+                            <option value="">Year</option>
+                            {YEAR_OPTIONS.map(year => (
+                              <option key={year} value={year}>
+                                {year}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <span className="text-xs font-semibold uppercase tracking-wide text-neutral-600">End date</span>
+                        <div className="grid grid-cols-2 gap-2">
+                          <select
+                            className="rounded border border-neutral-300 px-2 py-2 text-sm focus:border-emerald-600 focus:outline-none focus:ring-4 focus:ring-emerald-200"
+                            value={timelineDraft.endMonth}
+                            onChange={event => updateTimelineInput(index, 'end', 'month', event.target.value)}
+                            disabled={timelineDraft.endPresent}
+                          >
+                            <option value="">Month</option>
+                            {MONTH_OPTIONS.map(option => (
+                              <option key={option.value} value={option.value}>
+                                {option.label}
+                              </option>
+                            ))}
+                          </select>
+                          <select
+                            className="rounded border border-neutral-300 px-2 py-2 text-sm focus:border-emerald-600 focus:outline-none focus:ring-4 focus:ring-emerald-200"
+                            value={timelineDraft.endYear}
+                            onChange={event => updateTimelineInput(index, 'end', 'year', event.target.value)}
+                            disabled={timelineDraft.endPresent}
+                          >
+                            <option value="">Year</option>
+                            {YEAR_OPTIONS.map(year => (
+                              <option key={year} value={year}>
+                                {year}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <label className="flex items-center gap-2 text-sm text-neutral-700">
+                          <input
+                            type="checkbox"
+                            className="h-4 w-4 rounded border-neutral-400 text-emerald-600 focus:ring-emerald-200"
+                            checked={timelineDraft.endPresent}
+                            onChange={event => updateTimelineInput(index, 'end', 'present', event.target.checked)}
+                          />
+                          I still work here
+                        </label>
+                      </div>
+                    </div>
+                    <label className="mt-4 flex flex-col gap-2">
+                      <span className="text-xs font-semibold uppercase tracking-wide text-neutral-600">
+                        Key contributions
+                      </span>
+                      <textarea
+                        className="min-h-[140px] rounded border border-neutral-300 px-3 py-2 text-base focus:border-emerald-600 focus:outline-none focus:ring-4 focus:ring-emerald-200"
+                        value={bulletsInputs[index] ?? ''}
+                        onChange={event => updateExperienceField(index, 'bullets', event.target.value)}
+                        placeholder={'Handled 50+ customer purchases each shift\nTrained two new team members'}
+                      />
+                      <span className="text-xs text-neutral-500">
+                        Use short sentences starting with action verbs. One idea per line.
+                      </span>
+                    </label>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      case 'education':
+        return (
+          <div className="flex flex-col gap-6">
+            <p className="text-lg text-neutral-600">
+              Share your schooling, certificates, or training programs. Most recent items should go first.
+            </p>
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                className="rounded bg-neutral-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-neutral-800 focus:outline-none focus:ring-4 focus:ring-neutral-300 disabled:cursor-not-allowed"
+                onClick={addEducation}
+                disabled={education.length >= EDUCATION_LIMIT}
+              >
+                Add education
+              </button>
+              <span className="text-sm text-neutral-500">
+                {education.length
+                  ? `You can add ${EDUCATION_LIMIT - education.length} more ${education.length === EDUCATION_LIMIT - 1 ? 'entry' : 'entries'}.`
+                  : 'Include diplomas, certificates, or relevant coursework.'}
+              </span>
+            </div>
+            {!education.length && (
+              <div className="rounded-lg border border-dashed border-neutral-200 bg-neutral-50 p-4 text-sm text-neutral-600">
+                Add your highest level of education or any job-ready training.
+              </div>
+            )}
+            <div className="flex flex-col gap-6">
+              {education.map((entry, index) => (
+                <div key={`education-${index}`} className="rounded-lg border border-neutral-200 bg-white p-4 shadow-sm">
+                  <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-200 pb-3">
+                    <span className="text-lg font-semibold text-neutral-900">Education {index + 1}</span>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => moveEducation(index, -1)}
+                        className="rounded border border-neutral-300 px-3 py-1 text-sm font-medium text-neutral-700 transition hover:border-neutral-500 hover:text-neutral-900 focus:outline-none focus:ring-4 focus:ring-neutral-200 disabled:cursor-not-allowed disabled:text-neutral-400"
+                        disabled={index === 0}
+                        title="Move this entry up"
+                      >
+                        Move up
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => moveEducation(index, 1)}
+                        className="rounded border border-neutral-300 px-3 py-1 text-sm font-medium text-neutral-700 transition hover:border-neutral-500 hover:text-neutral-900 focus:outline-none focus:ring-4 focus:ring-neutral-200 disabled:cursor-not-allowed disabled:text-neutral-400"
+                        disabled={index === education.length - 1}
+                        title="Move this entry down"
+                      >
+                        Move down
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => removeEducation(index)}
+                        className="rounded bg-red-600 px-3 py-1 text-sm font-semibold text-white transition hover:bg-red-700 focus:outline-none focus:ring-4 focus:ring-red-200"
+                        title="Remove this entry"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                  <div className="mt-4 grid gap-4 md:grid-cols-2">
+                    <label className="flex flex-col gap-2">
+                      <span className="text-xs font-semibold uppercase tracking-wide text-neutral-600">
+                        Degree or program
+                      </span>
+                      <input
+                        type="text"
+                        className="rounded border border-neutral-300 px-3 py-2 text-base focus:border-emerald-600 focus:outline-none focus:ring-4 focus:ring-emerald-200"
+                        value={entry.degree ?? ''}
+                        onChange={event => updateEducationField(index, 'degree', event.target.value)}
+                        placeholder="High School Diploma"
+                      />
+                    </label>
+                    <label className="flex flex-col gap-2">
+                      <span className="text-xs font-semibold uppercase tracking-wide text-neutral-600">School</span>
+                      <input
+                        type="text"
+                        className="rounded border border-neutral-300 px-3 py-2 text-base focus:border-emerald-600 focus:outline-none focus:ring-4 focus:ring-emerald-200"
+                        value={entry.school ?? ''}
+                        onChange={event => updateEducationField(index, 'school', event.target.value)}
+                        placeholder="Greenwood High School"
+                      />
+                    </label>
+                    <label className="flex flex-col gap-2">
+                      <span className="text-xs font-semibold uppercase tracking-wide text-neutral-600">
+                        Graduation year (optional)
+                      </span>
+                      <input
+                        className="rounded border border-neutral-300 px-3 py-2 text-base focus:border-emerald-600 focus:outline-none focus:ring-4 focus:ring-emerald-200"
+                        value={entry.graduationYear ?? ''}
+                        onChange={event => updateEducationField(index, 'graduationYear', event.target.value)}
+                        placeholder="2022"
+                      />
+                    </label>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      case 'preview':
+        return (
+          <div className="flex flex-col gap-6">
+            <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-4">
+              <p className="text-lg text-neutral-700">
+                Almost done! Use the checklist below to make sure everything is ready. You can jump back to any step.
+              </p>
+            </div>
+            <ul className="flex flex-col gap-3">
+              {WIZARD_STEPS.slice(0, -1).map(step => {
+                if (step.key === 'preview') return null;
+                const isComplete = stepCompletion[step.key];
+                return (
+                  <li
+                    key={step.key}
+                    className={`flex items-center justify-between rounded-lg border px-4 py-3 ${
+                      isComplete ? 'border-emerald-500 bg-emerald-50 text-emerald-900' : 'border-neutral-200 bg-white text-neutral-700'
+                    }`}
+                  >
+                    <div>
+                      <span className="text-base font-semibold">{step.title}</span>
+                      <p className="text-sm">{step.description}</p>
+                    </div>
+                    <span
+                      className={`rounded-full px-3 py-1 text-sm font-semibold ${
+                        isComplete ? 'bg-emerald-600 text-white' : 'bg-neutral-200 text-neutral-600'
+                      }`}
+                    >
+                      {isComplete ? 'Ready' : 'Needs attention'}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+            {previewUrl && (
+              <div className="rounded-lg border border-emerald-300 bg-emerald-50 p-4 text-neutral-800">
+                <p className="text-base font-semibold">Your latest preview is ready.</p>
+                <p className="mt-1 text-sm">
+                  Open the preview to double-check layout or use the download button below to save the PDF.
+                </p>
+              </div>
+            )}
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
 
-      <div className="sticky bottom-0 z-10 -mx-4 mt-2 flex flex-col gap-3 border-t border-neutral-200 bg-white/95 px-4 py-4 backdrop-blur md:static md:-mx-0 md:flex-row md:items-center md:border-none md:bg-transparent md:px-0 md:py-0">
-        <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-3">
+
+return (
+  <section
+    id="resume-builder"
+    className="mt-10 flex flex-col gap-8 rounded-2xl border border-neutral-200 bg-white p-6 shadow-lg"
+  >
+    <header className="flex flex-col gap-6">
+      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div className="max-w-2xl">
+          <h2 className="text-3xl font-bold text-neutral-900">Build Your Resume</h2>
+          <p className="mt-1 text-base text-neutral-600">
+            Move through each step in plain language. Your progress saves automatically in this browser.
+          </p>
+        </div>
+        <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center">
           <button
             type="button"
-            className="w-full rounded bg-neutral-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-neutral-800 disabled:cursor-not-allowed disabled:bg-neutral-500 md:w-auto"
             onClick={handleGenerate}
-            disabled={!hasRequiredFields || isPreviewLoading}
+            disabled={!canPreview || isPreviewLoading}
+            className="rounded-full bg-emerald-600 px-6 py-3 text-base font-semibold text-white shadow-sm transition hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-200 disabled:cursor-not-allowed disabled:bg-emerald-200 disabled:text-emerald-700"
             aria-describedby={buttonsHelpId}
+            title="Open a PDF preview in a new tab"
           >
-            {isPreviewLoading ? 'Generating…' : 'Preview PDF'}
+            {isPreviewLoading ? 'Opening Preview…' : 'Preview Resume'}
           </button>
           {previewUrl && (
             <a
               href={previewUrl}
               download={downloadFilename}
-              className="inline-flex w-full items-center justify-center rounded border border-neutral-300 px-4 py-2 text-sm font-medium text-neutral-700 transition hover:border-neutral-500 hover:text-neutral-900 md:w-auto"
+              className="inline-flex items-center justify-center rounded-full border-2 border-emerald-600 px-6 py-3 text-base font-semibold text-emerald-700 transition hover:border-emerald-700 hover:text-emerald-900 focus:outline-none focus:ring-4 focus:ring-emerald-200"
+              title="Download the generated PDF"
             >
               Download PDF
             </a>
           )}
-          <button
-            type="button"
-            className="w-full rounded border border-neutral-300 px-4 py-2 text-sm font-medium transition hover:border-neutral-500 hover:text-neutral-900 md:w-auto"
-            onClick={handleReset}
-          >
-            Reset Draft
-          </button>
-        </div>
-        <div className="flex flex-col gap-1 md:ml-4 md:flex-1 md:flex-row md:items-center md:justify-between">
-          <p id={buttonsHelpId} className="text-xs text-neutral-500 md:text-sm">
-            Preview opens in a new tab. Download saves as <span className="font-mono">{downloadFilename}</span>.
-          </p>
-          {status && (
-            <p className="text-sm text-neutral-600" role="status" aria-live="polite">
-              {status}
-            </p>
-          )}
         </div>
       </div>
-    </section>
-  );
+      <div className="flex flex-col gap-3">
+        <div className="relative h-2 w-full rounded-full bg-neutral-200" aria-hidden="true">
+          <div
+            className="h-2 rounded-full bg-emerald-600 transition-all"
+            style={{ width: `${progressPercent}%` }}
+          />
+        </div>
+        <ol className="flex flex-wrap gap-2" aria-label="Resume builder steps">
+          {WIZARD_STEPS.map((step, index) => {
+            const isActive = index === currentStepIndex;
+            const isDone = index < currentStepIndex;
+            const canNavigate = index <= currentStepIndex;
+            const accent = isActive
+              ? 'border-emerald-600 bg-emerald-600 text-white'
+              : isDone
+                ? 'border-emerald-400 bg-emerald-50 text-emerald-800'
+                : 'border-neutral-300 bg-white text-neutral-600';
+            return (
+              <li key={step.key}>
+                <button
+                  type="button"
+                  onClick={() => handleGoToStep(index)}
+                  disabled={!canNavigate}
+                  className={`flex items-center gap-2 rounded-full border-2 px-4 py-2 text-sm font-semibold transition focus:outline-none focus:ring-4 focus:ring-emerald-200 disabled:border-neutral-200 disabled:text-neutral-400 ${accent}`}
+                  title={canNavigate ? `Go to ${step.title}` : 'Complete previous steps first'}
+                  aria-current={isActive ? 'step' : undefined}
+                >
+                  <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-white/20 font-bold">
+                    {index + 1}
+                  </span>
+                  <span>{step.title}</span>
+                </button>
+              </li>
+            );
+          })}
+        </ol>
+      </div>
+    </header>
+    <div className="flex flex-col gap-4">
+      <h3 className="text-2xl font-bold text-neutral-900">{activeStep.title}</h3>
+      <p className="text-base text-neutral-600">{activeStep.description}</p>
+      {renderStepContent()}
+    </div>
+    <nav className="sticky bottom-0 z-20 -mx-6 mt-8 border-t border-neutral-200 bg-white/95 px-6 py-5 backdrop-blur">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={handlePreviousStep}
+            disabled={isFirstStep}
+            className="rounded-full border-2 border-neutral-300 px-5 py-3 text-base font-semibold text-neutral-800 transition hover:border-neutral-500 focus:outline-none focus:ring-4 focus:ring-neutral-300 disabled:cursor-not-allowed disabled:border-neutral-200 disabled:text-neutral-400"
+            title="Go back to the previous step"
+          >
+            Back
+          </button>
+          {!isLastStep && (
+            <button
+              type="button"
+              onClick={handleNextStep}
+              disabled={!isActiveStepComplete}
+              className="rounded-full bg-neutral-900 px-6 py-3 text-base font-semibold text-white shadow-sm transition hover:bg-neutral-800 focus:outline-none focus:ring-4 focus:ring-neutral-400 disabled:cursor-not-allowed disabled:bg-neutral-400"
+              title={isActiveStepComplete ? 'Continue to the next step' : 'Complete the required fields to continue'}
+            >
+              {nextStepLabel}
+            </button>
+          )}
+        </div>
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={handleGenerate}
+              disabled={!canPreview || isPreviewLoading}
+              className="rounded-full bg-emerald-600 px-6 py-3 text-base font-semibold text-white shadow-sm transition hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-200 disabled:cursor-not-allowed disabled:bg-emerald-200 disabled:text-emerald-700"
+              aria-describedby={buttonsHelpId}
+              title="Open a PDF preview in a new tab"
+            >
+              {isPreviewLoading ? 'Opening Preview…' : 'Preview Resume'}
+            </button>
+            {previewUrl && (
+              <a
+                href={previewUrl}
+                download={downloadFilename}
+                className="inline-flex items-center justify-center rounded-full border-2 border-emerald-600 px-6 py-3 text-base font-semibold text-emerald-700 transition hover:border-emerald-700 hover:text-emerald-900 focus:outline-none focus:ring-4 focus:ring-emerald-200"
+                title="Download the generated PDF"
+              >
+                Download PDF
+              </a>
+            )}
+            <button
+              type="button"
+              onClick={handleReset}
+              className="rounded-full border-2 border-neutral-300 px-6 py-3 text-base font-semibold text-neutral-700 transition hover:border-neutral-500 hover:text-neutral-900 focus:outline-none focus:ring-4 focus:ring-neutral-300"
+              title="Clear all fields and start over"
+            >
+              Reset All
+            </button>
+          </div>
+          <div className="text-sm text-neutral-600">
+            <p id={buttonsHelpId}>
+              Preview opens in a new tab. Download saves as <span className="font-mono">{downloadFilename}</span>.
+            </p>
+            {status && (
+              <p className="mt-1 text-sm text-neutral-700" role="status" aria-live="polite">
+                {status}
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+    </nav>
+  </section>
+);
 }
 
 function TemplatePreview({ template }: { template: TemplateName }) {

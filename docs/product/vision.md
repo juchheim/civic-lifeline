@@ -14,7 +14,8 @@ Low-income residents (primarily rural and Black communities) struggle to locate 
 ## What It Is (MVP Scope)
 - **Food Access Map**: Live SNAP-accepting retailers on an interactive map.
 - **Benefits & Rights Coach (AI)**: Plain-language steps + official links; letter templates (e.g., repair request).
-- **Jobs & Skills Pulse**: County unemployment trend (live BLS series) + resume/cover builder.
+- **Jobs & Skills Pulse**: County unemployment trend (live BLS series) surfaced on the Stats page.
+- **Resume Builder**: Guided resume wizard with AI summary support and PDF export.
 - **Digital Access**: County/tract broadband summaries from FCC downloads.
 - **Housing Starter**: HUD housing counselors near me + FMR context.
 

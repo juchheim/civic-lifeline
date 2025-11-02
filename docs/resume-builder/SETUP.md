@@ -61,8 +61,8 @@ Recommended models:
 
 1. Set up your environment variables as described above
 2. Start the development server: `cd apps/web && npm run dev`
-3. Navigate to `/jobs` in your browser
-4. Scroll to the "Build Your Resume" section
+3. Navigate to `/resume` in your browser
+4. Confirm the "Resume Builder" wizard renders
 5. Enter a summary (at least 12 characters)
 6. Click "Rewrite with AI"
 7. If configured correctly, you should see the rewritten summary appear in the text area
@@ -98,4 +98,3 @@ The resume summary rewriter has been updated to use OpenAI's standard Chat Compl
 - **Environment Variables**: Now uses standard `OPENAI_API_KEY` (with backward compatibility for `GPT5_NANO_API_KEY`)
 
 These changes align the integration with OpenAI's official API documentation and ensure compatibility with current and future OpenAI models.
-

@@ -1,6 +1,6 @@
 # Goal
 
-Deliver an accessible resume builder section within `/jobs` that posts to `POST /api/pdf?template=...`, lets users pick a template, and downloads a Playwright-rendered PDF. Future iterations can layer on richer preview and editing tools.
+Deliver an accessible resume builder section within `/resume` that posts to `POST /api/pdf?template=...`, lets users pick a template, and downloads a Playwright-rendered PDF. Future iterations can layer on richer preview and editing tools.
 
 ## User Stories
 
@@ -11,13 +11,14 @@ Deliver an accessible resume builder section within `/jobs` that posts to `POST 
 
 ## Routes & IA
 
-- `/jobs` — see `apps/web/app/jobs/page.tsx`; the resume builder renders beneath the unemployment chart inside `<ResumeBuilderSection />`.
+- `/resume` — see `apps/web/app/resume/page.tsx`; the resume builder wizard is the primary content.
+- `/stats` — see `apps/web/app/stats/page.tsx`; the unemployment chart now lives on its own analytics page.
 - Optional future enhancement: add a second column or modal preview when templates grow.
 
 ## Components
 
 - `apps/web/components/resume/ResumeBuilderSection.tsx` — main UI, stores payload/template, handles localStorage + status messaging.
-- `apps/web/app/resume/page.tsx` — lightweight redirect to `/jobs#resume-builder` for legacy links.
+- `apps/web/app/resume/page.tsx` — page shell that introduces and mounts the wizard.
 - `apps/web/lib/resume/download-pdf.ts` — browser helper that posts to `/api/pdf` and triggers downloads.
 - `apps/web/resume/shared/templates.ts` — authoritative template list for both client & server.
 - Future: extract sub-forms (experience, education, links) once full data entry is added.
@@ -95,7 +96,7 @@ Track template switches, PDF generation success/failure, time‑to‑first‑PDF
 ## Tests
 
 - Component tests (future): cover localStorage sync and disabled state when required fields missing.
-- E2E (Playwright): fill form → click “Generate PDF” → assert download name/size (>1 KB).
+- E2E (Playwright): fill form → click “Preview Resume” → assert preview/download availability and file name (>1 KB when saved).
 
 ## Responsive Rules
 
@@ -103,6 +104,6 @@ Switch to stacked layout below 1024px; sticky ActionsBar at bottom on mobile.
 
 ## Copy (editable)
 
-- Title: "Build Your Resume"
-- CTA: "Preview PDF"
-- Subtext: "Your data stays on this device except when generating the PDF."
+- Title: "Build Your Resume" (section) / "Resume Builder" (page hero)
+- CTA: "Preview Resume"
+- Subtext: "Preview opens in a new tab; your data stays on this device except when generating the PDF."

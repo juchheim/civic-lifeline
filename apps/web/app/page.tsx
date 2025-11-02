@@ -8,8 +8,13 @@ const sections = [
     description: "Search USDA SNAP retailers within a map view and filter by store type.",
   },
   {
-    href: "/jobs",
-    title: "Jobs & Unemployment",
+    href: "/resume",
+    title: "Resume Builder",
+    description: "Complete a guided, multi-step resume draft that saves securely in your browser.",
+  },
+  {
+    href: "/stats",
+    title: "Stats — Unemployment",
     description: "Query BLS LAUS unemployment series by county and visualise the trend.",
   },
   {

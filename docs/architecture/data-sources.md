@@ -10,7 +10,7 @@
 - **Edge Cases**: Sparse hours/phone; nulls tolerated.
 
 ## BLS LAUS (Local Area Unemployment Statistics)
-- **Purpose**: Jobs/skills pulse.
+- **Purpose**: Jobs/skills pulse (Stats page).
 - **Access**: POST JSON to `/publicAPI/v2/timeseries/data`.
 - **Series**: `LAUCN{STATE2}{COUNTY3}000000003` (unemployment rate).
 - **Frequency**: On-demand (24h cache) + nightly refresh.

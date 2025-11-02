@@ -165,8 +165,8 @@ After adding the environment variable:
 
 1. **Redeploy** your service
 2. **Test the feature**:
-   - Navigate to `/jobs` on your deployed site
-   - Scroll to "Build Your Resume" section
+   - Navigate to `/resume` on your deployed site
+   - Confirm the "Resume Builder" wizard loads
    - Enter a summary (at least 12 characters)
    - Click "Rewrite with AI"
    - If configured correctly, you should see a rewritten summary
@@ -239,4 +239,3 @@ Monitor your usage at: https://platform.openai.com/usage
 | `OPENAI_API_KEY` | ✅ Yes | None | Your OpenAI API key |
 | `RESUME_SUMMARY_MODEL` | ❌ No | `gpt-5-mini-2025-08-07` | OpenAI model to use |
 | `OPENAI_API_URL` | ❌ No | `https://api.openai.com/v1/chat/completions` | Custom API endpoint |
-

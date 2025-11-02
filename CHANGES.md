@@ -116,8 +116,8 @@ Fixed the AI-powered resume summary rewriter feature to work with OpenAI's stand
    ```
 
 5. **Test the Feature**
-   - Navigate to http://localhost:3000/jobs
-   - Scroll to "Build Your Resume" section
+   - Navigate to http://localhost:3000/resume
+   - Confirm the "Resume Builder" wizard loads
    - Enter a summary with at least 12 characters
    - Click "Rewrite with AI"
    - You should see a polished version appear
@@ -126,7 +126,7 @@ Fixed the AI-powered resume summary rewriter feature to work with OpenAI's stand
 
 ### Manual Testing via UI
 1. Start the dev server: `cd apps/web && npm run dev`
-2. Go to http://localhost:3000/jobs
+2. Go to http://localhost:3000/resume
 3. Fill in the resume builder form
 4. Click "Rewrite with AI" on the summary field
 
@@ -202,4 +202,3 @@ curl -X POST http://localhost:3000/api/resume/summary \
 3. Deploy with the new environment variables configured
 4. Monitor logs for any API errors
 5. Consider setting up rate limiting if needed
-
