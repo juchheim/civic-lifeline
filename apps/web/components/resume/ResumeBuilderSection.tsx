@@ -170,7 +170,7 @@ export function ResumeBuilderSection() {
 return (
   <section
     id="resume-builder"
-    className="mt-10 flex flex-col gap-8 rounded-2xl border border-neutral-200 bg-white p-6 shadow-lg"
+    className="mt-4 flex flex-col gap-6 rounded-2xl border border-neutral-200 bg-white p-6 shadow-lg"
   >
     <header className="flex flex-col gap-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
