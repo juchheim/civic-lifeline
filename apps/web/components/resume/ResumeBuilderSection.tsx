@@ -177,7 +177,7 @@ return (
         <div className="max-w-2xl">
           <h2 className="text-3xl font-bold text-neutral-900">Build Your Resume</h2>
           <p className="mt-1 text-base text-neutral-600">
-            Follow the guided steps to build a polished resume. Your draft saves automatically in this browser so you can pick up where you left off.
+            Follow these steps to create your resume. Your work saves on this computer, so you can come back later. Your information is private — we don&apos;t keep or share it.
           </p>
         </div>
         <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center">

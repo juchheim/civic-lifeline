@@ -746,7 +746,7 @@ export function useResumeBuilderState() {
         window.open(absoluteUrl, '_blank');
       }
 
-      setStatus('Preview opened in a new tab. Use the download button if you need a copy.');
+      setStatus(null);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to generate PDF.';
       setStatus(message);

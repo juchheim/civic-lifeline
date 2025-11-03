@@ -3,15 +3,15 @@ import { TEMPLATES, type TemplateName } from '@/resume/shared/templates';
 const TEMPLATE_DETAILS: Record<TemplateName, { label: string; description: string }> = {
   classic: {
     label: 'Classic',
-    description: 'Serif, column-free layout. Best for traditional employers and ATS scans.',
+    description: 'Best for office jobs, retail, and customer service roles.',
   },
   modern: {
     label: 'Modern',
-    description: 'Clean sans-serif with bold headings and accent colour for section titles.',
+    description: 'Good for healthcare, education, and professional positions.',
   },
   minimal: {
     label: 'Minimal',
-    description: 'Monospaced typography with generous spacing for tech-forward teams.',
+    description: 'Works well for tech jobs, creative fields, and startups.',
   },
 };
 
