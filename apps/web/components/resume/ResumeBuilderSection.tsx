@@ -280,16 +280,18 @@ return (
               {nextStepLabel}
             </button>
           )}
-          <button
-            type="button"
-            onClick={handleGenerate}
-            disabled={!canPreview || isPreviewLoading}
-            className="flex-shrink-0 rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white whitespace-nowrap shadow-sm transition hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-200 disabled:cursor-not-allowed disabled:bg-emerald-200 disabled:text-emerald-700 md:px-6 md:py-3 md:text-base"
-            aria-describedby={buttonsHelpId}
-            title="Open a PDF preview in a new tab"
-          >
-            {isPreviewLoading ? 'Opening Preview…' : 'Preview Resume'}
-          </button>
+          {canPreview && (
+            <button
+              type="button"
+              onClick={handleGenerate}
+              disabled={isPreviewLoading}
+              className="flex-shrink-0 rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white whitespace-nowrap shadow-sm transition hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-200 disabled:cursor-not-allowed disabled:bg-emerald-200 disabled:text-emerald-700 md:px-6 md:py-3 md:text-base"
+              aria-describedby={buttonsHelpId}
+              title="Open a PDF preview in a new tab"
+            >
+              {isPreviewLoading ? 'Opening Preview…' : 'Preview Resume'}
+            </button>
+          )}
           {previewUrl && (
             <a
               href={previewUrl}
