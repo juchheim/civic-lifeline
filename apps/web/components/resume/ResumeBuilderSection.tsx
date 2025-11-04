@@ -2,7 +2,7 @@
 
 import { useEffect, useId } from 'react';
 import { useResumeBuilderState } from './useResumeBuilderState';
-import { WIZARD_STEPS, EXPERIENCE_LIMIT, EDUCATION_LIMIT } from './constants';
+import { WIZARD_STEPS, EXPERIENCE_LIMIT, EDUCATION_LIMIT, MAX_SKILLS } from './constants';
 import { TemplateStep } from './steps/TemplateStep';
 import { ContactStep } from './steps/ContactStep';
 import { SummaryStep } from './steps/SummaryStep';
@@ -258,7 +258,16 @@ return (
     </header>
     <div className="flex flex-col gap-4">
       <h3 className="text-2xl font-bold text-neutral-900">{activeStep.title}</h3>
-      <p className="text-base text-neutral-600">{activeStep.description}</p>
+      {activeStep.key === 'skills' ? (
+        <div className="flex items-center justify-between gap-1">
+          <p className="text-base text-neutral-600">{activeStep.description}</p>
+          <span className="text-sm font-medium text-neutral-600 whitespace-nowrap">
+            {skillValues.length} of {MAX_SKILLS}
+          </span>
+        </div>
+      ) : (
+        <p className="text-base text-neutral-600">{activeStep.description}</p>
+      )}
       {renderStepContent()}
     </div>
     <nav className="sticky bottom-0 z-20 -mx-6 mt-8 border-t border-neutral-200 bg-white/95 px-4 py-3 backdrop-blur md:px-6 md:py-5">

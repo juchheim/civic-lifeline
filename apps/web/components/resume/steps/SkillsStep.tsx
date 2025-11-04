@@ -26,19 +26,10 @@ export function SkillsStep({
     onChangeDraft(event.target.value);
   };
   
-  const maxSkills = 20;
   const hasSkills = skills.length >= 1;
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex items-center justify-between gap-1">
-        <p id={skillsHelpId} className="text-lg text-neutral-600">
-          List your abilities.
-        </p>
-        <span className="text-sm font-medium text-neutral-600 whitespace-nowrap">
-          {skills.length} of {maxSkills}
-        </span>
-      </div>
       {!hasSkills && (
         <p className="text-sm text-amber-600" role="alert">
           Please add at least one skill to continue.
