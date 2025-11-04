@@ -191,16 +191,18 @@ return (
           </p>
         </div>
         <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center">
-          <button
-            type="button"
-            onClick={handleGenerate}
-            disabled={!canPreview || isPreviewLoading}
-            className="rounded-full bg-emerald-600 px-6 py-3 text-base font-semibold text-white shadow-sm transition hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-200 disabled:cursor-not-allowed disabled:bg-emerald-200 disabled:text-emerald-700"
-            aria-describedby={buttonsHelpId}
-            title="Open a PDF preview in a new tab"
-          >
-            {isPreviewLoading ? 'Opening Preview…' : 'Preview Resume'}
-          </button>
+          {canPreview && (
+            <button
+              type="button"
+              onClick={handleGenerate}
+              disabled={isPreviewLoading}
+              className="rounded-full bg-emerald-600 px-6 py-3 text-base font-semibold text-white shadow-sm transition hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-200 disabled:cursor-not-allowed disabled:bg-emerald-200 disabled:text-emerald-700"
+              aria-describedby={buttonsHelpId}
+              title="Open a PDF preview in a new tab"
+            >
+              {isPreviewLoading ? 'Opening Preview…' : 'Preview Resume'}
+            </button>
+          )}
           {previewUrl && (
             <a
               href={previewUrl}
