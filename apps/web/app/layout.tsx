@@ -130,7 +130,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </div>
             </header>
             <div role="main">
-              <div className="mx-auto w-full max-w-6xl px-4 py-6">{children}</div>
+              <div className="mx-auto w-full max-w-6xl px-4 py-3 md:py-6">{children}</div>
             </div>
             <footer className="border-t border-slate-200 bg-white/70">
               <div className="mx-auto w-full max-w-6xl px-4 py-4 text-xs text-slate-500">
