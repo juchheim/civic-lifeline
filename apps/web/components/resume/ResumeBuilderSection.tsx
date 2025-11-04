@@ -261,36 +261,43 @@ return (
     </div>
     <nav className="sticky bottom-0 z-20 -mx-6 mt-8 border-t border-neutral-200 bg-white/95 px-4 py-3 backdrop-blur md:px-6 md:py-5">
       <div className="flex flex-col gap-2 md:gap-4">
-        <div className="flex flex-nowrap items-center gap-2 md:gap-3">
-          <button
-            type="button"
-            onClick={handlePreviousStep}
-            disabled={isFirstStep}
-            className="flex-1 min-w-[88px] rounded-full border-2 border-neutral-300 px-3 py-2 text-sm font-semibold text-neutral-800 whitespace-nowrap transition hover:border-neutral-500 focus:outline-none focus:ring-4 focus:ring-neutral-300 disabled:cursor-not-allowed disabled:border-neutral-200 disabled:text-neutral-400 md:flex-shrink-0 md:min-w-0 md:px-5 md:py-3 md:text-base"
-            title="Go back to the previous step"
-          >
-            Back
-          </button>
-          {!isLastStep && (
+        <div className="flex flex-col gap-1.5 md:gap-0">
+          <div className="flex flex-nowrap items-center gap-2 md:gap-3">
             <button
               type="button"
-              onClick={handleNextStep}
-              disabled={!isActiveStepComplete}
-              className="flex-1 min-w-[88px] rounded-full bg-neutral-900 px-3 py-2 text-sm font-semibold text-white whitespace-nowrap shadow-sm transition hover:bg-neutral-800 focus:outline-none focus:ring-4 focus:ring-neutral-400 disabled:cursor-not-allowed disabled:bg-neutral-400 md:flex-shrink-0 md:min-w-0 md:px-6 md:py-3 md:text-base"
-              title={isActiveStepComplete ? `Continue to ${WIZARD_STEPS[currentStepIndex + 1]?.title ?? 'the next step'}` : 'Complete the required fields to continue'}
+              onClick={handlePreviousStep}
+              disabled={isFirstStep}
+              className="flex-1 min-w-[88px] rounded-full border-2 border-neutral-300 px-3 py-2 text-sm font-semibold text-neutral-800 whitespace-nowrap transition hover:border-neutral-500 focus:outline-none focus:ring-4 focus:ring-neutral-300 disabled:cursor-not-allowed disabled:border-neutral-200 disabled:text-neutral-400 md:flex-shrink-0 md:min-w-0 md:px-5 md:py-3 md:text-base"
+              title="Go back to the previous step"
             >
-              <span className="md:hidden">Next</span>
-              <span className="hidden md:inline">{nextStepLabel}</span>
+              Back
             </button>
+            {!isLastStep && (
+              <button
+                type="button"
+                onClick={handleNextStep}
+                disabled={!isActiveStepComplete}
+                className="flex-1 min-w-[88px] rounded-full bg-neutral-900 px-3 py-2 text-sm font-semibold text-white whitespace-nowrap shadow-sm transition hover:bg-neutral-800 focus:outline-none focus:ring-4 focus:ring-neutral-400 disabled:cursor-not-allowed disabled:bg-neutral-400 md:flex-shrink-0 md:min-w-0 md:px-6 md:py-3 md:text-base"
+                title={isActiveStepComplete ? `Continue to ${WIZARD_STEPS[currentStepIndex + 1]?.title ?? 'the next step'}` : 'Complete the required fields to continue'}
+              >
+                <span className="md:hidden">Next</span>
+                <span className="hidden md:inline">{nextStepLabel}</span>
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={handleReset}
+              className="flex-1 min-w-[88px] rounded-full border-2 border-neutral-300 px-3 py-2 text-sm font-semibold text-neutral-700 whitespace-nowrap transition hover:border-neutral-500 hover:text-neutral-900 focus:outline-none focus:ring-4 focus:ring-neutral-300 md:flex-shrink-0 md:min-w-0 md:px-6 md:py-3 md:text-base"
+              title="Clear all fields and start over"
+            >
+              Reset All
+            </button>
+          </div>
+          {!isLastStep && (
+            <p className="text-center text-xs text-neutral-500 md:hidden">
+              Next: {WIZARD_STEPS[currentStepIndex + 1]?.title ?? 'next step'}
+            </p>
           )}
-          <button
-            type="button"
-            onClick={handleReset}
-            className="flex-1 min-w-[88px] rounded-full border-2 border-neutral-300 px-3 py-2 text-sm font-semibold text-neutral-700 whitespace-nowrap transition hover:border-neutral-500 hover:text-neutral-900 focus:outline-none focus:ring-4 focus:ring-neutral-300 md:flex-shrink-0 md:min-w-0 md:px-6 md:py-3 md:text-base"
-            title="Clear all fields and start over"
-          >
-            Reset All
-          </button>
         </div>
         {(canPreview || previewUrl) && (
           <div className="flex flex-nowrap items-center gap-2 md:gap-3">
