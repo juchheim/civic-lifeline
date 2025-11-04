@@ -277,9 +277,10 @@ return (
               onClick={handleNextStep}
               disabled={!isActiveStepComplete}
               className="flex-1 min-w-[88px] rounded-full bg-neutral-900 px-3 py-2 text-sm font-semibold text-white whitespace-nowrap shadow-sm transition hover:bg-neutral-800 focus:outline-none focus:ring-4 focus:ring-neutral-400 disabled:cursor-not-allowed disabled:bg-neutral-400 md:flex-shrink-0 md:min-w-0 md:px-6 md:py-3 md:text-base"
-              title={isActiveStepComplete ? 'Continue to the next step' : 'Complete the required fields to continue'}
+              title={isActiveStepComplete ? `Continue to ${WIZARD_STEPS[currentStepIndex + 1]?.title ?? 'the next step'}` : 'Complete the required fields to continue'}
             >
-              {nextStepLabel}
+              <span className="md:hidden">Next</span>
+              <span className="hidden md:inline">{nextStepLabel}</span>
             </button>
           )}
           <button
