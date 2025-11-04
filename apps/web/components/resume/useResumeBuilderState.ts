@@ -770,6 +770,14 @@ export function useResumeBuilderState() {
   }, [buildSubmissionPayload, canPreview, currentStepIndex, payload, persistDraft, skillDraft, template]);
 
   const handleReset = useCallback(() => {
+    if (typeof window === 'undefined') return;
+    
+    const confirmed = window.confirm(
+      'Are you sure you want to delete everything? This cannot be undone.\n\nClick OK to clear all fields and start over, or Cancel to keep your work.'
+    );
+    
+    if (!confirmed) return;
+    
     setPayload(createDefaultPayload());
     setTemplate(DEFAULT_TEMPLATE);
     setCurrentStepIndex(0);
@@ -786,9 +794,7 @@ export function useResumeBuilderState() {
       previewWindowRef.current.close();
     }
     previewWindowRef.current = null;
-    if (typeof window !== 'undefined') {
-      window.localStorage.removeItem(STORAGE_KEY);
-    }
+    window.localStorage.removeItem(STORAGE_KEY);
   }, []);
 
   return {
