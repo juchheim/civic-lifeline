@@ -326,6 +326,7 @@ export function useResumeBuilderState() {
       if (index === currentStepIndex) return;
       if (index > currentStepIndex) return;
       persistDraft(payload, template, index);
+      setStatus(null); // Clear status messages when navigating
       setCurrentStepIndex(index);
       if (typeof window !== 'undefined') {
         window.scrollTo({ top: 0, behavior: 'smooth' });
