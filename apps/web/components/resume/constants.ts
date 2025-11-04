@@ -15,7 +15,7 @@ export const WIZARD_STEPS: Array<{ key: StepKey; title: string; description: str
   { key: 'template', title: 'Select a Template', description: '' },
   { key: 'contact', title: 'Contact info', description: 'Share how employers can reach you.' },
   { key: 'summary', title: 'Summary', description: 'Describe your strengths in a few sentences.' },
-  { key: 'skills', title: 'Skills', description: 'List the abilities you want to highlight.' },
+  { key: 'skills', title: 'Skills', description: 'List the abilities to highlight.' },
   { key: 'experience', title: 'Experience', description: 'Add past jobs and what you did.' },
   { key: 'education', title: 'Education', description: 'Show your schooling or training.' },
   { key: 'preview', title: 'Preview', description: 'Check the final resume before downloading.' },
