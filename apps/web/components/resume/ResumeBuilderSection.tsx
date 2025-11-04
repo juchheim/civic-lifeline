@@ -282,28 +282,6 @@ return (
               {nextStepLabel}
             </button>
           )}
-          {canPreview && (
-            <button
-              type="button"
-              onClick={handleGenerate}
-              disabled={isPreviewLoading}
-              className="flex-shrink-0 rounded-full bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white whitespace-nowrap shadow-sm transition hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-200 disabled:cursor-not-allowed disabled:bg-emerald-200 disabled:text-emerald-700 md:px-6 md:py-3 md:text-base"
-              aria-describedby={buttonsHelpId}
-              title="Open a PDF preview in a new tab"
-            >
-              {isPreviewLoading ? 'Opening Preview…' : 'Preview Resume'}
-            </button>
-          )}
-          {previewUrl && (
-            <a
-              href={previewUrl}
-              download={downloadFilename}
-              className="inline-flex flex-shrink-0 items-center justify-center rounded-full border-2 border-emerald-600 px-3 py-1.5 text-xs font-semibold text-emerald-700 whitespace-nowrap transition hover:border-emerald-700 hover:text-emerald-900 focus:outline-none focus:ring-4 focus:ring-emerald-200 md:px-6 md:py-3 md:text-base"
-              title="Download the generated PDF"
-            >
-              Download PDF
-            </a>
-          )}
           <button
             type="button"
             onClick={handleReset}
@@ -313,6 +291,32 @@ return (
             Reset All
           </button>
         </div>
+        {(canPreview || previewUrl) && (
+          <div className="flex flex-nowrap items-center gap-1.5 md:gap-3">
+            {canPreview && (
+              <button
+                type="button"
+                onClick={handleGenerate}
+                disabled={isPreviewLoading}
+                className="flex-shrink-0 rounded-full bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white whitespace-nowrap shadow-sm transition hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-200 disabled:cursor-not-allowed disabled:bg-emerald-200 disabled:text-emerald-700 md:px-6 md:py-3 md:text-base"
+                aria-describedby={buttonsHelpId}
+                title="Open a PDF preview in a new tab"
+              >
+                {isPreviewLoading ? 'Opening Preview…' : 'Preview Resume'}
+              </button>
+            )}
+            {previewUrl && (
+              <a
+                href={previewUrl}
+                download={downloadFilename}
+                className="inline-flex flex-shrink-0 items-center justify-center rounded-full border-2 border-emerald-600 px-3 py-1.5 text-xs font-semibold text-emerald-700 whitespace-nowrap transition hover:border-emerald-700 hover:text-emerald-900 focus:outline-none focus:ring-4 focus:ring-emerald-200 md:px-6 md:py-3 md:text-base"
+                title="Download the generated PDF"
+              >
+                Download PDF
+              </a>
+            )}
+          </div>
+        )}
         <div className="hidden text-sm text-neutral-600 md:block">
           <p id={buttonsHelpId}>
             Preview opens in a new tab. Download saves as <span className="font-mono">{downloadFilename}</span>.
