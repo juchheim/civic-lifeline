@@ -37,17 +37,6 @@ export default function MainNav() {
     };
   }, [isOpen]);
 
-  // Close menu on escape key
-  useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && isOpen) {
-        setIsOpen(false);
-      }
-    };
-    window.addEventListener("keydown", handleEscape);
-    return () => window.removeEventListener("keydown", handleEscape);
-  }, [isOpen]);
-
   return (
     <>
       {/* Desktop Navigation */}
@@ -74,7 +63,7 @@ export default function MainNav() {
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="relative z-50 flex h-10 w-10 flex-col items-center justify-center gap-1.5 rounded-lg transition hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 md:hidden"
+        className="relative z-[100] flex h-10 w-10 flex-col items-center justify-center gap-1.5 rounded-lg transition hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 md:hidden"
         aria-label={isOpen ? "Close menu" : "Open menu"}
         aria-expanded={isOpen}
       >
@@ -98,7 +87,7 @@ export default function MainNav() {
       {/* Mobile Menu Overlay */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm transition-opacity md:hidden"
+          className="fixed inset-0 z-[99] bg-black/50 backdrop-blur-sm transition-opacity md:hidden"
           onClick={() => setIsOpen(false)}
           aria-hidden="true"
         />
@@ -106,7 +95,7 @@ export default function MainNav() {
 
       {/* Mobile Menu */}
       <nav
-        className={`fixed right-0 top-0 z-50 h-full w-80 max-w-[85vw] transform bg-white shadow-2xl transition-transform duration-300 ease-out md:hidden ${
+        className={`fixed right-0 top-0 z-[100] h-full w-80 max-w-[85vw] transform bg-white shadow-2xl transition-transform duration-300 ease-out md:hidden ${
           isOpen ? "translate-x-0" : "translate-x-full"
         }`}
         aria-label="Main navigation"
@@ -165,12 +154,6 @@ export default function MainNav() {
             </ul>
           </div>
 
-          {/* Footer */}
-          <div className="border-t border-slate-200 px-6 py-4">
-            <p className="text-xs text-slate-500">
-              Press <kbd className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs">ESC</kbd> to close
-            </p>
-          </div>
         </div>
       </nav>
     </>
