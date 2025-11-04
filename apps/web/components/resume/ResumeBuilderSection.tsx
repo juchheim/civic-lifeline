@@ -222,7 +222,7 @@ return (
             style={{ width: `${progressPercent}%` }}
           />
         </div>
-        <ol className="flex flex-wrap gap-2" aria-label="Resume builder steps">
+        <ol className="flex flex-nowrap gap-1.5 md:flex-wrap md:gap-2" aria-label="Resume builder steps">
           {WIZARD_STEPS.map((step, index) => {
             const isActive = index === currentStepIndex;
             const isDone = index < currentStepIndex;
@@ -238,12 +238,13 @@ return (
                   type="button"
                   onClick={() => handleGoToStep(index)}
                   disabled={!canNavigate}
-                  className={`flex items-center gap-2 rounded-full border-2 px-4 py-2 text-sm font-semibold transition focus:outline-none focus:ring-4 focus:ring-emerald-200 disabled:border-neutral-200 disabled:text-neutral-400 ${accent}`}
+                  className={`flex items-center justify-center rounded-full border-2 transition focus:outline-none focus:ring-4 focus:ring-emerald-200 disabled:border-neutral-200 disabled:text-neutral-400 md:gap-2 md:px-4 md:py-2 ${accent} h-8 w-8 text-xs font-semibold md:h-auto md:w-auto md:text-sm`}
                   title={canNavigate ? `Go to ${step.title}` : 'Complete previous steps first'}
                   aria-current={isActive ? 'step' : undefined}
                   aria-label={`Step ${index + 1}: ${step.title}`}
                 >
-                  <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-white/20 font-bold">
+                  <span className="md:hidden">{index + 1}</span>
+                  <span className="hidden md:inline-flex md:h-6 md:w-6 md:items-center md:justify-center md:rounded-full md:bg-white/20 md:font-bold">
                     {index + 1}
                   </span>
                   <span className="hidden md:inline">{step.title}</span>
