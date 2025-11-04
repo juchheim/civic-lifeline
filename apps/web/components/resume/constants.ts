@@ -21,15 +21,12 @@ export const WIZARD_STEPS: Array<{ key: StepKey; title: string; description: str
   { key: 'preview', title: 'Preview', description: 'Check the final resume before downloading.' },
 ];
 
-export const DEFAULT_SUMMARY_TEMPLATE =
-  'Dedicated [Job Title] with [X] years supporting [Customers/Teams]. Skilled in [Top Strengths]. Ready to bring dependable service to [Target Role].';
-
 export const DEFAULT_PAYLOAD: ResumePayload = {
   name: '',
   email: '',
   phone: '',
   location: '',
-  summary: DEFAULT_SUMMARY_TEMPLATE,
+  summary: '',
   skills: [],
   experience: [],
   education: [],

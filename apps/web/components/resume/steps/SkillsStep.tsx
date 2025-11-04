@@ -24,12 +24,19 @@ export function SkillsStep({
   const handleDraftChange = (event: ChangeEvent<HTMLInputElement>) => {
     onChangeDraft(event.target.value);
   };
+  
+  const maxSkills = 20;
 
   return (
     <div className="flex flex-col gap-5">
-      <p id={skillsHelpId} className="text-lg text-neutral-600">
-        Add short phrases like Cash Handling or Teamwork. Press Enter after each skill or pick from the suggestions.
-      </p>
+      <div className="flex items-center justify-between gap-3">
+        <p id={skillsHelpId} className="text-lg text-neutral-600">
+          Type skills and press Enter. Pick from suggestions below.
+        </p>
+        <span className="text-sm font-medium text-neutral-600">
+          {skills.length} of {maxSkills}
+        </span>
+      </div>
       <div
         className={`flex flex-wrap items-center gap-2 rounded-lg border-2 px-3 py-3 ${
           skills.length ? 'border-neutral-300 bg-white' : 'border-dashed border-neutral-300 bg-neutral-50'

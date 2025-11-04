@@ -58,13 +58,9 @@ export function ExperienceStep({
         >
           Add a job
         </button>
-        <span className="text-sm text-neutral-500">
-          {experience.length
-            ? `You can add up to ${experienceLimit - experience.length} more ${
-                experience.length === experienceLimit - 1 ? 'role' : 'roles'
-              }.`
-            : 'Start with your most recent role.'}
-        </span>
+        {!experience.length && (
+          <span className="text-sm text-neutral-500">Start with your most recent role.</span>
+        )}
       </div>
       {!experience.length && (
         <div className="rounded-lg border border-dashed border-neutral-200 bg-neutral-50 p-4 text-sm text-neutral-600">
@@ -115,7 +111,16 @@ export function ExperienceStep({
                     className="rounded border border-neutral-300 px-3 py-2 text-base focus:border-emerald-600 focus:outline-none focus:ring-4 focus:ring-emerald-200"
                     value={entry.title ?? ''}
                     onChange={event => onUpdateExperienceField(index, 'title', event.target.value)}
-                    placeholder="Shift Lead"
+                    onBlur={event => {
+                      const capitalized = event.target.value
+                        .trim()
+                        .split(' ')
+                        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                        .join(' ');
+                      onUpdateExperienceField(index, 'title', capitalized);
+                    }}
+                    placeholder="Cashier"
+                    autoCapitalize="words"
                   />
                 </label>
                 <label className="flex flex-col gap-2">
@@ -124,7 +129,16 @@ export function ExperienceStep({
                     className="rounded border border-neutral-300 px-3 py-2 text-base focus:border-emerald-600 focus:outline-none focus:ring-4 focus:ring-emerald-200"
                     value={entry.company ?? ''}
                     onChange={event => onUpdateExperienceField(index, 'company', event.target.value)}
-                    placeholder="Riverfront Grocery"
+                    onBlur={event => {
+                      const capitalized = event.target.value
+                        .trim()
+                        .split(' ')
+                        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                        .join(' ');
+                      onUpdateExperienceField(index, 'company', capitalized);
+                    }}
+                    placeholder="Walmart"
+                    autoCapitalize="words"
                   />
                 </label>
                 <div className="flex flex-col gap-2">
@@ -198,15 +212,21 @@ export function ExperienceStep({
                 </div>
               </div>
               <label className="mt-4 flex flex-col gap-2">
-                <span className="text-xs font-semibold uppercase tracking-wide text-neutral-600">Key contributions</span>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-neutral-600">What you did</span>
+                  <span className="text-xs text-neutral-500">
+                    {(bulletsInputs[index] ?? '').split('\n').filter(line => line.trim()).length} tasks (up to 8)
+                  </span>
+                </div>
                 <textarea
                   className="min-h-[140px] rounded border border-neutral-300 px-3 py-2 text-base focus:border-emerald-600 focus:outline-none focus:ring-4 focus:ring-emerald-200"
                   value={bulletsInputs[index] ?? ''}
                   onChange={event => onUpdateExperienceField(index, 'bullets', event.target.value)}
-                  placeholder={'Handled 50+ customer purchases each shift\nTrained two new team members'}
+                  placeholder={'Served customers at checkout\nRestocked shelves\nCleaned work area'}
+                  spellCheck="true"
                 />
                 <span className="text-xs text-neutral-500">
-                  Use short sentences starting with action verbs. One idea per line.
+                  One task per line. Start each line with a verb: Served, Helped, Managed, Trained.
                 </span>
               </label>
             </div>

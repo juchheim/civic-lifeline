@@ -33,13 +33,9 @@ export function EducationStep({
         >
           Add education
         </button>
-        <span className="text-sm text-neutral-500">
-          {education.length
-            ? `You can add ${educationLimit - education.length} more ${
-                education.length === educationLimit - 1 ? 'entry' : 'entries'
-              }.`
-            : 'Include diplomas, certificates, or relevant coursework.'}
-        </span>
+        {!education.length && (
+          <span className="text-sm text-neutral-500">Include diplomas, certificates, or relevant coursework.</span>
+        )}
       </div>
       {!education.length && (
         <div className="rounded-lg border border-dashed border-neutral-200 bg-neutral-50 p-4 text-sm text-neutral-600">
@@ -82,34 +78,56 @@ export function EducationStep({
             </div>
             <div className="mt-4 grid gap-4 md:grid-cols-2">
               <label className="flex flex-col gap-2">
-                <span className="text-xs font-semibold uppercase tracking-wide text-neutral-600">Degree or program</span>
+                <span className="text-xs font-semibold uppercase tracking-wide text-neutral-600">Type</span>
                 <input
                   type="text"
                   className="rounded border border-neutral-300 px-3 py-2 text-base focus:border-emerald-600 focus:outline-none focus:ring-4 focus:ring-emerald-200"
                   value={entry.degree ?? ''}
                   onChange={event => onUpdateEducationField(index, 'degree', event.target.value)}
+                  onBlur={event => {
+                    const capitalized = event.target.value
+                      .trim()
+                      .split(' ')
+                      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                      .join(' ');
+                    onUpdateEducationField(index, 'degree', capitalized);
+                  }}
                   placeholder="High School Diploma"
+                  autoCapitalize="words"
                 />
+                <span className="text-xs text-neutral-500">Example: GED, CPR Certificate, Food Handler Permit</span>
               </label>
               <label className="flex flex-col gap-2">
-                <span className="text-xs font-semibold uppercase tracking-wide text-neutral-600">School</span>
+                <span className="text-xs font-semibold uppercase tracking-wide text-neutral-600">School name</span>
                 <input
                   type="text"
                   className="rounded border border-neutral-300 px-3 py-2 text-base focus:border-emerald-600 focus:outline-none focus:ring-4 focus:ring-emerald-200"
                   value={entry.school ?? ''}
                   onChange={event => onUpdateEducationField(index, 'school', event.target.value)}
+                  onBlur={event => {
+                    const capitalized = event.target.value
+                      .trim()
+                      .split(' ')
+                      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                      .join(' ');
+                    onUpdateEducationField(index, 'school', capitalized);
+                  }}
                   placeholder="Greenwood High School"
+                  autoCapitalize="words"
                 />
               </label>
               <label className="flex flex-col gap-2">
                 <span className="text-xs font-semibold uppercase tracking-wide text-neutral-600">
-                  Graduation year (optional)
+                  Year finished (if done)
                 </span>
                 <input
+                  type="number"
                   className="rounded border border-neutral-300 px-3 py-2 text-base focus:border-emerald-600 focus:outline-none focus:ring-4 focus:ring-emerald-200"
                   value={entry.graduationYear ?? ''}
                   onChange={event => onUpdateEducationField(index, 'graduationYear', event.target.value)}
                   placeholder="2022"
+                  min="1950"
+                  max="2030"
                 />
               </label>
             </div>

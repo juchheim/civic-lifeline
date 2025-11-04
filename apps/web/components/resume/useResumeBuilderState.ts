@@ -9,7 +9,6 @@ import { TEMPLATES, type TemplateName } from '@/resume/shared/templates';
 
 import {
   createDefaultPayload,
-  DEFAULT_SUMMARY_TEMPLATE,
   DEFAULT_TEMPLATE,
   EDUCATION_LIMIT,
   EXPERIENCE_LIMIT,
@@ -130,7 +129,7 @@ export function useResumeBuilderState() {
         normalized.phone = formatPhoneNumber(normalized.phone);
       }
       if (!normalized.summary) {
-        normalized.summary = DEFAULT_SUMMARY_TEMPLATE;
+        normalized.summary = '';
       }
 
       setPayload(normalized);
@@ -192,7 +191,6 @@ export function useResumeBuilderState() {
   const summaryComplete = useMemo(() => {
     const summary = (payload.summary ?? '').trim();
     if (summary.length < SUMMARY_MIN_CHARS) return false;
-    if (summary === DEFAULT_SUMMARY_TEMPLATE.trim()) return false;
     return true;
   }, [payload.summary]);
 

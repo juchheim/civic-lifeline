@@ -3,9 +3,10 @@ import { WIZARD_STEPS, type StepKey } from '../constants';
 type PreviewStepProps = {
   stepCompletion: Record<StepKey, boolean>;
   previewUrl: string | null;
+  onGoToStep: (stepIndex: number) => void;
 };
 
-export function PreviewStep({ stepCompletion, previewUrl }: PreviewStepProps) {
+export function PreviewStep({ stepCompletion, previewUrl, onGoToStep }: PreviewStepProps) {
   return (
     <div className="flex flex-col gap-6">
       <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-4">
@@ -14,27 +15,30 @@ export function PreviewStep({ stepCompletion, previewUrl }: PreviewStepProps) {
         </p>
       </div>
       <ul className="flex flex-col gap-3">
-        {WIZARD_STEPS.slice(0, -1).map(step => {
+        {WIZARD_STEPS.slice(0, -1).map((step, index) => {
           if (step.key === 'preview') return null;
           const isComplete = stepCompletion[step.key];
           return (
-            <li
-              key={step.key}
-              className={`flex items-center justify-between rounded-lg border px-4 py-3 ${
-                isComplete ? 'border-emerald-500 bg-emerald-50 text-emerald-900' : 'border-neutral-200 bg-white text-neutral-700'
-              }`}
-            >
-              <div>
-                <span className="text-base font-semibold">{step.title}</span>
-                <p className="text-sm">{step.description}</p>
-              </div>
-              <span
-                className={`rounded-full px-3 py-1 text-sm font-semibold ${
-                  isComplete ? 'bg-emerald-600 text-white' : 'bg-neutral-200 text-neutral-600'
+            <li key={step.key}>
+              <button
+                type="button"
+                onClick={() => onGoToStep(index)}
+                className={`w-full flex items-center justify-between rounded-lg border px-4 py-3 text-left transition hover:shadow-sm focus:outline-none focus:ring-4 focus:ring-emerald-200 ${
+                  isComplete ? 'border-emerald-500 bg-emerald-50 text-emerald-900' : 'border-neutral-200 bg-white text-neutral-700'
                 }`}
               >
-                {isComplete ? 'Ready' : 'Needs attention'}
-              </span>
+                <div>
+                  <span className="text-base font-semibold">{step.title}</span>
+                  <p className="text-sm">{step.description}</p>
+                </div>
+                <span
+                  className={`rounded-full px-3 py-1 text-sm font-semibold ${
+                    isComplete ? 'bg-emerald-600 text-white' : 'bg-neutral-200 text-neutral-600'
+                  }`}
+                >
+                  {isComplete ? 'Ready' : 'Needs attention'}
+                </span>
+              </button>
             </li>
           );
         })}

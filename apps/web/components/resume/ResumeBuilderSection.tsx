@@ -160,7 +160,7 @@ export function ResumeBuilderSection() {
           />
         );
       case 'preview':
-        return <PreviewStep stepCompletion={stepCompletion} previewUrl={previewUrl} />;
+        return <PreviewStep stepCompletion={stepCompletion} previewUrl={previewUrl} onGoToStep={handleGoToStep} />;
       default:
         return null;
     }

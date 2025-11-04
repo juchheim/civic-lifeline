@@ -29,7 +29,7 @@ export function formatPhoneNumber(value: string | undefined): string {
 
 export function normalizeSkillLabel(label: string): string {
   const collapsed = label.replace(/\s+/g, ' ').trim();
-  if (!collapsed) return '';
+  if (!collapsed || collapsed.length > 50) return '';
 
   return collapsed
     .split(' ')

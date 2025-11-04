@@ -2,7 +2,6 @@ import { useMemo } from 'react';
 
 import { diffWords } from '@/lib/resume/utils/diff';
 
-import { DEFAULT_SUMMARY_TEMPLATE } from '../constants';
 
 type SummaryStatus = { kind: 'success' | 'error'; message: string } | null;
 
@@ -35,12 +34,19 @@ export function SummaryStep({
   onAcceptSuggestion,
   onKeepOriginal,
 }: SummaryStepProps) {
+  const charCount = summary.length;
+  const minChars = 12;
+  const maxChars = 800;
+  
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
+        <div className="flex-1">
           <p id={summaryHelpId} className="text-lg text-neutral-600">
-            Use this space to tell employers what you bring to the job. Replace the bracketed phrases with your details.
+            Use this space to tell employers what you bring to the job.
+          </p>
+          <p className="mt-2 text-sm text-neutral-500">
+            Example: Store clerk with 2 years helping customers. Skilled in cash handling and restocking. Looking for full-time retail work.
           </p>
         </div>
         <button
@@ -53,19 +59,29 @@ export function SummaryStep({
           {isSummaryRewriting ? 'Rewriting…' : 'Rewrite with AI'}
         </button>
       </div>
-      <textarea
-        className="h-48 w-full rounded-lg border-2 border-neutral-300 px-4 py-3 text-base text-neutral-900 shadow-sm transition focus:border-emerald-600 focus:outline-none focus:ring-4 focus:ring-emerald-200"
-        value={summary}
-        onChange={event => {
-          onClearFeedback();
-          onChangeSummary(event.target.value);
-        }}
-        placeholder={DEFAULT_SUMMARY_TEMPLATE}
-        aria-busy={isSummaryRewriting}
-        aria-describedby={summaryHelpId}
-        maxLength={800}
-        title="Write 2-3 sentences about your experience"
-      />
+      <div className="relative">
+        <textarea
+          className="h-48 w-full rounded-lg border-2 border-neutral-300 px-4 py-3 text-base text-neutral-900 shadow-sm transition focus:border-emerald-600 focus:outline-none focus:ring-4 focus:ring-emerald-200"
+          value={summary}
+          onChange={event => {
+            onClearFeedback();
+            onChangeSummary(event.target.value);
+          }}
+          placeholder=""
+          aria-busy={isSummaryRewriting}
+          aria-describedby={summaryHelpId}
+          maxLength={maxChars}
+          title="Write 2-3 sentences about your experience"
+          spellCheck="true"
+        />
+        <div className="mt-1 text-xs text-neutral-500">
+          {charCount < minChars ? (
+            <span className="text-amber-600">{charCount} characters (need {minChars - charCount} more)</span>
+          ) : (
+            <span>{charCount} of {maxChars}</span>
+          )}
+        </div>
+      </div>
       {summaryStatus && (
         <span
           className={`text-sm ${summaryStatus.kind === 'error' ? 'text-red-600' : 'text-neutral-700'}`}
@@ -75,8 +91,8 @@ export function SummaryStep({
           {summaryStatus.message}
         </span>
       )}
-      <p className="text-sm text-neutral-500">
-        Tip: Mention how many years you have worked, the skills you rely on, and the type of job you want next.
+      <p className="text-xs text-neutral-500">
+        Write 2-3 sentences. Don&apos;t use &quot;I&quot; or &quot;my&quot;. Start sentences with your job or skill.
       </p>
       {comparison && (
         <SummaryReview

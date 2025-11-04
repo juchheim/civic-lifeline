@@ -24,7 +24,7 @@ export function TemplateStep({ selectedTemplate, onSelectTemplate }: TemplateSte
   return (
     <div className="flex flex-col gap-6">
       <p className="text-lg text-neutral-600">
-        Each template keeps your information the same. Choose the look that fits the job you want.
+        Choose the look that fits the job you want.
       </p>
       <div role="radiogroup" aria-label="Resume template" className="grid gap-4 md:grid-cols-3">
         {TEMPLATES.map(option => {
