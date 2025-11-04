@@ -177,16 +177,29 @@ export function useResumeBuilderState() {
     return () => window.clearTimeout(timer);
   }, [payload, template, currentStepIndex, persistDraft]);
 
-  const hasRequiredContact = useMemo(
-    () =>
-      Boolean(
-        payload.name.trim() &&
-          payload.email.trim() &&
-          (payload.phone ?? '').trim() &&
-          (payload.location ?? '').trim(),
-      ),
-    [payload],
-  );
+  const hasRequiredContact = useMemo(() => {
+    const name = payload.name.trim();
+    const email = payload.email.trim();
+    const phone = (payload.phone ?? '').trim();
+    const location = (payload.location ?? '').trim();
+    
+    // Check all fields are present
+    if (!name || !email || !phone || !location) return false;
+    
+    // Check minimum lengths
+    if (name.length < 2) return false;
+    if (location.length < 2) return false;
+    
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) return false;
+    
+    // Validate phone has enough digits
+    const phoneDigits = phone.replace(/\D/g, '');
+    if (phoneDigits.length < 7) return false;
+    
+    return true;
+  }, [payload]);
 
   const summaryComplete = useMemo(() => {
     const summary = (payload.summary ?? '').trim();

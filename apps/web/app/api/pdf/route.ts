@@ -34,9 +34,43 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     payload = ResumeSchema.parse(body);
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Invalid payload';
+    let message = 'Some required information is missing or invalid.';
+    
+    // Parse Zod errors into friendly messages
+    if (error && typeof error === 'object' && 'issues' in error) {
+      const issues = (error as any).issues as Array<{ path: string[]; message: string; code: string }>;
+      const friendlyErrors: string[] = [];
+      
+      for (const issue of issues) {
+        const field = issue.path[0];
+        switch (field) {
+          case 'name':
+            friendlyErrors.push('Please enter your full name (at least 2 letters).');
+            break;
+          case 'email':
+            friendlyErrors.push('Please enter a valid email address like name@email.com');
+            break;
+          case 'phone':
+            friendlyErrors.push('Please enter a phone number with at least 7 digits.');
+            break;
+          case 'location':
+            friendlyErrors.push('Please enter your city and state.');
+            break;
+          case 'summary':
+            friendlyErrors.push('Please keep your summary under 800 characters.');
+            break;
+          default:
+            friendlyErrors.push(issue.message);
+        }
+      }
+      
+      if (friendlyErrors.length > 0) {
+        message = friendlyErrors.join(' ');
+      }
+    }
+    
     logRequest({ reqId, template, startedAt, level: 'warn', error });
-    return NextResponse.json({ error: 'Validation failed', details: message }, { status: 400, headers });
+    return NextResponse.json({ error: 'Please fix the following', details: message }, { status: 400, headers });
   }
 
   try {
