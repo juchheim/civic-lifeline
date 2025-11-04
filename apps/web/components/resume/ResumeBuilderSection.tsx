@@ -182,8 +182,8 @@ return (
     id="resume-builder"
     className="mt-4 flex flex-col gap-6 rounded-2xl border border-neutral-200 bg-white p-6 shadow-lg"
   >
-    <header className={`flex flex-col gap-6 ${!isFirstStep ? 'hidden md:flex' : ''}`}>
-      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+    <header className="flex flex-col gap-6">
+      <div className={`flex flex-col gap-4 md:flex-row md:items-start md:justify-between ${!isFirstStep ? 'hidden md:flex' : ''}`}>
         <div className="max-w-2xl">
           <h2 className="text-3xl font-bold text-neutral-900">Build Your Resume</h2>
           <p className="mt-1 text-base text-neutral-600">
