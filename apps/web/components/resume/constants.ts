@@ -2,7 +2,7 @@ import type { ResumePayload } from '@/lib/resume/types';
 import type { TemplateName } from '@/resume/shared/templates';
 
 export const STORAGE_KEY = 'resume.draft';
-export const STORAGE_VERSION = 2;
+export const STORAGE_VERSION = 3;
 export const EXPERIENCE_LIMIT = 20;
 export const EDUCATION_LIMIT = 10;
 export const MAX_BULLETS = 8;
@@ -25,7 +25,8 @@ export const DEFAULT_PAYLOAD: ResumePayload = {
   name: '',
   email: '',
   phone: '',
-  location: '',
+  city: '',
+  state: '',
   summary: '',
   skills: [],
   experience: [],

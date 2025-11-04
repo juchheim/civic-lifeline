@@ -54,9 +54,15 @@ export async function POST(request: NextRequest) {
             case 'phone':
               friendlyErrors.push('Please enter a phone number with at least 7 digits.');
               break;
-            case 'location':
-              friendlyErrors.push('Please enter your city and state.');
-              break;
+          case 'city':
+            friendlyErrors.push('Please enter your city.');
+            break;
+          case 'state':
+            friendlyErrors.push('Please select your state.');
+            break;
+          case 'location':
+            friendlyErrors.push('Please enter your city and state.');
+            break;
             case 'summary':
               friendlyErrors.push('Please keep your summary under 800 characters.');
               break;

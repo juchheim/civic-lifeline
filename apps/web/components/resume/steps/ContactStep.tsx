@@ -12,8 +12,62 @@ export type ContactErrors = {
   name?: string;
   email?: string;
   phone?: string;
-  location?: string;
+  city?: string;
+  state?: string;
 };
+
+const US_STATES = [
+  { code: 'AL', name: 'Alabama' },
+  { code: 'AK', name: 'Alaska' },
+  { code: 'AZ', name: 'Arizona' },
+  { code: 'AR', name: 'Arkansas' },
+  { code: 'CA', name: 'California' },
+  { code: 'CO', name: 'Colorado' },
+  { code: 'CT', name: 'Connecticut' },
+  { code: 'DE', name: 'Delaware' },
+  { code: 'FL', name: 'Florida' },
+  { code: 'GA', name: 'Georgia' },
+  { code: 'HI', name: 'Hawaii' },
+  { code: 'ID', name: 'Idaho' },
+  { code: 'IL', name: 'Illinois' },
+  { code: 'IN', name: 'Indiana' },
+  { code: 'IA', name: 'Iowa' },
+  { code: 'KS', name: 'Kansas' },
+  { code: 'KY', name: 'Kentucky' },
+  { code: 'LA', name: 'Louisiana' },
+  { code: 'ME', name: 'Maine' },
+  { code: 'MD', name: 'Maryland' },
+  { code: 'MA', name: 'Massachusetts' },
+  { code: 'MI', name: 'Michigan' },
+  { code: 'MN', name: 'Minnesota' },
+  { code: 'MS', name: 'Mississippi' },
+  { code: 'MO', name: 'Missouri' },
+  { code: 'MT', name: 'Montana' },
+  { code: 'NE', name: 'Nebraska' },
+  { code: 'NV', name: 'Nevada' },
+  { code: 'NH', name: 'New Hampshire' },
+  { code: 'NJ', name: 'New Jersey' },
+  { code: 'NM', name: 'New Mexico' },
+  { code: 'NY', name: 'New York' },
+  { code: 'NC', name: 'North Carolina' },
+  { code: 'ND', name: 'North Dakota' },
+  { code: 'OH', name: 'Ohio' },
+  { code: 'OK', name: 'Oklahoma' },
+  { code: 'OR', name: 'Oregon' },
+  { code: 'PA', name: 'Pennsylvania' },
+  { code: 'RI', name: 'Rhode Island' },
+  { code: 'SC', name: 'South Carolina' },
+  { code: 'SD', name: 'South Dakota' },
+  { code: 'TN', name: 'Tennessee' },
+  { code: 'TX', name: 'Texas' },
+  { code: 'UT', name: 'Utah' },
+  { code: 'VT', name: 'Vermont' },
+  { code: 'VA', name: 'Virginia' },
+  { code: 'WA', name: 'Washington' },
+  { code: 'WV', name: 'West Virginia' },
+  { code: 'WI', name: 'Wisconsin' },
+  { code: 'WY', name: 'Wyoming' },
+] as const;
 
 function validateEmail(email: string): boolean {
   if (!email.trim()) return false;
@@ -58,11 +112,18 @@ export function ContactStep({ payload, setPayload, contactHelpId }: ContactStepP
           error = 'Phone number must have at least 7 digits.';
         }
         break;
-      case 'location':
+      case 'city':
         if (!value.trim()) {
-          error = 'Please enter your city and state.';
+          error = 'Please enter your city.';
         } else if (value.trim().length < 2) {
-          error = 'Location must be at least 2 letters.';
+          error = 'City must be at least 2 letters.';
+        }
+        break;
+      case 'state':
+        if (!value.trim()) {
+          error = 'Please select your state.';
+        } else if (value.length !== 2) {
+          error = 'Please select a state from the list.';
         }
         break;
     }
@@ -195,44 +256,79 @@ export function ContactStep({ payload, setPayload, contactHelpId }: ContactStepP
         </label>
         <label className="flex flex-col gap-2" title="Required field">
           <span className="text-sm font-semibold uppercase tracking-wide text-neutral-900">
-            City &amp; State{' '}
+            City{' '}
             <abbr title="Required" className="text-lg text-red-600 no-underline">
               *
             </abbr>
           </span>
           <input
             className={`rounded-lg border-2 px-4 py-3 text-base text-neutral-900 shadow-sm transition focus:outline-none focus:ring-4 ${
-              touchedFields.has('location') && errors.location
+              touchedFields.has('city') && errors.city
                 ? 'border-red-500 focus:border-red-500 focus:ring-red-200'
                 : 'border-neutral-300 focus:border-emerald-600 focus:ring-emerald-200'
             }`}
-            value={payload.location ?? ''}
+            value={payload.city ?? ''}
             onChange={event => {
-              setPayload(prev => ({ ...prev, location: event.target.value }));
-              if (touchedFields.has('location')) {
-                validateField('location', event.target.value);
+              setPayload(prev => ({ ...prev, city: event.target.value }));
+              if (touchedFields.has('city')) {
+                validateField('city', event.target.value);
               }
             }}
             onBlur={() => {
-              const capitalized = (payload.location ?? '')
+              const capitalized = (payload.city ?? '')
                 .trim()
                 .split(' ')
                 .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
                 .join(' ');
-              setPayload(prev => ({ ...prev, location: capitalized }));
-              handleBlur('location', capitalized);
+              setPayload(prev => ({ ...prev, city: capitalized }));
+              handleBlur('city', capitalized);
             }}
-            placeholder="Jackson, MS"
+            placeholder="Jackson"
             autoComplete="address-level2"
             autoCapitalize="words"
             aria-describedby={contactHelpId}
-            aria-invalid={touchedFields.has('location') && !!errors.location}
+            aria-invalid={touchedFields.has('city') && !!errors.city}
             required
           />
-          {touchedFields.has('location') && errors.location ? (
-            <span className="text-sm text-red-600" role="alert">{errors.location}</span>
-          ) : (
-            <span className="text-sm text-neutral-500">City and state. Example: Jackson, MS</span>
+          {touchedFields.has('city') && errors.city && (
+            <span className="text-sm text-red-600" role="alert">{errors.city}</span>
+          )}
+        </label>
+        <label className="flex flex-col gap-2" title="Required field">
+          <span className="text-sm font-semibold uppercase tracking-wide text-neutral-900">
+            State{' '}
+            <abbr title="Required" className="text-lg text-red-600 no-underline">
+              *
+            </abbr>
+          </span>
+          <select
+            className={`rounded-lg border-2 px-4 py-3 text-base text-neutral-900 shadow-sm transition focus:outline-none focus:ring-4 ${
+              touchedFields.has('state') && errors.state
+                ? 'border-red-500 focus:border-red-500 focus:ring-red-200'
+                : 'border-neutral-300 focus:border-emerald-600 focus:ring-emerald-200'
+            }`}
+            value={payload.state ?? ''}
+            onChange={event => {
+              const value = event.target.value;
+              setPayload(prev => ({ ...prev, state: value }));
+              if (touchedFields.has('state')) {
+                validateField('state', value);
+              }
+            }}
+            onBlur={() => handleBlur('state', payload.state ?? '')}
+            aria-describedby={contactHelpId}
+            aria-invalid={touchedFields.has('state') && !!errors.state}
+            required
+          >
+            <option value="">Select a state</option>
+            {US_STATES.map(state => (
+              <option key={state.code} value={state.code}>
+                {state.name}
+              </option>
+            ))}
+          </select>
+          {touchedFields.has('state') && errors.state && (
+            <span className="text-sm text-red-600" role="alert">{errors.state}</span>
           )}
         </label>
       </div>

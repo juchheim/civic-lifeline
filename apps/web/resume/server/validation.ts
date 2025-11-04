@@ -10,12 +10,15 @@ const TimelineString = z
     { message: 'Use YYYY, YYYY-MM, YYYY-MM-DD, or "present".' },
   );
 
-export const ResumeSchema = z.object({
-  name: z.string().min(2),
-  email: z.string().email(),
-  phone: z.string().min(7),
-  location: z.string().min(2),
-  summary: z.string().max(800).optional().or(z.literal('')),
+export const ResumeSchema = z
+  .object({
+    name: z.string().min(2),
+    email: z.string().email(),
+    phone: z.string().min(7),
+    city: z.string().min(1).optional(),
+    state: z.string().length(2).optional(),
+    location: z.string().min(2).optional(),
+    summary: z.string().max(800).optional().or(z.literal('')),
   skills: z.array(z.string()).max(50).optional().or(z.array(z.string()).length(0)),
   experience: z
     .array(
@@ -49,6 +52,24 @@ export const ResumeSchema = z.object({
     )
     .max(10)
     .optional(),
-});
+  })
+  .refine(
+    data => {
+      // Either location is provided, or both city and state are provided
+      if (data.location) return true;
+      if (data.city && data.state) return true;
+      return false;
+    },
+    {
+      message: 'Either location or both city and state must be provided.',
+    },
+  )
+  .transform(data => {
+    // If location is not provided, combine city and state
+    if (!data.location && data.city && data.state) {
+      return { ...data, location: `${data.city}, ${data.state.toUpperCase()}` };
+    }
+    return data;
+  });
 
 export type ResumePayload = z.infer<typeof ResumeSchema>;

@@ -131,6 +131,17 @@ export function useResumeBuilderState() {
       if (!normalized.summary) {
         normalized.summary = '';
       }
+      
+      // Migrate old location format to city/state
+      if ((normalized.location && !normalized.city && !normalized.state)) {
+        const locationParts = normalized.location.split(',').map(s => s.trim());
+        if (locationParts.length >= 2) {
+          normalized.city = locationParts[0];
+          normalized.state = locationParts[1].toUpperCase().slice(0, 2);
+        } else if (locationParts.length === 1) {
+          normalized.city = locationParts[0];
+        }
+      }
 
       setPayload(normalized);
       setSkillDraft('');
@@ -181,14 +192,16 @@ export function useResumeBuilderState() {
     const name = payload.name.trim();
     const email = payload.email.trim();
     const phone = (payload.phone ?? '').trim();
-    const location = (payload.location ?? '').trim();
+    const city = (payload.city ?? '').trim();
+    const state = (payload.state ?? '').trim();
     
     // Check all fields are present
-    if (!name || !email || !phone || !location) return false;
+    if (!name || !email || !phone || !city || !state) return false;
     
     // Check minimum lengths
     if (name.length < 2) return false;
-    if (location.length < 2) return false;
+    if (city.length < 2) return false;
+    if (state.length !== 2) return false;
     
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -614,7 +627,9 @@ export function useResumeBuilderState() {
       const name = draft.name.trim();
       const email = draft.email.trim();
       const phone = formatPhoneNumber(draft.phone ?? '');
-      const location = draft.location?.trim() ?? '';
+      const city = (draft.city ?? '').trim();
+      const state = (draft.state ?? '').trim().toUpperCase();
+      const location = city && state ? `${city}, ${state}` : '';
       const summary = draft.summary?.trim();
 
       const normalizedSkillsInput = (draft.skills ?? []).map(skill => normalizeSkillLabel(skill)).filter(Boolean);
@@ -668,6 +683,8 @@ export function useResumeBuilderState() {
         name,
         email,
         phone,
+        city,
+        state,
         location,
         summary: summary || '',
         skills,
