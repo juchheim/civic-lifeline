@@ -266,7 +266,7 @@ return (
             type="button"
             onClick={handlePreviousStep}
             disabled={isFirstStep}
-            className="flex-1 min-w-0 rounded-full border-2 border-neutral-300 px-3 py-2 text-sm font-semibold text-neutral-800 whitespace-nowrap transition hover:border-neutral-500 focus:outline-none focus:ring-4 focus:ring-neutral-300 disabled:cursor-not-allowed disabled:border-neutral-200 disabled:text-neutral-400 md:flex-shrink-0 md:px-5 md:py-3 md:text-base"
+            className="flex-1 min-w-[88px] rounded-full border-2 border-neutral-300 px-3 py-2 text-sm font-semibold text-neutral-800 whitespace-nowrap transition hover:border-neutral-500 focus:outline-none focus:ring-4 focus:ring-neutral-300 disabled:cursor-not-allowed disabled:border-neutral-200 disabled:text-neutral-400 md:flex-shrink-0 md:min-w-0 md:px-5 md:py-3 md:text-base"
             title="Go back to the previous step"
           >
             Back
@@ -276,7 +276,7 @@ return (
               type="button"
               onClick={handleNextStep}
               disabled={!isActiveStepComplete}
-              className="flex-1 min-w-0 rounded-full bg-neutral-900 px-3 py-2 text-sm font-semibold text-white whitespace-nowrap shadow-sm transition hover:bg-neutral-800 focus:outline-none focus:ring-4 focus:ring-neutral-400 disabled:cursor-not-allowed disabled:bg-neutral-400 md:flex-shrink-0 md:px-6 md:py-3 md:text-base"
+              className="flex-1 min-w-[88px] rounded-full bg-neutral-900 px-3 py-2 text-sm font-semibold text-white whitespace-nowrap shadow-sm transition hover:bg-neutral-800 focus:outline-none focus:ring-4 focus:ring-neutral-400 disabled:cursor-not-allowed disabled:bg-neutral-400 md:flex-shrink-0 md:min-w-0 md:px-6 md:py-3 md:text-base"
               title={isActiveStepComplete ? 'Continue to the next step' : 'Complete the required fields to continue'}
             >
               {nextStepLabel}
@@ -285,7 +285,7 @@ return (
           <button
             type="button"
             onClick={handleReset}
-            className="flex-1 min-w-0 rounded-full border-2 border-neutral-300 px-3 py-2 text-sm font-semibold text-neutral-700 whitespace-nowrap transition hover:border-neutral-500 hover:text-neutral-900 focus:outline-none focus:ring-4 focus:ring-neutral-300 md:flex-shrink-0 md:px-6 md:py-3 md:text-base"
+            className="flex-1 min-w-[88px] rounded-full border-2 border-neutral-300 px-3 py-2 text-sm font-semibold text-neutral-700 whitespace-nowrap transition hover:border-neutral-500 hover:text-neutral-900 focus:outline-none focus:ring-4 focus:ring-neutral-300 md:flex-shrink-0 md:min-w-0 md:px-6 md:py-3 md:text-base"
             title="Clear all fields and start over"
           >
             Reset All
