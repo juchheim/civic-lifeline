@@ -15,16 +15,33 @@ const LAUNCH_ARGS = [
 ] as const;
 
 async function launchBrowser() {
+  const isProduction = process.env.AWS_REGION || process.env.VERCEL;
+  
   // Set chromium font config for serverless environment
-  if (process.env.AWS_REGION || process.env.VERCEL) {
+  if (isProduction) {
     chromium.setGraphicsMode = false;
   }
 
-  const browser = await puppeteer.launch({
-    args: [...chromium.args, ...LAUNCH_ARGS],
-    executablePath: await chromium.executablePath(),
-    headless: true,
-  });
+  // In local development, use system Chrome
+  // In production (Vercel/Lambda), use @sparticuz/chromium
+  const launchOptions = isProduction
+    ? {
+        args: [...chromium.args, ...LAUNCH_ARGS],
+        executablePath: await chromium.executablePath(),
+        headless: true,
+      }
+    : {
+        args: [...LAUNCH_ARGS],
+        executablePath:
+          process.platform === 'darwin'
+            ? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
+            : process.platform === 'win32'
+              ? 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'
+              : '/usr/bin/google-chrome-stable', // Linux
+        headless: true,
+      };
+
+  const browser = await puppeteer.launch(launchOptions);
   const close = async () => {
     try {
       await browser.close();

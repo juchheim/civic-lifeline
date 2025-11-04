@@ -1,4 +1,4 @@
 {
-  "/_not-found/page": "app/_not-found/page.js",
+  "/api/pdf/route": "app/api/pdf/route.js",
   "/resume/page": "app/resume/page.js"
 }
