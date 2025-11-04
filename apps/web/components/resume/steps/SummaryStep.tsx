@@ -40,8 +40,8 @@ export function SummaryStep({
   
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="flex-1">
+      <div className="flex flex-col gap-4 md:flex-row md:flex-wrap md:items-start md:justify-between">
+        <div className="flex-1 hidden md:block">
           <p id={summaryHelpId} className="text-lg text-neutral-600">
             Use this space to tell employers what you bring to the job.
           </p>
@@ -51,7 +51,7 @@ export function SummaryStep({
         </div>
         <button
           type="button"
-          className="rounded-full bg-neutral-900 px-4 py-2 text-sm font-semibold uppercase tracking-wide text-white transition hover:bg-neutral-800 focus:outline-none focus:ring-4 focus:ring-neutral-300 disabled:cursor-not-allowed disabled:bg-neutral-400"
+          className="rounded-full bg-neutral-900 px-4 py-2 text-sm font-semibold uppercase tracking-wide text-white transition hover:bg-neutral-800 focus:outline-none focus:ring-4 focus:ring-neutral-300 disabled:cursor-not-allowed disabled:bg-neutral-400 md:flex-shrink-0"
           onClick={onRewriteSummary}
           disabled={isSummaryRewriting || !canRewriteSummary}
           title="Let the assistant polish your summary"
