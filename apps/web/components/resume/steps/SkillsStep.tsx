@@ -31,11 +31,11 @@ export function SkillsStep({
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex items-center justify-between gap-1">
         <p id={skillsHelpId} className="text-lg text-neutral-600">
-          List the abilities to highlight.
+          List your abilities.
         </p>
-        <span className="text-sm font-medium text-neutral-600">
+        <span className="text-sm font-medium text-neutral-600 whitespace-nowrap">
           {skills.length} of {maxSkills}
         </span>
       </div>
