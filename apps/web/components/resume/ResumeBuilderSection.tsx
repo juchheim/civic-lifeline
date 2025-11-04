@@ -261,12 +261,12 @@ return (
     </div>
     <nav className="sticky bottom-0 z-20 -mx-6 mt-8 border-t border-neutral-200 bg-white/95 px-4 py-3 backdrop-blur md:px-6 md:py-5">
       <div className="flex flex-col gap-2 md:gap-4">
-        <div className="flex flex-wrap items-center gap-2 md:gap-3 md:flex-nowrap">
+        <div className="flex flex-nowrap items-center gap-1.5 md:gap-3">
           <button
             type="button"
             onClick={handlePreviousStep}
             disabled={isFirstStep}
-            className="flex-shrink-0 rounded-full border-2 border-neutral-300 px-4 py-2 text-sm font-semibold text-neutral-800 whitespace-nowrap transition hover:border-neutral-500 focus:outline-none focus:ring-4 focus:ring-neutral-300 disabled:cursor-not-allowed disabled:border-neutral-200 disabled:text-neutral-400 md:px-5 md:py-3 md:text-base"
+            className="flex-shrink-0 rounded-full border-2 border-neutral-300 px-2.5 py-1.5 text-xs font-semibold text-neutral-800 whitespace-nowrap transition hover:border-neutral-500 focus:outline-none focus:ring-4 focus:ring-neutral-300 disabled:cursor-not-allowed disabled:border-neutral-200 disabled:text-neutral-400 md:px-5 md:py-3 md:text-base"
             title="Go back to the previous step"
           >
             Back
@@ -276,7 +276,7 @@ return (
               type="button"
               onClick={handleNextStep}
               disabled={!isActiveStepComplete}
-              className="flex-shrink-0 rounded-full bg-neutral-900 px-5 py-2 text-sm font-semibold text-white whitespace-nowrap shadow-sm transition hover:bg-neutral-800 focus:outline-none focus:ring-4 focus:ring-neutral-400 disabled:cursor-not-allowed disabled:bg-neutral-400 md:px-6 md:py-3 md:text-base"
+              className="flex-shrink-0 rounded-full bg-neutral-900 px-2.5 py-1.5 text-xs font-semibold text-white whitespace-nowrap shadow-sm transition hover:bg-neutral-800 focus:outline-none focus:ring-4 focus:ring-neutral-400 disabled:cursor-not-allowed disabled:bg-neutral-400 md:px-6 md:py-3 md:text-base"
               title={isActiveStepComplete ? 'Continue to the next step' : 'Complete the required fields to continue'}
             >
               {nextStepLabel}
@@ -287,7 +287,7 @@ return (
               type="button"
               onClick={handleGenerate}
               disabled={isPreviewLoading}
-              className="flex-shrink-0 rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white whitespace-nowrap shadow-sm transition hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-200 disabled:cursor-not-allowed disabled:bg-emerald-200 disabled:text-emerald-700 md:px-6 md:py-3 md:text-base"
+              className="flex-shrink-0 rounded-full bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white whitespace-nowrap shadow-sm transition hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-200 disabled:cursor-not-allowed disabled:bg-emerald-200 disabled:text-emerald-700 md:px-6 md:py-3 md:text-base"
               aria-describedby={buttonsHelpId}
               title="Open a PDF preview in a new tab"
             >
@@ -298,7 +298,7 @@ return (
             <a
               href={previewUrl}
               download={downloadFilename}
-              className="inline-flex flex-shrink-0 items-center justify-center rounded-full border-2 border-emerald-600 px-4 py-2 text-sm font-semibold text-emerald-700 whitespace-nowrap transition hover:border-emerald-700 hover:text-emerald-900 focus:outline-none focus:ring-4 focus:ring-emerald-200 md:px-6 md:py-3 md:text-base"
+              className="inline-flex flex-shrink-0 items-center justify-center rounded-full border-2 border-emerald-600 px-3 py-1.5 text-xs font-semibold text-emerald-700 whitespace-nowrap transition hover:border-emerald-700 hover:text-emerald-900 focus:outline-none focus:ring-4 focus:ring-emerald-200 md:px-6 md:py-3 md:text-base"
               title="Download the generated PDF"
             >
               Download PDF
@@ -307,7 +307,7 @@ return (
           <button
             type="button"
             onClick={handleReset}
-            className="flex-shrink-0 rounded-full border-2 border-neutral-300 px-4 py-2 text-sm font-semibold text-neutral-700 whitespace-nowrap transition hover:border-neutral-500 hover:text-neutral-900 focus:outline-none focus:ring-4 focus:ring-neutral-300 md:px-6 md:py-3 md:text-base"
+            className="flex-shrink-0 rounded-full border-2 border-neutral-300 px-2.5 py-1.5 text-xs font-semibold text-neutral-700 whitespace-nowrap transition hover:border-neutral-500 hover:text-neutral-900 focus:outline-none focus:ring-4 focus:ring-neutral-300 md:px-6 md:py-3 md:text-base"
             title="Clear all fields and start over"
           >
             Reset All
