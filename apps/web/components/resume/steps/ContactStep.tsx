@@ -256,7 +256,7 @@ export function ContactStep({ payload, setPayload, contactHelpId }: ContactStepP
             <span className="text-sm text-neutral-500">Type any way. We&apos;ll fix the format.</span>
           )}
         </label>
-        <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div className="flex flex-col gap-2 md:grid md:grid-cols-2 md:gap-5">
           <label className="flex flex-col gap-2" title="Required field">
             <span className="text-sm font-semibold uppercase tracking-wide text-neutral-900">
               City{' '}
