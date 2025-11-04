@@ -665,12 +665,11 @@ export function useResumeBuilderState() {
         .filter(entry => entry.degree && entry.school);
 
       return {
-        ...draft,
         name,
         email,
         phone,
         location,
-        ...(summary ? { summary } : { summary: undefined }),
+        summary: summary || '',
         skills,
         experience: experienceEntries,
         education: educationEntries,

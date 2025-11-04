@@ -15,8 +15,8 @@ export const ResumeSchema = z.object({
   email: z.string().email(),
   phone: z.string().min(7),
   location: z.string().min(2),
-  summary: z.string().max(800).optional(),
-  skills: z.array(z.string()).max(50).optional(),
+  summary: z.string().max(800).optional().or(z.literal('')),
+  skills: z.array(z.string()).max(50).optional().or(z.array(z.string()).length(0)),
   experience: z
     .array(
       z.object({
