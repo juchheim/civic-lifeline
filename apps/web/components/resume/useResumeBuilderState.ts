@@ -55,6 +55,7 @@ export function useResumeBuilderState() {
   const [payload, setPayload] = useState<ResumePayload>(() => createDefaultPayload());
   const [template, setTemplate] = useState<TemplateName>(DEFAULT_TEMPLATE);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  const [maxStepReached, setMaxStepReached] = useState(0);
   const [status, setStatus] = useState<string | null>(null);
   const [skillDraft, setSkillDraft] = useState<string>('');
   const [bulletsInputs, setBulletsInputs] = useState<string[]>([]);
@@ -173,6 +174,7 @@ export function useResumeBuilderState() {
         const index = WIZARD_STEPS.findIndex(step => step.key === storedStep);
         if (index >= 0) {
           setCurrentStepIndex(index);
+          setMaxStepReached(index); // Initialize max step reached to the stored step
         }
       }
     } catch {
@@ -304,6 +306,7 @@ export function useResumeBuilderState() {
     persistDraft(payload, template, nextIndex);
     setStatus(null); // Clear status messages when navigating
     setCurrentStepIndex(nextIndex);
+    setMaxStepReached(prev => Math.max(prev, nextIndex));
     if (typeof window !== 'undefined') {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -324,7 +327,7 @@ export function useResumeBuilderState() {
     (index: number) => {
       if (index < 0 || index >= WIZARD_STEPS.length) return;
       if (index === currentStepIndex) return;
-      if (index > currentStepIndex) return;
+      if (index > maxStepReached) return;
       persistDraft(payload, template, index);
       setStatus(null); // Clear status messages when navigating
       setCurrentStepIndex(index);
@@ -332,7 +335,7 @@ export function useResumeBuilderState() {
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     },
-    [currentStepIndex, payload, persistDraft, template],
+    [currentStepIndex, maxStepReached, payload, persistDraft, template],
   );
 
   const handleRewriteSummary = useCallback(async () => {
@@ -884,5 +887,6 @@ export function useResumeBuilderState() {
     updateTimelineInput,
     handleGenerate,
     handleReset,
+    maxStepReached,
   };
 }

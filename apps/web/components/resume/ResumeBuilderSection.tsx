@@ -60,6 +60,7 @@ export function ResumeBuilderSection() {
     education,
     canRewriteSummary,
     downloadFilename,
+    maxStepReached,
     addSkill,
     removeSkill,
     handleSkillDraftCommit,
@@ -226,7 +227,7 @@ return (
           {WIZARD_STEPS.map((step, index) => {
             const isActive = index === currentStepIndex;
             const isDone = index < currentStepIndex;
-            const canNavigate = index <= currentStepIndex;
+            const canNavigate = index <= maxStepReached;
             const accent = isActive
               ? 'border-emerald-600 bg-emerald-600 text-white'
               : isDone
