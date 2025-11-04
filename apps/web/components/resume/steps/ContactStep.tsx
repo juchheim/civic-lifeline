@@ -256,83 +256,85 @@ export function ContactStep({ payload, setPayload, contactHelpId }: ContactStepP
             <span className="text-sm text-neutral-500">Type any way. We&apos;ll fix the format.</span>
           )}
         </label>
-        <label className="flex flex-col gap-2" title="Required field">
-          <span className="text-sm font-semibold uppercase tracking-wide text-neutral-900">
-            City{' '}
-            <abbr title="Required" className="text-lg text-red-600 no-underline">
-              *
-            </abbr>
-          </span>
-          <input
-            className={`rounded-lg border-2 px-4 py-3 text-base text-neutral-900 shadow-sm transition focus:outline-none focus:ring-4 ${
-              touchedFields.has('city') && errors.city
-                ? 'border-red-500 focus:border-red-500 focus:ring-red-200'
-                : 'border-neutral-300 focus:border-emerald-600 focus:ring-emerald-200'
-            }`}
-            value={payload.city ?? ''}
-            onChange={event => {
-              setPayload(prev => ({ ...prev, city: event.target.value }));
-              if (touchedFields.has('city')) {
-                validateField('city', event.target.value);
-              }
-            }}
-            onBlur={() => {
-              const capitalized = (payload.city ?? '')
-                .trim()
-                .split(' ')
-                .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-                .join(' ');
-              setPayload(prev => ({ ...prev, city: capitalized }));
-              handleBlur('city', capitalized);
-            }}
-            placeholder="Jackson"
-            autoComplete="address-level2"
-            autoCapitalize="words"
-            aria-describedby={contactHelpId}
-            aria-invalid={touchedFields.has('city') && !!errors.city}
-            required
-          />
-          {touchedFields.has('city') && errors.city && (
-            <span className="text-sm text-red-600" role="alert">{errors.city}</span>
-          )}
-        </label>
-        <label className="flex flex-col gap-2" title="Required field">
-          <span className="text-sm font-semibold uppercase tracking-wide text-neutral-900">
-            State{' '}
-            <abbr title="Required" className="text-lg text-red-600 no-underline">
-              *
-            </abbr>
-          </span>
-          <select
-            className={`rounded-lg border-2 px-4 py-3 text-base text-neutral-900 shadow-sm transition focus:outline-none focus:ring-4 ${
-              touchedFields.has('state') && errors.state
-                ? 'border-red-500 focus:border-red-500 focus:ring-red-200'
-                : 'border-neutral-300 focus:border-emerald-600 focus:ring-emerald-200'
-            }`}
-            value={payload.state ?? ''}
-            onChange={event => {
-              const value = event.target.value;
-              setPayload(prev => ({ ...prev, state: value }));
-              if (touchedFields.has('state')) {
-                validateField('state', value);
-              }
-            }}
-            onBlur={() => handleBlur('state', payload.state ?? '')}
-            aria-describedby={contactHelpId}
-            aria-invalid={touchedFields.has('state') && !!errors.state}
-            required
-          >
-            <option value="">Select a state</option>
-            {US_STATES.map(state => (
-              <option key={state.code} value={state.code}>
-                {state.name}
-              </option>
-            ))}
-          </select>
-          {touchedFields.has('state') && errors.state && (
-            <span className="text-sm text-red-600" role="alert">{errors.state}</span>
-          )}
-        </label>
+        <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-5">
+          <label className="flex flex-col gap-2" title="Required field">
+            <span className="text-sm font-semibold uppercase tracking-wide text-neutral-900">
+              City{' '}
+              <abbr title="Required" className="text-lg text-red-600 no-underline">
+                *
+              </abbr>
+            </span>
+            <input
+              className={`rounded-lg border-2 px-4 py-3 text-base text-neutral-900 shadow-sm transition focus:outline-none focus:ring-4 ${
+                touchedFields.has('city') && errors.city
+                  ? 'border-red-500 focus:border-red-500 focus:ring-red-200'
+                  : 'border-neutral-300 focus:border-emerald-600 focus:ring-emerald-200'
+              }`}
+              value={payload.city ?? ''}
+              onChange={event => {
+                setPayload(prev => ({ ...prev, city: event.target.value }));
+                if (touchedFields.has('city')) {
+                  validateField('city', event.target.value);
+                }
+              }}
+              onBlur={() => {
+                const capitalized = (payload.city ?? '')
+                  .trim()
+                  .split(' ')
+                  .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                  .join(' ');
+                setPayload(prev => ({ ...prev, city: capitalized }));
+                handleBlur('city', capitalized);
+              }}
+              placeholder="Jackson"
+              autoComplete="address-level2"
+              autoCapitalize="words"
+              aria-describedby={contactHelpId}
+              aria-invalid={touchedFields.has('city') && !!errors.city}
+              required
+            />
+            {touchedFields.has('city') && errors.city && (
+              <span className="text-sm text-red-600" role="alert">{errors.city}</span>
+            )}
+          </label>
+          <label className="flex flex-col gap-2" title="Required field">
+            <span className="text-sm font-semibold uppercase tracking-wide text-neutral-900">
+              State{' '}
+              <abbr title="Required" className="text-lg text-red-600 no-underline">
+                *
+              </abbr>
+            </span>
+            <select
+              className={`rounded-lg border-2 px-4 py-3 text-base text-neutral-900 shadow-sm transition focus:outline-none focus:ring-4 ${
+                touchedFields.has('state') && errors.state
+                  ? 'border-red-500 focus:border-red-500 focus:ring-red-200'
+                  : 'border-neutral-300 focus:border-emerald-600 focus:ring-emerald-200'
+              }`}
+              value={payload.state ?? ''}
+              onChange={event => {
+                const value = event.target.value;
+                setPayload(prev => ({ ...prev, state: value }));
+                if (touchedFields.has('state')) {
+                  validateField('state', value);
+                }
+              }}
+              onBlur={() => handleBlur('state', payload.state ?? '')}
+              aria-describedby={contactHelpId}
+              aria-invalid={touchedFields.has('state') && !!errors.state}
+              required
+            >
+              <option value="">Select a state</option>
+              {US_STATES.map(state => (
+                <option key={state.code} value={state.code}>
+                  {state.name}
+                </option>
+              ))}
+            </select>
+            {touchedFields.has('state') && errors.state && (
+              <span className="text-sm text-red-600" role="alert">{errors.state}</span>
+            )}
+          </label>
+        </div>
       </div>
     </div>
   );
