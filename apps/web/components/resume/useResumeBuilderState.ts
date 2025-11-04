@@ -302,6 +302,7 @@ export function useResumeBuilderState() {
     const currentKey = WIZARD_STEPS[currentStepIndex]?.key;
     if (currentKey && !stepCompletion[currentKey]) return;
     persistDraft(payload, template, nextIndex);
+    setStatus(null); // Clear status messages when navigating
     setCurrentStepIndex(nextIndex);
     if (typeof window !== 'undefined') {
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -312,6 +313,7 @@ export function useResumeBuilderState() {
     const prevIndex = Math.max(currentStepIndex - 1, 0);
     if (prevIndex === currentStepIndex) return;
     persistDraft(payload, template, prevIndex);
+    setStatus(null); // Clear status messages when navigating
     setCurrentStepIndex(prevIndex);
     if (typeof window !== 'undefined') {
       window.scrollTo({ top: 0, behavior: 'smooth' });
