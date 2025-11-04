@@ -96,6 +96,15 @@ export function ResumeBuilderSection() {
     window.scrollTo({ top: scrollHeight, behavior: 'smooth' });
   }, [summaryComparison]);
 
+  // Scroll to top of form when step changes on mobile
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    // Only scroll on mobile (< 768px)
+    if (window.innerWidth < 768) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [currentStepIndex]);
+
 
   const renderStepContent = () => {
     switch (activeStep.key) {
@@ -230,11 +239,12 @@ return (
                   className={`flex items-center gap-2 rounded-full border-2 px-4 py-2 text-sm font-semibold transition focus:outline-none focus:ring-4 focus:ring-emerald-200 disabled:border-neutral-200 disabled:text-neutral-400 ${accent}`}
                   title={canNavigate ? `Go to ${step.title}` : 'Complete previous steps first'}
                   aria-current={isActive ? 'step' : undefined}
+                  aria-label={`Step ${index + 1}: ${step.title}`}
                 >
                   <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-white/20 font-bold">
                     {index + 1}
                   </span>
-                  <span>{step.title}</span>
+                  <span className="hidden md:inline">{step.title}</span>
                 </button>
               </li>
             );
@@ -247,14 +257,14 @@ return (
       <p className="text-base text-neutral-600">{activeStep.description}</p>
       {renderStepContent()}
     </div>
-    <nav className="sticky bottom-0 z-20 -mx-6 mt-8 border-t border-neutral-200 bg-white/95 px-6 py-5 backdrop-blur">
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-wrap items-center gap-3 pb-1 md:flex-nowrap md:pb-0">
+    <nav className="sticky bottom-0 z-20 -mx-6 mt-8 border-t border-neutral-200 bg-white/95 px-4 py-3 backdrop-blur md:px-6 md:py-5">
+      <div className="flex flex-col gap-2 md:gap-4">
+        <div className="flex flex-wrap items-center gap-2 md:gap-3 md:flex-nowrap">
           <button
             type="button"
             onClick={handlePreviousStep}
             disabled={isFirstStep}
-            className="flex-shrink-0 rounded-full border-2 border-neutral-300 px-5 py-3 text-base font-semibold text-neutral-800 whitespace-nowrap transition hover:border-neutral-500 focus:outline-none focus:ring-4 focus:ring-neutral-300 disabled:cursor-not-allowed disabled:border-neutral-200 disabled:text-neutral-400"
+            className="flex-shrink-0 rounded-full border-2 border-neutral-300 px-4 py-2 text-sm font-semibold text-neutral-800 whitespace-nowrap transition hover:border-neutral-500 focus:outline-none focus:ring-4 focus:ring-neutral-300 disabled:cursor-not-allowed disabled:border-neutral-200 disabled:text-neutral-400 md:px-5 md:py-3 md:text-base"
             title="Go back to the previous step"
           >
             Back
@@ -264,7 +274,7 @@ return (
               type="button"
               onClick={handleNextStep}
               disabled={!isActiveStepComplete}
-              className="flex-shrink-0 rounded-full bg-neutral-900 px-6 py-3 text-base font-semibold text-white whitespace-nowrap shadow-sm transition hover:bg-neutral-800 focus:outline-none focus:ring-4 focus:ring-neutral-400 disabled:cursor-not-allowed disabled:bg-neutral-400"
+              className="flex-shrink-0 rounded-full bg-neutral-900 px-5 py-2 text-sm font-semibold text-white whitespace-nowrap shadow-sm transition hover:bg-neutral-800 focus:outline-none focus:ring-4 focus:ring-neutral-400 disabled:cursor-not-allowed disabled:bg-neutral-400 md:px-6 md:py-3 md:text-base"
               title={isActiveStepComplete ? 'Continue to the next step' : 'Complete the required fields to continue'}
             >
               {nextStepLabel}
@@ -274,7 +284,7 @@ return (
             type="button"
             onClick={handleGenerate}
             disabled={!canPreview || isPreviewLoading}
-            className="flex-shrink-0 rounded-full bg-emerald-600 px-6 py-3 text-base font-semibold text-white whitespace-nowrap shadow-sm transition hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-200 disabled:cursor-not-allowed disabled:bg-emerald-200 disabled:text-emerald-700"
+            className="flex-shrink-0 rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white whitespace-nowrap shadow-sm transition hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-200 disabled:cursor-not-allowed disabled:bg-emerald-200 disabled:text-emerald-700 md:px-6 md:py-3 md:text-base"
             aria-describedby={buttonsHelpId}
             title="Open a PDF preview in a new tab"
           >
@@ -284,7 +294,7 @@ return (
             <a
               href={previewUrl}
               download={downloadFilename}
-              className="inline-flex flex-shrink-0 items-center justify-center rounded-full border-2 border-emerald-600 px-6 py-3 text-base font-semibold text-emerald-700 whitespace-nowrap transition hover:border-emerald-700 hover:text-emerald-900 focus:outline-none focus:ring-4 focus:ring-emerald-200"
+              className="inline-flex flex-shrink-0 items-center justify-center rounded-full border-2 border-emerald-600 px-4 py-2 text-sm font-semibold text-emerald-700 whitespace-nowrap transition hover:border-emerald-700 hover:text-emerald-900 focus:outline-none focus:ring-4 focus:ring-emerald-200 md:px-6 md:py-3 md:text-base"
               title="Download the generated PDF"
             >
               Download PDF
@@ -293,13 +303,13 @@ return (
           <button
             type="button"
             onClick={handleReset}
-            className="flex-shrink-0 rounded-full border-2 border-neutral-300 px-6 py-3 text-base font-semibold text-neutral-700 whitespace-nowrap transition hover:border-neutral-500 hover:text-neutral-900 focus:outline-none focus:ring-4 focus:ring-neutral-300"
+            className="flex-shrink-0 rounded-full border-2 border-neutral-300 px-4 py-2 text-sm font-semibold text-neutral-700 whitespace-nowrap transition hover:border-neutral-500 hover:text-neutral-900 focus:outline-none focus:ring-4 focus:ring-neutral-300 md:px-6 md:py-3 md:text-base"
             title="Clear all fields and start over"
           >
             Reset All
           </button>
         </div>
-        <div className="text-sm text-neutral-600">
+        <div className="hidden text-sm text-neutral-600 md:block">
           <p id={buttonsHelpId}>
             Preview opens in a new tab. Download saves as <span className="font-mono">{downloadFilename}</span>.
           </p>
