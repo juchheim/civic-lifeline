@@ -226,7 +226,7 @@ return (
         <ol className="flex flex-nowrap gap-1.5 md:flex-wrap md:gap-2" aria-label="Resume builder steps">
           {WIZARD_STEPS.map((step, index) => {
             const isActive = index === currentStepIndex;
-            const isDone = index < currentStepIndex;
+            const isDone = index < maxStepReached;
             const canNavigate = index <= maxStepReached;
             const accent = isActive
               ? 'border-emerald-600 bg-emerald-600 text-white'
