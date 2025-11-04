@@ -145,7 +145,7 @@ export function ContactStep({ payload, setPayload, contactHelpId }: ContactStepP
       <p id={contactHelpId} className="text-lg text-neutral-600">
         We only use this information to build the PDF. It stays on this device.
       </p>
-      <div className="grid gap-5 md:grid-cols-2">
+      <div className="grid gap-5 grid-cols-1 md:grid-cols-2">
         <label className="flex flex-col gap-2" title="Required field">
           <span className="text-sm font-semibold uppercase tracking-wide text-neutral-900">
             Name{' '}
@@ -256,7 +256,7 @@ export function ContactStep({ payload, setPayload, contactHelpId }: ContactStepP
             <span className="text-sm text-neutral-500">Type any way. We&apos;ll fix the format.</span>
           )}
         </label>
-        <div className="flex flex-col gap-2 md:grid md:grid-cols-2 md:gap-5">
+        <div className="flex flex-col gap-5 md:grid md:grid-cols-2 md:gap-5">
           <label className="flex flex-col gap-2" title="Required field">
             <span className="text-sm font-semibold uppercase tracking-wide text-neutral-900">
               City{' '}
