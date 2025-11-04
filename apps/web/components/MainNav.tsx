@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 
 const links = [
   { href: "/", label: "Home" },
@@ -25,6 +26,8 @@ export default function MainNav() {
     setIsOpen(false);
   }, [pathname]);
 
+  const [mounted, setMounted] = useState(false);
+
   // Prevent body scroll when menu is open
   useEffect(() => {
     if (isOpen) {
@@ -37,53 +40,13 @@ export default function MainNav() {
     };
   }, [isOpen]);
 
-  return (
+  // Only render portal after mount to avoid SSR issues
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const mobileMenu = (
     <>
-      {/* Desktop Navigation */}
-      <nav className="hidden md:flex md:flex-wrap md:items-center md:gap-2 md:text-sm">
-        {links.map(({ href, label }) => {
-          const active = pathname === href || (href !== "/" && pathname.startsWith(href));
-          return (
-            <Link
-              key={href}
-              href={href}
-              className={
-                active
-                  ? "rounded-full bg-blue-600 px-3 py-1 font-medium text-white shadow-sm transition"
-                  : "rounded-full px-3 py-1 font-medium text-slate-600 transition hover:bg-blue-50 hover:text-blue-700"
-              }
-            >
-              {label}
-            </Link>
-          );
-        })}
-      </nav>
-
-      {/* Mobile Hamburger Button */}
-      <button
-        type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className="relative z-[9999] flex h-10 w-10 flex-col items-center justify-center gap-1.5 rounded-lg transition hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 md:hidden"
-        aria-label={isOpen ? "Close menu" : "Open menu"}
-        aria-expanded={isOpen}
-      >
-        <span
-          className={`h-0.5 w-6 origin-center rounded-full bg-blue-700 transition-all duration-300 ${
-            isOpen ? "translate-y-1.5 rotate-45" : ""
-          }`}
-        />
-        <span
-          className={`h-0.5 w-6 rounded-full bg-blue-700 transition-all duration-300 ${
-            isOpen ? "opacity-0" : "opacity-100"
-          }`}
-        />
-        <span
-          className={`h-0.5 w-6 origin-center rounded-full bg-blue-700 transition-all duration-300 ${
-            isOpen ? "-translate-y-1.5 -rotate-45" : ""
-          }`}
-        />
-      </button>
-
       {/* Mobile Menu Overlay */}
       {isOpen && (
         <div
@@ -153,9 +116,60 @@ export default function MainNav() {
               })}
             </ul>
           </div>
-
         </div>
       </nav>
+    </>
+  );
+
+  return (
+    <>
+      {/* Desktop Navigation */}
+      <nav className="hidden md:flex md:flex-wrap md:items-center md:gap-2 md:text-sm">
+        {links.map(({ href, label }) => {
+          const active = pathname === href || (href !== "/" && pathname.startsWith(href));
+          return (
+            <Link
+              key={href}
+              href={href}
+              className={
+                active
+                  ? "rounded-full bg-blue-600 px-3 py-1 font-medium text-white shadow-sm transition"
+                  : "rounded-full px-3 py-1 font-medium text-slate-600 transition hover:bg-blue-50 hover:text-blue-700"
+              }
+            >
+              {label}
+            </Link>
+          );
+        })}
+      </nav>
+
+      {/* Mobile Hamburger Button */}
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="relative z-[9999] flex h-10 w-10 flex-col items-center justify-center gap-1.5 rounded-lg transition hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 md:hidden"
+        aria-label={isOpen ? "Close menu" : "Open menu"}
+        aria-expanded={isOpen}
+      >
+        <span
+          className={`h-0.5 w-6 origin-center rounded-full bg-blue-700 transition-all duration-300 ${
+            isOpen ? "translate-y-1.5 rotate-45" : ""
+          }`}
+        />
+        <span
+          className={`h-0.5 w-6 rounded-full bg-blue-700 transition-all duration-300 ${
+            isOpen ? "opacity-0" : "opacity-100"
+          }`}
+        />
+        <span
+          className={`h-0.5 w-6 origin-center rounded-full bg-blue-700 transition-all duration-300 ${
+            isOpen ? "-translate-y-1.5 -rotate-45" : ""
+          }`}
+        />
+      </button>
+
+      {/* Render mobile menu in portal to body */}
+      {mounted && typeof document !== "undefined" && createPortal(mobileMenu, document.body)}
     </>
   );
 }

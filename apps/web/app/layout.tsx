@@ -122,7 +122,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Providers>
           <div className="flex flex-col">
             <header className="border-b border-slate-200 bg-white/80 backdrop-blur">
-              <div className="mx-auto flex w-full max-w-6xl flex-col gap-3 px-4 py-4 md:flex-row md:items-center md:justify-between">
+              <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-4">
                 <Link href="/" className="text-lg font-semibold text-blue-700 hover:text-blue-800">
                   Civic Lifeline
                 </Link>
