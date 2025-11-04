@@ -38,29 +38,33 @@ export async function POST(request: NextRequest) {
     
     // Parse Zod errors into friendly messages
     if (error && typeof error === 'object' && 'issues' in error) {
-      const issues = (error as any).issues as Array<{ path: string[]; message: string; code: string }>;
+      const issues = (error as any).issues;
       const friendlyErrors: string[] = [];
       
-      for (const issue of issues) {
-        const field = issue.path[0];
-        switch (field) {
-          case 'name':
-            friendlyErrors.push('Please enter your full name (at least 2 letters).');
-            break;
-          case 'email':
-            friendlyErrors.push('Please enter a valid email address like name@email.com');
-            break;
-          case 'phone':
-            friendlyErrors.push('Please enter a phone number with at least 7 digits.');
-            break;
-          case 'location':
-            friendlyErrors.push('Please enter your city and state.');
-            break;
-          case 'summary':
-            friendlyErrors.push('Please keep your summary under 800 characters.');
-            break;
-          default:
-            friendlyErrors.push(issue.message);
+      if (Array.isArray(issues)) {
+        for (const issue of issues) {
+          const field = issue.path && issue.path.length > 0 ? String(issue.path[0]) : '';
+          switch (field) {
+            case 'name':
+              friendlyErrors.push('Please enter your full name (at least 2 letters).');
+              break;
+            case 'email':
+              friendlyErrors.push('Please enter a valid email address like name@email.com');
+              break;
+            case 'phone':
+              friendlyErrors.push('Please enter a phone number with at least 7 digits.');
+              break;
+            case 'location':
+              friendlyErrors.push('Please enter your city and state.');
+              break;
+            case 'summary':
+              friendlyErrors.push('Please keep your summary under 800 characters.');
+              break;
+            default:
+              if (issue.message) {
+                friendlyErrors.push(issue.message);
+              }
+          }
         }
       }
       
