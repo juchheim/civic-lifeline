@@ -220,19 +220,24 @@ export function useResumeBuilderState() {
     return true;
   }, [payload.summary]);
 
-  const canPreview = hasRequiredContact && summaryComplete;
+  const skillsComplete = useMemo(() => {
+    const skills = payload.skills ?? [];
+    return skills.length >= 1;
+  }, [payload.skills]);
+
+  const canPreview = hasRequiredContact && summaryComplete && skillsComplete;
 
   const stepCompletion = useMemo<Record<StepKey, boolean>>(
     () => ({
       template: true,
       contact: hasRequiredContact,
       summary: summaryComplete,
-      skills: true,
+      skills: skillsComplete,
       experience: true,
       education: true,
       preview: canPreview,
     }),
-    [canPreview, hasRequiredContact, summaryComplete],
+    [canPreview, hasRequiredContact, summaryComplete, skillsComplete],
   );
 
   const progressPercent = useMemo(() => {
@@ -697,7 +702,13 @@ export function useResumeBuilderState() {
 
   const handleGenerate = useCallback(async () => {
     if (!canPreview) {
-      setStatus('Please complete your contact details and summary before previewing.');
+      if (!hasRequiredContact) {
+        setStatus('Please complete your contact details before previewing.');
+      } else if (!summaryComplete) {
+        setStatus('Please complete your summary before previewing.');
+      } else if (!skillsComplete) {
+        setStatus('Please add at least one skill before previewing.');
+      }
       return;
     }
 
@@ -784,7 +795,7 @@ export function useResumeBuilderState() {
     } finally {
       setIsPreviewLoading(false);
     }
-  }, [buildSubmissionPayload, canPreview, currentStepIndex, payload, persistDraft, skillDraft, template]);
+  }, [buildSubmissionPayload, canPreview, currentStepIndex, payload, persistDraft, skillDraft, template, hasRequiredContact, summaryComplete, skillsComplete]);
 
   const handleReset = useCallback(() => {
     if (typeof window === 'undefined') return;

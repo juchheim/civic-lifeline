@@ -129,6 +129,7 @@ export function ResumeBuilderSection() {
             onAddSkill={addSkill}
             onRemoveSkill={removeSkill}
             skillsHelpId={skillsHelpId}
+            isComplete={stepCompletion.skills}
           />
         );
       case 'experience':

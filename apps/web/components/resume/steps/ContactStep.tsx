@@ -231,9 +231,11 @@ export function ContactStep({ payload, setPayload, contactHelpId }: ContactStepP
             }`}
             value={payload.phone ?? ''}
             onChange={event => {
-              setPayload(prev => ({ ...prev, phone: event.target.value }));
+              // Strip all non-numeric characters automatically
+              const digitsOnly = event.target.value.replace(/\D/g, '');
+              setPayload(prev => ({ ...prev, phone: digitsOnly }));
               if (touchedFields.has('phone')) {
-                validateField('phone', event.target.value);
+                validateField('phone', digitsOnly);
               }
             }}
             onBlur={() => {

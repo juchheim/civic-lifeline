@@ -10,6 +10,7 @@ type SkillsStepProps = {
   onAddSkill: (value: string) => void;
   onRemoveSkill: (skill: string) => void;
   skillsHelpId: string;
+  isComplete?: boolean;
 };
 
 export function SkillsStep({
@@ -26,6 +27,7 @@ export function SkillsStep({
   };
   
   const maxSkills = 20;
+  const hasSkills = skills.length >= 1;
 
   return (
     <div className="flex flex-col gap-5">
@@ -37,6 +39,11 @@ export function SkillsStep({
           {skills.length} of {maxSkills}
         </span>
       </div>
+      {!hasSkills && (
+        <p className="text-sm text-amber-600" role="alert">
+          Please add at least one skill to continue.
+        </p>
+      )}
       <div
         className={`flex flex-wrap items-center gap-2 rounded-lg border-2 px-3 py-3 ${
           skills.length ? 'border-neutral-300 bg-white' : 'border-dashed border-neutral-300 bg-neutral-50'

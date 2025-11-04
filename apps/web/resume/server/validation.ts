@@ -15,11 +15,11 @@ export const ResumeSchema = z
     name: z.string().min(2),
     email: z.string().email(),
     phone: z.string().min(7),
-    city: z.string().min(1).optional(),
-    state: z.string().length(2).optional(),
-    location: z.string().min(2).optional(),
-    summary: z.string().max(800).optional().or(z.literal('')),
-  skills: z.array(z.string()).max(50).optional().or(z.array(z.string()).length(0)),
+  city: z.string().min(1).optional(),
+  state: z.string().length(2).optional(),
+  location: z.string().min(2).optional(),
+  summary: z.string().max(800).optional().or(z.literal('')),
+  skills: z.array(z.string()).min(1).max(50),
   experience: z
     .array(
       z.object({
