@@ -8,7 +8,7 @@ import { Providers } from "./providers";
 
 export const metadata: Metadata = {
   title: "Civic Lifeline",
-  description: "Community resources and data",
+  description: "Community data and services",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -123,7 +123,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Providers>
           <div className="flex flex-col">
             <header className="border-b border-slate-200 bg-white/80 backdrop-blur">
-              <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-4">
+              <div className="mx-auto flex w-full max-w-[85rem] items-center justify-between px-4 py-4">
                 <Link href="/" className="flex items-center hover:opacity-80 transition-opacity">
                   <Image
                     src="/CivicLifeline.png"
@@ -138,7 +138,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </div>
             </header>
             <div role="main">
-              <div className="mx-auto w-full max-w-6xl px-4 py-3 md:py-6">{children}</div>
+              <div className="mx-auto w-full max-w-[85rem] px-4 pt-2 pb-2 md:pb-4">{children}</div>
             </div>
             <footer className="border-t border-slate-200 bg-white/70">
               <div className="mx-auto w-full max-w-6xl px-4 py-4 text-xs text-slate-500">
