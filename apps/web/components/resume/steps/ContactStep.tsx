@@ -157,7 +157,7 @@ export function ContactStep({ payload, setPayload, contactHelpId }: ContactStepP
             className={`rounded-lg border-2 px-4 py-3 text-base text-neutral-900 shadow-sm transition focus:outline-none focus:ring-4 ${
               touchedFields.has('name') && errors.name
                 ? 'border-red-500 focus:border-red-500 focus:ring-red-200'
-                : 'border-neutral-300 focus:border-emerald-600 focus:ring-emerald-200'
+                : 'border-neutral-300 focus:border-civic-green focus:ring-civic-green/30'
             }`}
             value={payload.name}
             onChange={event => {
@@ -194,7 +194,7 @@ export function ContactStep({ payload, setPayload, contactHelpId }: ContactStepP
             className={`rounded-lg border-2 px-4 py-3 text-base text-neutral-900 shadow-sm transition focus:outline-none focus:ring-4 ${
               touchedFields.has('email') && errors.email
                 ? 'border-red-500 focus:border-red-500 focus:ring-red-200'
-                : 'border-neutral-300 focus:border-emerald-600 focus:ring-emerald-200'
+                : 'border-neutral-300 focus:border-civic-green focus:ring-civic-green/30'
             }`}
             value={payload.email}
             onChange={event => {
@@ -227,7 +227,7 @@ export function ContactStep({ payload, setPayload, contactHelpId }: ContactStepP
             className={`rounded-lg border-2 px-4 py-3 text-base text-neutral-900 shadow-sm transition focus:outline-none focus:ring-4 ${
               touchedFields.has('phone') && errors.phone
                 ? 'border-red-500 focus:border-red-500 focus:ring-red-200'
-                : 'border-neutral-300 focus:border-emerald-600 focus:ring-emerald-200'
+                : 'border-neutral-300 focus:border-civic-green focus:ring-civic-green/30'
             }`}
             value={payload.phone ?? ''}
             onChange={event => {
@@ -268,7 +268,7 @@ export function ContactStep({ payload, setPayload, contactHelpId }: ContactStepP
               className={`rounded-lg border-2 px-4 py-3 text-base text-neutral-900 shadow-sm transition focus:outline-none focus:ring-4 ${
                 touchedFields.has('city') && errors.city
                   ? 'border-red-500 focus:border-red-500 focus:ring-red-200'
-                  : 'border-neutral-300 focus:border-emerald-600 focus:ring-emerald-200'
+                  : 'border-neutral-300 focus:border-civic-green focus:ring-civic-green/30'
               }`}
               value={payload.city ?? ''}
               onChange={event => {
@@ -308,7 +308,7 @@ export function ContactStep({ payload, setPayload, contactHelpId }: ContactStepP
               className={`rounded-lg border-2 px-4 py-3 text-base text-neutral-900 shadow-sm transition focus:outline-none focus:ring-4 ${
                 touchedFields.has('state') && errors.state
                   ? 'border-red-500 focus:border-red-500 focus:ring-red-200'
-                  : 'border-neutral-300 focus:border-emerald-600 focus:ring-emerald-200'
+                  : 'border-neutral-300 focus:border-civic-green focus:ring-civic-green/30'
               }`}
               value={payload.state ?? ''}
               onChange={event => {

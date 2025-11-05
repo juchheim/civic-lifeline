@@ -60,10 +60,10 @@ export function TemplateStep({ selectedTemplate, onSelectTemplate }: TemplateSte
 }
 
 function TemplatePreview({ template }: { template: TemplateName }) {
-  const accentClass = template === 'modern' ? 'bg-blue-500' : template === 'minimal' ? 'bg-neutral-900' : 'bg-neutral-700';
+  const accentClass = template === 'modern' ? 'bg-civic-blue' : template === 'minimal' ? 'bg-neutral-900' : 'bg-neutral-700';
   const accentLightClass =
-    template === 'modern' ? 'bg-blue-200' : template === 'minimal' ? 'bg-neutral-300' : 'bg-neutral-300';
-  const bulletClass = template === 'minimal' ? 'bg-neutral-800' : template === 'modern' ? 'bg-blue-300' : 'bg-neutral-400';
+    template === 'modern' ? 'bg-civic-blue/30' : template === 'minimal' ? 'bg-neutral-300' : 'bg-neutral-300';
+  const bulletClass = template === 'minimal' ? 'bg-neutral-800' : template === 'modern' ? 'bg-civic-blue/40' : 'bg-neutral-400';
 
   return (
     <div className="flex flex-col gap-2 rounded border border-neutral-200 bg-white p-3">

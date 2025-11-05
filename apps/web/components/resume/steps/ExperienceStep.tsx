@@ -108,7 +108,7 @@ export function ExperienceStep({
                 <label className="flex flex-col gap-2">
                   <span className="text-xs font-semibold uppercase tracking-wide text-neutral-600">Job Title</span>
                   <input
-                    className="rounded border border-neutral-300 px-3 py-2 text-base focus:border-emerald-600 focus:outline-none focus:ring-4 focus:ring-emerald-200"
+                    className="rounded border border-neutral-300 px-3 py-2 text-base focus:border-civic-green focus:outline-none focus:ring-4 focus:ring-civic-green/30"
                     value={entry.title ?? ''}
                     onChange={event => onUpdateExperienceField(index, 'title', event.target.value)}
                     onBlur={event => {
@@ -126,7 +126,7 @@ export function ExperienceStep({
                 <label className="flex flex-col gap-2">
                   <span className="text-xs font-semibold uppercase tracking-wide text-neutral-600">Employer</span>
                   <input
-                    className="rounded border border-neutral-300 px-3 py-2 text-base focus:border-emerald-600 focus:outline-none focus:ring-4 focus:ring-emerald-200"
+                    className="rounded border border-neutral-300 px-3 py-2 text-base focus:border-civic-green focus:outline-none focus:ring-4 focus:ring-civic-green/30"
                     value={entry.company ?? ''}
                     onChange={event => onUpdateExperienceField(index, 'company', event.target.value)}
                     onBlur={event => {
@@ -145,7 +145,7 @@ export function ExperienceStep({
                   <span className="text-xs font-semibold uppercase tracking-wide text-neutral-600">Start date</span>
                   <div className="grid grid-cols-2 gap-2">
                     <select
-                      className="rounded border border-neutral-300 px-2 py-2 text-sm focus:border-emerald-600 focus:outline-none focus:ring-4 focus:ring-emerald-200"
+                      className="rounded border border-neutral-300 px-2 py-2 text-sm focus:border-civic-green focus:outline-none focus:ring-4 focus:ring-civic-green/30"
                       value={timelineDraft.startMonth}
                       onChange={event => onUpdateTimelineDraft(index, 'start', 'month', event.target.value)}
                     >
@@ -157,7 +157,7 @@ export function ExperienceStep({
                       ))}
                     </select>
                     <select
-                      className="rounded border border-neutral-300 px-2 py-2 text-sm focus:border-emerald-600 focus:outline-none focus:ring-4 focus:ring-emerald-200"
+                      className="rounded border border-neutral-300 px-2 py-2 text-sm focus:border-civic-green focus:outline-none focus:ring-4 focus:ring-civic-green/30"
                       value={timelineDraft.startYear}
                       onChange={event => onUpdateTimelineDraft(index, 'start', 'year', event.target.value)}
                     >
@@ -174,7 +174,7 @@ export function ExperienceStep({
                   <span className="text-xs font-semibold uppercase tracking-wide text-neutral-600">End date</span>
                   <div className="grid grid-cols-2 gap-2">
                     <select
-                      className="rounded border border-neutral-300 px-2 py-2 text-sm focus:border-emerald-600 focus:outline-none focus:ring-4 focus:ring-emerald-200"
+                      className="rounded border border-neutral-300 px-2 py-2 text-sm focus:border-civic-green focus:outline-none focus:ring-4 focus:ring-civic-green/30"
                       value={timelineDraft.endMonth}
                       onChange={event => onUpdateTimelineDraft(index, 'end', 'month', event.target.value)}
                       disabled={timelineDraft.endPresent}
@@ -187,7 +187,7 @@ export function ExperienceStep({
                       ))}
                     </select>
                     <select
-                      className="rounded border border-neutral-300 px-2 py-2 text-sm focus:border-emerald-600 focus:outline-none focus:ring-4 focus:ring-emerald-200"
+                      className="rounded border border-neutral-300 px-2 py-2 text-sm focus:border-civic-green focus:outline-none focus:ring-4 focus:ring-civic-green/30"
                       value={timelineDraft.endYear}
                       onChange={event => onUpdateTimelineDraft(index, 'end', 'year', event.target.value)}
                       disabled={timelineDraft.endPresent}
@@ -203,7 +203,7 @@ export function ExperienceStep({
                   <label className="flex items-center gap-2 text-sm text-neutral-700">
                     <input
                       type="checkbox"
-                      className="h-4 w-4 rounded border-neutral-400 text-emerald-600 focus:ring-emerald-200"
+                      className="h-4 w-4 rounded border-neutral-400 text-civic-green focus:ring-civic-green/30"
                       checked={timelineDraft.endPresent}
                       onChange={event => onUpdateTimelineDraft(index, 'end', 'present', event.target.checked)}
                     />
@@ -219,7 +219,7 @@ export function ExperienceStep({
                   </span>
                 </div>
                 <textarea
-                  className="min-h-[140px] rounded border border-neutral-300 px-3 py-2 text-base focus:border-emerald-600 focus:outline-none focus:ring-4 focus:ring-emerald-200"
+                  className="min-h-[140px] rounded border border-neutral-300 px-3 py-2 text-base focus:border-civic-green focus:outline-none focus:ring-4 focus:ring-civic-green/30"
                   value={bulletsInputs[index] ?? ''}
                   onChange={event => onUpdateExperienceField(index, 'bullets', event.target.value)}
                   placeholder={'Served customers at checkout\nRestocked shelves\nCleaned work area'}

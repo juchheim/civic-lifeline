@@ -60,8 +60,8 @@ export default function ModeratePage() {
                 {it.contact?.phone && <div className="text-xs">{it.contact.phone}</div>}
               </div>
               <div className="flex items-center gap-2">
-                <button onClick={() => verify(it.id, "phone")} className="px-2 py-1 text-xs rounded bg-green-600 text-white">Verify (phone)</button>
-                <button onClick={() => verify(it.id, "site")} className="px-2 py-1 text-xs rounded bg-blue-600 text-white">Verify (site)</button>
+                <button onClick={() => verify(it.id, "phone")} className="px-2 py-1 text-xs rounded bg-civic-green text-white">Verify (phone)</button>
+                <button onClick={() => verify(it.id, "site")} className="px-2 py-1 text-xs rounded bg-civic-blue text-white">Verify (site)</button>
                 <button onClick={() => verify(it.id, "email")} className="px-2 py-1 text-xs rounded bg-indigo-600 text-white">Verify (email)</button>
               </div>
             </li>

@@ -61,7 +61,7 @@ export function SummaryStep({
       </div>
       <div className="relative">
         <textarea
-          className="h-48 w-full rounded-lg border-2 border-neutral-300 px-4 py-3 text-base text-neutral-900 shadow-sm transition focus:border-emerald-600 focus:outline-none focus:ring-4 focus:ring-emerald-200"
+          className="h-48 w-full rounded-lg border-2 border-neutral-300 px-4 py-3 text-base text-neutral-900 shadow-sm transition focus:border-civic-green focus:outline-none focus:ring-4 focus:ring-civic-green/30"
           value={summary}
           onChange={event => {
             onClearFeedback();

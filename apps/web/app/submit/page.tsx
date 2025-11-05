@@ -59,7 +59,7 @@ export default function SubmitPage() {
     <main className="max-w-2xl mx-auto p-4 md:p-6">
       <h1 className="text-xl md:text-2xl font-semibold mb-4">Submit a Community Resource</h1>
       {error && <div className="mb-3 rounded border border-red-300 bg-red-50 text-red-800 px-3 py-2 text-sm">{error}</div>}
-      {result && <div className="mb-3 rounded border border-green-300 bg-green-50 text-green-800 px-3 py-2 text-sm">{result}</div>}
+      {result && <div className="mb-3 rounded border border-civic-green/30 bg-civic-green/10 text-civic-green px-3 py-2 text-sm">{result}</div>}
       <form className="space-y-3" onSubmit={onSubmit}>
         <div className="flex items-center gap-3">
           <label className="w-32 text-sm">Type</label>

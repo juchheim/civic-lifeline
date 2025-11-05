@@ -76,7 +76,7 @@ export function SkillsStep({
           <button
             key={skill}
             type="button"
-            className="rounded-full border border-neutral-300 px-3 py-1 text-sm text-neutral-700 transition hover:border-emerald-500 hover:text-emerald-700"
+            className="rounded-full border border-neutral-300 px-3 py-1 text-sm text-neutral-700 transition hover:border-civic-green hover:text-civic-green"
             onClick={() => onAddSkill(skill)}
           >
             {skill}

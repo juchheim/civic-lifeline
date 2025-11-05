@@ -70,7 +70,7 @@ export default function MainNav() {
             <button
               type="button"
               onClick={() => setIsOpen(false)}
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-600 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-600"
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-600 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-civic-blue"
               aria-label="Close menu"
             >
               <svg
@@ -102,8 +102,8 @@ export default function MainNav() {
                       onClick={() => setIsOpen(false)}
                       className={`flex items-center rounded-lg px-4 py-3 text-base font-medium transition ${
                         active
-                          ? "bg-blue-600 text-white shadow-sm"
-                          : "text-slate-700 hover:bg-blue-50 hover:text-blue-700 active:bg-blue-100"
+                          ? "bg-civic-blue text-white shadow-sm"
+                          : "text-slate-700 hover:bg-civic-blue/10 hover:text-civic-blue active:bg-civic-blue/20"
                       }`}
                     >
                       {label}
@@ -133,8 +133,8 @@ export default function MainNav() {
               href={href}
               className={
                 active
-                  ? "rounded-full bg-blue-600 px-3 py-1 font-medium text-white shadow-sm transition"
-                  : "rounded-full px-3 py-1 font-medium text-slate-600 transition hover:bg-blue-50 hover:text-blue-700"
+                  ? "rounded-full bg-civic-blue px-3 py-1 font-medium text-white shadow-sm transition"
+                  : "rounded-full px-3 py-1 font-medium text-slate-600 transition hover:bg-civic-blue/10 hover:text-civic-blue"
               }
             >
               {label}
@@ -147,12 +147,12 @@ export default function MainNav() {
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="relative z-[9999] flex h-10 w-10 flex-col items-center justify-center gap-1.5 rounded-lg transition hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 md:hidden"
+        className="relative z-[9999] flex h-10 w-10 flex-col items-center justify-center gap-1.5 rounded-lg transition hover:bg-civic-blue/10 focus:outline-none focus:ring-2 focus:ring-civic-blue focus:ring-offset-2 md:hidden"
         aria-label={isOpen ? "Close menu" : "Open menu"}
         aria-expanded={isOpen}
       >
         <span
-          className={`h-0.5 w-6 origin-center rounded-full bg-blue-700 transition-all duration-300 ${
+          className={`h-0.5 w-6 origin-center rounded-full bg-civic-blue transition-all duration-300 ${
             isOpen ? "translate-y-1.5 rotate-45" : ""
           }`}
         />
@@ -162,7 +162,7 @@ export default function MainNav() {
           }`}
         />
         <span
-          className={`h-0.5 w-6 origin-center rounded-full bg-blue-700 transition-all duration-300 ${
+          className={`h-0.5 w-6 origin-center rounded-full bg-civic-blue transition-all duration-300 ${
             isOpen ? "-translate-y-1.5 -rotate-45" : ""
           }`}
         />

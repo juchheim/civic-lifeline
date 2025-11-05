@@ -81,7 +81,7 @@ export function EducationStep({
                 <span className="text-xs font-semibold uppercase tracking-wide text-neutral-600">Type</span>
                 <input
                   type="text"
-                  className="rounded border border-neutral-300 px-3 py-2 text-base focus:border-emerald-600 focus:outline-none focus:ring-4 focus:ring-emerald-200"
+                  className="rounded border border-neutral-300 px-3 py-2 text-base focus:border-civic-green focus:outline-none focus:ring-4 focus:ring-civic-green/30"
                   value={entry.degree ?? ''}
                   onChange={event => onUpdateEducationField(index, 'degree', event.target.value)}
                   onBlur={event => {
@@ -101,7 +101,7 @@ export function EducationStep({
                 <span className="text-xs font-semibold uppercase tracking-wide text-neutral-600">School name</span>
                 <input
                   type="text"
-                  className="rounded border border-neutral-300 px-3 py-2 text-base focus:border-emerald-600 focus:outline-none focus:ring-4 focus:ring-emerald-200"
+                  className="rounded border border-neutral-300 px-3 py-2 text-base focus:border-civic-green focus:outline-none focus:ring-4 focus:ring-civic-green/30"
                   value={entry.school ?? ''}
                   onChange={event => onUpdateEducationField(index, 'school', event.target.value)}
                   onBlur={event => {
@@ -122,7 +122,7 @@ export function EducationStep({
                 </span>
                 <input
                   type="number"
-                  className="rounded border border-neutral-300 px-3 py-2 text-base focus:border-emerald-600 focus:outline-none focus:ring-4 focus:ring-emerald-200"
+                  className="rounded border border-neutral-300 px-3 py-2 text-base focus:border-civic-green focus:outline-none focus:ring-4 focus:ring-civic-green/30"
                   value={entry.graduationYear ?? ''}
                   onChange={event => onUpdateEducationField(index, 'graduationYear', event.target.value)}
                   placeholder="2022"

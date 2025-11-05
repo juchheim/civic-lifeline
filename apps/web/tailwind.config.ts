@@ -7,7 +7,12 @@ export default {
     "../../packages/*/src/**/*.{ts,tsx}"
   ],
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+        'civic-green': '#90ae4b',
+        'civic-blue': '#153eb0',
+      },
+    },
   },
   plugins: [require("tailwindcss-animate")],
 } satisfies Config;

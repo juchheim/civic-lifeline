@@ -197,7 +197,7 @@ return (
               type="button"
               onClick={handleGenerate}
               disabled={isPreviewLoading}
-              className="rounded-full bg-emerald-600 px-6 py-3 text-base font-semibold text-white shadow-sm transition hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-200 disabled:cursor-not-allowed disabled:bg-emerald-200 disabled:text-emerald-700"
+              className="rounded-full bg-civic-green px-6 py-3 text-base font-semibold text-white shadow-sm transition hover:bg-civic-green/90 focus:outline-none focus:ring-4 focus:ring-civic-green/30 disabled:cursor-not-allowed disabled:bg-civic-green/30 disabled:text-civic-green"
               aria-describedby={buttonsHelpId}
               title="Open a PDF preview in a new tab"
             >
@@ -208,7 +208,7 @@ return (
             <a
               href={previewUrl}
               download={downloadFilename}
-              className="inline-flex items-center justify-center rounded-full border-2 border-emerald-600 px-6 py-3 text-base font-semibold text-emerald-700 transition hover:border-emerald-700 hover:text-emerald-900 focus:outline-none focus:ring-4 focus:ring-emerald-200"
+              className="inline-flex items-center justify-center rounded-full border-2 border-civic-green px-6 py-3 text-base font-semibold text-civic-green transition hover:border-civic-green/90 hover:text-civic-green/90 focus:outline-none focus:ring-4 focus:ring-civic-green/30"
               title="Download the generated PDF"
             >
               Download PDF
@@ -219,7 +219,7 @@ return (
       <div className="flex flex-col gap-3">
         <div className="relative h-2 w-full rounded-full bg-neutral-200" aria-hidden="true">
           <div
-            className="h-2 rounded-full bg-emerald-600 transition-all"
+            className="h-2 rounded-full bg-civic-green transition-all"
             style={{ width: `${progressPercent}%` }}
           />
         </div>
@@ -229,9 +229,9 @@ return (
             const isDone = index < maxStepReached;
             const canNavigate = index <= maxStepReached;
             const accent = isActive
-              ? 'border-emerald-600 bg-emerald-600 text-white'
+              ? 'border-civic-green bg-civic-green text-white'
               : isDone
-                ? 'border-emerald-400 bg-emerald-50 text-emerald-800'
+                ? 'border-civic-green/60 bg-civic-green/10 text-civic-green'
                 : 'border-neutral-300 bg-white text-neutral-600';
             return (
               <li key={step.key}>
@@ -239,7 +239,7 @@ return (
                   type="button"
                   onClick={() => handleGoToStep(index)}
                   disabled={!canNavigate}
-                  className={`flex items-center justify-center rounded-full border-2 transition focus:outline-none focus:ring-4 focus:ring-emerald-200 disabled:border-neutral-200 disabled:text-neutral-400 md:gap-2 md:px-4 md:py-2 ${accent} h-8 w-8 text-xs font-semibold md:h-auto md:w-auto md:text-sm`}
+                  className={`flex items-center justify-center rounded-full border-2 transition focus:outline-none focus:ring-4 focus:ring-civic-green/30 disabled:border-neutral-200 disabled:text-neutral-400 md:gap-2 md:px-4 md:py-2 ${accent} h-8 w-8 text-xs font-semibold md:h-auto md:w-auto md:text-sm`}
                   title={canNavigate ? `Go to ${step.title}` : 'Complete previous steps first'}
                   aria-current={isActive ? 'step' : undefined}
                   aria-label={`Step ${index + 1}: ${step.title}`}
@@ -317,7 +317,7 @@ return (
                 type="button"
                 onClick={handleGenerate}
                 disabled={isPreviewLoading}
-                className="flex-1 min-w-0 rounded-full bg-emerald-600 px-3 py-2 text-sm font-semibold text-white whitespace-nowrap shadow-sm transition hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-200 disabled:cursor-not-allowed disabled:bg-emerald-200 disabled:text-emerald-700 md:flex-shrink-0 md:px-6 md:py-3 md:text-base"
+                className="flex-1 min-w-0 rounded-full bg-civic-green px-3 py-2 text-sm font-semibold text-white whitespace-nowrap shadow-sm transition hover:bg-civic-green/90 focus:outline-none focus:ring-4 focus:ring-civic-green/30 disabled:cursor-not-allowed disabled:bg-civic-green/30 disabled:text-civic-green md:flex-shrink-0 md:px-6 md:py-3 md:text-base"
                 aria-describedby={buttonsHelpId}
                 title="Open a PDF preview in a new tab"
               >
@@ -328,7 +328,7 @@ return (
               <a
                 href={previewUrl}
                 download={downloadFilename}
-                className="inline-flex flex-1 min-w-0 items-center justify-center rounded-full border-2 border-emerald-600 px-3 py-2 text-sm font-semibold text-emerald-700 whitespace-nowrap transition hover:border-emerald-700 hover:text-emerald-900 focus:outline-none focus:ring-4 focus:ring-emerald-200 md:flex-shrink-0 md:px-6 md:py-3 md:text-base"
+                className="inline-flex flex-1 min-w-0 items-center justify-center rounded-full border-2 border-civic-green px-3 py-2 text-sm font-semibold text-civic-green whitespace-nowrap transition hover:border-civic-green/90 hover:text-civic-green/90 focus:outline-none focus:ring-4 focus:ring-civic-green/30 md:flex-shrink-0 md:px-6 md:py-3 md:text-base"
                 title="Download the generated PDF"
               >
                 Download PDF

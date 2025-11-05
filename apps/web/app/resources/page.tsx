@@ -185,7 +185,7 @@ export default function ResourcesPage() {
                         </div>
                       )}
                       {item.verified ? (
-                        <div className="rounded border border-green-200 bg-green-50 px-2 py-1 text-xs text-green-700">
+                        <div className="rounded border border-civic-green/30 bg-civic-green/10 px-2 py-1 text-xs text-civic-green">
                           Verified via {item.verified.method} on {new Date(item.verified.at).toLocaleString()} by {item.verified.by}
                         </div>
                       ) : (

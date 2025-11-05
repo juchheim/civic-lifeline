@@ -132,7 +132,7 @@ export default function BroadbandPage() {
                   {speedLabels.map((entry) => (
                     <li key={entry.key}>
                       <span className="font-medium">{entry.label}:</span>{" "}
-                      {speeds && speeds[entry.key] ? <span className="text-green-600">Yes</span> : <span className="text-slate-500">No</span>}
+                      {speeds && speeds[entry.key] ? <span className="text-civic-green">Yes</span> : <span className="text-slate-500">No</span>}
                     </li>
                   ))}
                 </ul>
