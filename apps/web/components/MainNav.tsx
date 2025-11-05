@@ -10,11 +10,8 @@ const links = [
   { href: "/food", label: "Food" },
   { href: "/resume", label: "Resume Builder" },
   { href: "/housing", label: "Housing" },
-  { href: "/stats", label: "Stats" },
   { href: "/broadband", label: "Broadband" },
-  { href: "/resources", label: "Resources" },
-  { href: "/submit", label: "Submit" },
-  { href: "/moderate", label: "Moderate" },
+  { href: "/stats", label: "Stats" },
 ];
 
 export default function MainNav() {
