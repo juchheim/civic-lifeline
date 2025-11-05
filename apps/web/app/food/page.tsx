@@ -1,7 +1,16 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type FocusEvent,
+  type FormEvent,
+  type KeyboardEvent,
+} from "react";
 import { useQuery } from "@tanstack/react-query";
 import { zSnapResponse, type SnapResponse, type SnapItem } from "@cl/types";
 import { bboxToQueryParam } from "@cl/utils";
@@ -12,6 +21,7 @@ import StoreCard from "@/components/StoreCard";
 const MapView = dynamic(() => import("@/components/MapView"), { ssr: false });
 
 type Bbox = [number, number, number, number];
+type Suggestion = { id: string; name: string; lat: number; lon: number; kind: string };
 
 function useDebouncedValue<T>(value: T, delayMs: number): T {
   const [debounced, setDebounced] = useState(value);
@@ -32,7 +42,17 @@ export default function FoodPage() {
   const [showManualInput, setShowManualInput] = useState(false);
   const [manualQuery, setManualQuery] = useState("");
   const [locationError, setLocationError] = useState<string | null>(null);
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [suggestError, setSuggestError] = useState<string | null>(null);
+  const [isSuggestLoading, setIsSuggestLoading] = useState(false);
+  const [activeSuggestionIndex, setActiveSuggestionIndex] = useState<number | null>(null);
+  const [isSuggestionOpen, setIsSuggestionOpen] = useState(false);
+  const [liveMessage, setLiveMessage] = useState("");
   const debouncedBbox = useDebouncedValue(bbox, 400);
+  const debouncedManualQuery = useDebouncedValue(manualQuery, 350);
+  const comboboxRef = useRef<HTMLDivElement | null>(null);
+  const listboxId = "manual-location-listbox";
+  const shouldShowDropdown = isSuggestionOpen && (isSuggestLoading || suggestions.length > 0 || !!suggestError);
 
   const typesParam = useMemo(() => (selectedTypes.size ? Array.from(selectedTypes).sort().join(",") : undefined), [selectedTypes]);
   const bboxParam = useMemo(() => (debouncedBbox ? bboxToQueryParam(debouncedBbox) : undefined), [debouncedBbox]);
@@ -94,6 +114,126 @@ export default function FoodPage() {
     setFocusedItem(null);
   }, [typesParam]);
 
+  useEffect(() => {
+    if (!showManualInput) {
+      setSuggestions([]);
+      setSuggestError(null);
+      setIsSuggestionOpen(false);
+      setActiveSuggestionIndex(null);
+      setIsSuggestLoading(false);
+      setLiveMessage("");
+    }
+  }, [showManualInput]);
+
+  useEffect(() => {
+    if (!showManualInput) return;
+    const query = debouncedManualQuery.trim();
+    if (query.length < 3) {
+      setSuggestions([]);
+      setSuggestError(null);
+      setIsSuggestionOpen(false);
+      setActiveSuggestionIndex(null);
+      setIsSuggestLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    const controller = new AbortController();
+    setIsSuggestLoading(true);
+    setIsSuggestionOpen(true);
+    setSuggestError(null);
+
+    const fetchSuggestions = async () => {
+      try {
+        const res = await fetch(`/api/geocode/suggest?q=${encodeURIComponent(query)}&limit=5`, {
+          headers: { accept: "application/json" },
+          signal: controller.signal,
+        });
+        if (cancelled) return;
+
+        if (res.status === 404) {
+          setSuggestions([]);
+          setSuggestError("No matches. Try a full address, city & state, or ZIP.");
+          setActiveSuggestionIndex(null);
+          return;
+        }
+
+        if (res.status === 429) {
+          setSuggestions([]);
+          setSuggestError("Too many searches, please pause briefly.");
+          setActiveSuggestionIndex(null);
+          return;
+        }
+
+        if (!res.ok) {
+          setSuggestions([]);
+          setSuggestError("Suggestion service unavailable. You can still search manually.");
+          setActiveSuggestionIndex(null);
+          return;
+        }
+
+        const data = (await res.json()) as Suggestion[];
+        setSuggestions(data.slice(0, 5));
+        setSuggestError(null);
+        setActiveSuggestionIndex(null);
+      } catch (error) {
+        if (cancelled) return;
+        if (error instanceof Error && error.name === "AbortError") {
+          return;
+        }
+        setSuggestions([]);
+        setSuggestError("Suggestion service unavailable. You can still search manually.");
+        setActiveSuggestionIndex(null);
+      } finally {
+        if (!cancelled) {
+          setIsSuggestLoading(false);
+        }
+      }
+    };
+
+    void fetchSuggestions();
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [debouncedManualQuery, showManualInput]);
+
+  useEffect(() => {
+    if (!isSuggestionOpen) {
+      setLiveMessage("");
+      return;
+    }
+
+    if (activeSuggestionIndex !== null && suggestions[activeSuggestionIndex]) {
+      const current = suggestions[activeSuggestionIndex];
+      setLiveMessage(`Suggestion ${activeSuggestionIndex + 1} of ${suggestions.length}: ${current.name}`);
+      return;
+    }
+
+    if (isSuggestLoading) {
+      setLiveMessage("Searching for suggestions…");
+      return;
+    }
+
+    if (suggestError) {
+      setLiveMessage(suggestError);
+      return;
+    }
+
+    if (suggestions.length > 0) {
+      setLiveMessage(`${suggestions.length} suggestion${suggestions.length === 1 ? "" : "s"} available.`);
+      return;
+    }
+
+    if (debouncedManualQuery.trim().length >= 3) {
+      setLiveMessage("No matches. Try a full address, city & state, or ZIP.");
+      return;
+    }
+
+    setLiveMessage("");
+  }, [activeSuggestionIndex, debouncedManualQuery, isSuggestionOpen, isSuggestLoading, suggestError, suggestions]);
+
   const handleLocationSelected = useCallback(
     (lat: number, lon: number) => {
       setInitialCenter([lat, lon]);
@@ -104,6 +244,129 @@ export default function FoodPage() {
       setManualQuery("");
     },
     [setFocusedItem]
+  );
+
+  const performManualGeocode = useCallback(
+    async (input: string) => {
+      const query = input.trim();
+      if (!query) {
+        setLocationError("Please enter a location.");
+        return;
+      }
+      setLocationError(null);
+      setIsGeocoding(true);
+      setIsSuggestionOpen(false);
+      setActiveSuggestionIndex(null);
+      setIsSuggestLoading(false);
+      setSuggestions([]);
+      setSuggestError(null);
+      try {
+        const res = await fetch(`/api/geocode?q=${encodeURIComponent(query)}`, {
+          headers: { accept: "application/json" },
+        });
+        if (!res.ok) {
+          throw new Error("Geocode failed");
+        }
+        const json = await res.json();
+        if (typeof json.lat !== "number" || typeof json.lon !== "number") {
+          throw new Error("Invalid geocode response");
+        }
+        handleLocationSelected(json.lat, json.lon);
+      } catch (err) {
+        console.error(err);
+        setLocationError("We couldn't find that location. Try a full address, city and state, or ZIP code.");
+      } finally {
+        setIsGeocoding(false);
+      }
+    },
+    [handleLocationSelected]
+  );
+
+  const handleSuggestionPick = useCallback(
+    (suggestion: Suggestion) => {
+      setManualQuery(suggestion.name);
+      setLocationError(null);
+      setSuggestions([]);
+      setSuggestError(null);
+      setIsSuggestionOpen(false);
+      setActiveSuggestionIndex(null);
+      handleLocationSelected(suggestion.lat, suggestion.lon);
+    },
+    [handleLocationSelected]
+  );
+
+  const handleComboboxBlur = useCallback(
+    (event: FocusEvent<HTMLDivElement>) => {
+      const related = event.relatedTarget;
+      if (related && comboboxRef.current && comboboxRef.current.contains(related as Node)) {
+        return;
+      }
+      setIsSuggestionOpen(false);
+      setActiveSuggestionIndex(null);
+    },
+    [comboboxRef]
+  );
+
+  const handleInputFocus = useCallback(() => {
+    if (manualQuery.trim().length >= 3 || suggestions.length > 0 || suggestError || isSuggestLoading) {
+      setIsSuggestionOpen(true);
+    }
+  }, [isSuggestLoading, manualQuery, suggestError, suggestions]);
+
+  const handleInputKeyDown = useCallback(
+    (event: KeyboardEvent<HTMLInputElement>) => {
+      if (event.key === "ArrowDown") {
+        if (suggestions.length === 0) return;
+        event.preventDefault();
+        setIsSuggestionOpen(true);
+        setActiveSuggestionIndex((prev) => {
+          if (suggestions.length === 0) return null;
+          if (prev === null) return 0;
+          return (prev + 1) % suggestions.length;
+        });
+        return;
+      }
+
+      if (event.key === "ArrowUp") {
+        if (suggestions.length === 0) return;
+        event.preventDefault();
+        setIsSuggestionOpen(true);
+        setActiveSuggestionIndex((prev) => {
+          if (suggestions.length === 0) return null;
+          if (prev === null) return suggestions.length - 1;
+          return (prev - 1 + suggestions.length) % suggestions.length;
+        });
+        return;
+      }
+
+      if (event.key === "Enter") {
+        if (isSuggestionOpen && activeSuggestionIndex !== null && suggestions[activeSuggestionIndex]) {
+          event.preventDefault();
+          handleSuggestionPick(suggestions[activeSuggestionIndex]);
+          return;
+        }
+        event.preventDefault();
+        void performManualGeocode(manualQuery);
+        return;
+      }
+
+      if (event.key === "Escape") {
+        if (isSuggestionOpen) {
+          event.preventDefault();
+          setIsSuggestionOpen(false);
+          setActiveSuggestionIndex(null);
+        }
+      }
+    },
+    [activeSuggestionIndex, handleSuggestionPick, isSuggestionOpen, manualQuery, performManualGeocode, suggestions]
+  );
+
+  const handleManualSubmit = useCallback(
+    (event: FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      void performManualGeocode(manualQuery);
+    },
+    [manualQuery, performManualGeocode]
   );
 
   const handleUseCurrentLocation = useCallback(() => {
@@ -125,38 +388,6 @@ export default function FoodPage() {
       }
     );
   }, [handleLocationSelected]);
-
-  const handleManualSubmit = useCallback(
-    async (event: FormEvent<HTMLFormElement>) => {
-      event.preventDefault();
-      const query = manualQuery.trim();
-      if (!query) {
-        setLocationError("Please enter a location.");
-        return;
-      }
-      setLocationError(null);
-      setIsGeocoding(true);
-      try {
-        const res = await fetch(`/api/geocode?q=${encodeURIComponent(query)}`, {
-          headers: { accept: "application/json" },
-        });
-        if (!res.ok) {
-          throw new Error("Geocode failed");
-        }
-        const json = await res.json();
-        if (typeof json.lat !== "number" || typeof json.lon !== "number") {
-          throw new Error("Invalid geocode response");
-        }
-        handleLocationSelected(json.lat, json.lon);
-      } catch (err) {
-        console.error(err);
-        setLocationError("We couldn't find that location. Try a full address, city and state, or ZIP code.");
-      } finally {
-        setIsGeocoding(false);
-      }
-    },
-    [handleLocationSelected, manualQuery]
-  );
 
   const mapReady = !!initialCenter;
 
@@ -193,15 +424,77 @@ export default function FoodPage() {
             <label htmlFor="manual-location" className="block text-sm font-medium text-gray-700">
               Location
             </label>
-            <input
-              id="manual-location"
-              name="location"
-              value={manualQuery}
-              onChange={(event) => setManualQuery(event.target.value)}
-              placeholder="123 Main St, Jackson MS"
-              className="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring"
-            />
+            <div
+              ref={comboboxRef}
+              className="relative mt-1"
+              onBlur={handleComboboxBlur}
+              onFocus={handleInputFocus}
+            >
+              <input
+                id="manual-location"
+                name="location"
+                value={manualQuery}
+                autoComplete="off"
+                onChange={(event) => {
+                  setManualQuery(event.target.value);
+                  setLocationError(null);
+                  setSuggestError(null);
+                }}
+                onKeyDown={handleInputKeyDown}
+                role="combobox"
+                aria-haspopup="listbox"
+                aria-expanded={shouldShowDropdown}
+                aria-controls={listboxId}
+                aria-autocomplete="list"
+                aria-activedescendant={
+                  shouldShowDropdown && activeSuggestionIndex !== null && suggestions[activeSuggestionIndex]
+                    ? `${listboxId}-option-${suggestions[activeSuggestionIndex].id}`
+                    : undefined
+                }
+                placeholder="123 Main St, Jackson MS"
+                className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring"
+              />
+              {shouldShowDropdown && (
+                <div className="absolute left-0 right-0 z-10 mt-1 overflow-hidden rounded border border-gray-200 bg-white shadow-lg">
+                  {isSuggestLoading ? (
+                    <div className="px-3 py-2 text-sm text-gray-500">Searching…</div>
+                  ) : suggestions.length > 0 ? (
+                    <ul id={listboxId} role="listbox" aria-label="Address suggestions" className="max-h-60 overflow-auto py-1">
+                      {suggestions.map((suggestion, index) => {
+                        const isActive = index === activeSuggestionIndex;
+                        const kindLabel = suggestion.kind
+                          ? suggestion.kind.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase())
+                          : "";
+                        return (
+                          <li
+                            key={suggestion.id}
+                            id={`${listboxId}-option-${suggestion.id}`}
+                            role="option"
+                            aria-selected={isActive}
+                            className={`cursor-pointer px-3 py-2 text-sm transition ${
+                              isActive ? "bg-blue-600 text-white" : "text-gray-900 hover:bg-gray-100"
+                            }`}
+                            onMouseDown={(event) => event.preventDefault()}
+                            onMouseEnter={() => setActiveSuggestionIndex(index)}
+                            onClick={() => handleSuggestionPick(suggestion)}
+                          >
+                            <div className="font-medium">{suggestion.name}</div>
+                            {kindLabel && <div className={`text-xs ${isActive ? "text-blue-100" : "text-gray-500"}`}>{kindLabel}</div>}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  ) : (
+                    <div className="px-3 py-2 text-sm text-gray-500">{suggestError ?? "No matches. Try a full address, city & state, or ZIP."}</div>
+                  )}
+                </div>
+              )}
+              <p aria-live="polite" className="sr-only">
+                {liveMessage}
+              </p>
+            </div>
             <p className="mt-1 text-xs text-gray-500">Full address, city & state, or ZIP code are all accepted.</p>
+            <p className="mt-1 text-xs text-gray-500">Search by Nominatim, © OpenStreetMap contributors.</p>
           </div>
           <div className="flex items-center justify-between gap-2">
             <button

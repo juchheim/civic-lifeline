@@ -37,6 +37,11 @@ Accept: application/json
 GET {{baseUrl}}/api/food/snap?bbox={{yazooBbox}}&types=Supermarket,Convenience&limit=300
 Accept: application/json
 
+###
+# Address autocomplete suggestions
+GET {{baseUrl}}/api/geocode/suggest?q=Jackson%20MS&limit=5
+Accept: application/json
+
 ### ----------------------------------------------------
 ### LOCAL API — Jobs (BLS LAUS series via your server)
 ### ----------------------------------------------------
