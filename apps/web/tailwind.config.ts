@@ -1,4 +1,5 @@
 import type { Config } from "tailwindcss";
+import { BRAND_COLORS } from "./lib/theme/colors";
 
 export default {
   content: [
@@ -9,8 +10,8 @@ export default {
   theme: {
     extend: {
       colors: {
-        'civic-green': '#90ae4b',
-        'civic-blue': '#153eb0',
+        'civic-green': BRAND_COLORS.green,
+        'civic-blue': BRAND_COLORS.blue,
       },
     },
   },

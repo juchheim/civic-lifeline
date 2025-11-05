@@ -37,10 +37,10 @@ export function TemplateStep({ selectedTemplate, onSelectTemplate }: TemplateSte
               role="radio"
               aria-checked={isSelected}
               onClick={() => onSelectTemplate(option)}
-              className={`rounded-xl border-2 px-5 py-4 text-left shadow-sm transition focus:outline-none focus:ring-4 focus:ring-emerald-200 ${
+              className={`rounded-xl border-2 px-5 py-4 text-left shadow-sm transition focus:outline-none focus:ring-4 focus:ring-civic-green/30 ${
                 isSelected
-                  ? 'border-emerald-600 bg-emerald-50 text-emerald-900'
-                  : 'border-neutral-300 bg-white text-neutral-700 hover:border-emerald-400 hover:text-neutral-900'
+                  ? 'border-civic-green bg-civic-green/10 text-civic-green'
+                  : 'border-neutral-300 bg-white text-neutral-700 hover:border-civic-green/60 hover:text-neutral-900'
               }`}
               title={`Use the ${detail.label} resume template`}
             >
