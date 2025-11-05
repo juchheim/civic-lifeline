@@ -61,28 +61,37 @@ describe("api zod schemas", () => {
           id: "HUD-123",
           name: "Delta Housing Aid",
           phone: "555-1234",
-          website: "https://example.org",
-          services: ["Rental", "Credit"],
-          languages: ["English", "Spanish"],
-          coords: [-90.41, 32.89],
-        },
-      ],
-      ...meta,
-    });
+      website: "https://example.org",
+      services: ["Rental", "Credit"],
+      languages: ["English", "Spanish"],
+      coords: [-90.41, 32.89],
+      address: "123 Main St",
+      city: "Jackson",
+      state: "MS",
+      postalCode: "39201",
+      distanceMiles: 12.3,
+    },
+  ],
+  ...meta,
+});
     expect(resp.items[0].name).toBe("Delta Housing Aid");
   });
 
   it("parses FmrResponse", () => {
     const resp = zFmrResponse.parse({
       year: 2025,
+      fips: "28163",
       areaName: "Yazoo County, MS",
       br0: 570,
       br1: 620,
       br2: 790,
       br3: 990,
       br4: 1150,
+      resolvedLocation: { name: "Yazoo County, MS", postalCode: "39194" },
       ...meta,
     });
     expect(resp.year).toBe(2025);
+    expect(resp.fips).toBe("28163");
+    expect(resp.resolvedLocation?.postalCode).toBe("39194");
   });
 });

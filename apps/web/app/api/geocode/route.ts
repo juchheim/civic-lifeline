@@ -35,7 +35,12 @@ export async function GET(request: NextRequest) {
       return Response.json({ error: "Geocoding service returned an error." }, { status: 502 });
     }
 
-    const results: Array<{ lat: string; lon: string; display_name?: string }> = await res.json();
+    const results: Array<{
+      lat: string;
+      lon: string;
+      display_name?: string;
+      address?: Record<string, unknown>;
+    }> = await res.json();
     const first = results[0];
 
     if (!first) {
@@ -49,10 +54,47 @@ export async function GET(request: NextRequest) {
       return Response.json({ error: "Geocoding returned invalid coordinates." }, { status: 502 });
     }
 
+    const address = first.address && typeof first.address === "object" ? first.address : {};
+    const postalCode = typeof address?.postcode === "string" ? address.postcode : undefined;
+    const city =
+      typeof address?.city === "string"
+        ? address.city
+        : typeof address?.town === "string"
+          ? address.town
+          : typeof address?.village === "string"
+            ? address.village
+            : typeof address?.hamlet === "string"
+              ? address.hamlet
+              : typeof address?.municipality === "string"
+                ? address.municipality
+                : undefined;
+    const county =
+      typeof address?.county === "string"
+        ? address.county
+        : typeof address?.county_name === "string"
+          ? address.county_name
+          : typeof address?.region === "string"
+            ? address.region
+            : undefined;
+    const state =
+      typeof address?.state === "string"
+        ? address.state
+        : typeof address?.state_district === "string"
+          ? address.state_district
+          : undefined;
+    const stateCode = typeof address?.state_code === "string" ? address.state_code : undefined;
+
     return Response.json({
       lat,
       lon,
       name: first.display_name ?? query,
+      address: {
+        postalCode,
+        city,
+        county,
+        state,
+        stateCode,
+      },
     });
   } catch (error) {
     console.error("geocode lookup failed", error);

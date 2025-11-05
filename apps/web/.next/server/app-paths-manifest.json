@@ -1,3 +1,6 @@
 {
-  "/resume/page": "app/resume/page.js"
+  "/housing/page": "app/housing/page.js",
+  "/broadband/page": "app/broadband/page.js",
+  "/api/housing/counselors/route": "app/api/housing/counselors/route.js",
+  "/api/housing/fmr/route": "app/api/housing/fmr/route.js"
 }

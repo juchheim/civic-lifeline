@@ -1,0 +1,22 @@
+[
+  {
+    "fips": "28163",
+    "year": 2024,
+    "areaName": "Yazoo County, MS (sample)",
+    "br0": 718,
+    "br1": 745,
+    "br2": 944,
+    "br3": 1198,
+    "br4": 1289
+  },
+  {
+    "fips": "28083",
+    "year": 2024,
+    "areaName": "Leflore County, MS (sample)",
+    "br0": 700,
+    "br1": 735,
+    "br2": 910,
+    "br3": 1125,
+    "br4": 1230
+  }
+]

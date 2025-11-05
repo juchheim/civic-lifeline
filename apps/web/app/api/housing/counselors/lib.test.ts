@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { transformHudToCounselors, buildHudCounselorsUrl } from "./lib";
+import { transformHudToCounselors, buildHudCounselorsUrl, normalizeRadius } from "./lib";
 
 describe("counselors lib", () => {
   it("maps HUD results to items", () => {
@@ -21,5 +21,12 @@ describe("counselors lib", () => {
     expect(u.searchParams.get("lat")).toBe("32.8");
     expect(u.searchParams.get("lng")).toBe("-90.4");
     expect(u.searchParams.get("distance")).toBe("30");
+  });
+
+  it("normalizes radius within bounds", () => {
+    expect(normalizeRadius(null)).toBe(100);
+    expect(normalizeRadius("4")).toBe(5);
+    expect(normalizeRadius("200")).toBe(100);
+    expect(normalizeRadius("15")).toBe(15);
   });
 });

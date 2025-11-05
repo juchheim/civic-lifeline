@@ -78,6 +78,11 @@ export interface CounselorsResponse extends SourceMeta {
     services?: string[];
     languages?: string[];
     coords?: [number, number];
+    address?: string;
+    city?: string;
+    state?: string;
+    postalCode?: string;
+    distanceMiles?: number;
   }>;
 }
 const zCounselorItem = z.object({
@@ -88,28 +93,43 @@ const zCounselorItem = z.object({
   services: z.array(z.string()).optional(),
   languages: z.array(z.string()).optional(),
   coords: z.tuple([z.number(), z.number()]).optional(),
+  address: z.string().optional(),
+  city: z.string().optional(),
+  state: z.string().optional(),
+  postalCode: z.string().optional(),
+  distanceMiles: z.number().optional(),
 });
 export const zCounselorsResponse = z.object({ items: z.array(zCounselorItem) }).and(zSourceMeta);
 
 // FmrResponse
 export interface FmrResponse extends SourceMeta {
   year: number;
+  fips?: string;
   areaName: string;
   br0: number;
   br1: number;
   br2: number;
   br3: number;
   br4: number;
+  resolvedLocation?: { name?: string | null; postalCode?: string | null } | null;
 }
 export const zFmrResponse = z
   .object({
     year: z.number().int(),
+    fips: z.string().optional(),
     areaName: z.string(),
     br0: z.number(),
     br1: z.number(),
     br2: z.number(),
     br3: z.number(),
     br4: z.number(),
+    resolvedLocation: z
+      .object({
+        name: z.string().nullable().optional(),
+        postalCode: z.string().nullable().optional(),
+      })
+      .nullable()
+      .optional(),
   })
   .and(zSourceMeta);
 
