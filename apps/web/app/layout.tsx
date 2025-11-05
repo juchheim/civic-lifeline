@@ -1,6 +1,7 @@
 import "./globals.css";
 import "leaflet/dist/leaflet.css";
 import Link from "next/link";
+import Image from "next/image";
 import type { Metadata } from "next";
 import MainNav from "@/components/MainNav";
 import { Providers } from "./providers";
@@ -123,8 +124,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <div className="flex flex-col">
             <header className="border-b border-slate-200 bg-white/80 backdrop-blur">
               <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-4">
-                <Link href="/" className="text-lg font-semibold text-blue-700 hover:text-blue-800">
-                  Civic Lifeline
+                <Link href="/" className="flex items-center hover:opacity-80 transition-opacity">
+                  <Image
+                    src="/CivicLifeline.png"
+                    alt="Civic Lifeline"
+                    width={200}
+                    height={50}
+                    priority
+                    className="h-auto w-auto max-h-[40px]"
+                  />
                 </Link>
                 <MainNav />
               </div>
