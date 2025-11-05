@@ -3,9 +3,9 @@
 ## Foundations
 - **Typography**: Inter (UI), Source Serif (long text). Scale: 12–32px.
 - **Color**:
-  - Primary: Civic Green (#90ae4b) - defined in `lib/theme/colors.ts`
+  - Primary: Civic Green (#9ab955) - defined in `lib/theme/colors.ts`
   - Accent: Civic Blue (#153eb0) - defined in `lib/theme/colors.ts`
-  - Success: Civic Green (#90ae4b)
+  - Success: Civic Green (#9ab955)
   - Warning: Amber 500
   - Error: Rose 600
   - Neutrals: Slate 50–900

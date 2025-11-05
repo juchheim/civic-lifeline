@@ -13,7 +13,7 @@
  */
 
 export const BRAND_COLORS = {
-  green: '#90ae4b',
+  green: '#9ab955',
   blue: '#153eb0',
 } as const;
 
