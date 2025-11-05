@@ -13,6 +13,11 @@ const sections = [
     description: "Complete a guided, multi-step resume draft that saves securely in your browser.",
   },
   {
+    href: "/housing",
+    title: "Housing Support",
+    description: "Find nearby HUD housing counselors and fetch Fair Market Rents.",
+  },
+  {
     href: "/stats",
     title: "Stats — Unemployment",
     description: "Query BLS LAUS unemployment series by county and visualise the trend.",
@@ -21,11 +26,6 @@ const sections = [
     href: "/broadband",
     title: "Broadband Coverage",
     description: "Look up FCC NBM broadband summaries by county FIPS code.",
-  },
-  {
-    href: "/housing",
-    title: "Housing Support",
-    description: "Find nearby HUD housing counselors and fetch Fair Market Rents.",
   },
   {
     href: "/resources",
