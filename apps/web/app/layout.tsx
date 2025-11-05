@@ -126,7 +126,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <div className="mx-auto flex w-full max-w-[85rem] items-center justify-between px-4 py-4">
                 <Link href="/" className="flex items-center hover:opacity-80 transition-opacity">
                   <Image
-                    src="/CivicLifeline.png"
+                    src="/CivicLifelineOGB.png"
                     alt="Civic Lifeline"
                     width={200}
                     height={50}
