@@ -23,6 +23,7 @@ describe("lookupCountyFips", () => {
     const payload = {
       County: { FIPS: "28163", name: "Yazoo" },
       State: { code: "MS", name: "Mississippi" },
+      Block: { FIPS: "281630001001234" },
     };
     const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(JSON.stringify(payload), {
@@ -35,6 +36,8 @@ describe("lookupCountyFips", () => {
     expect(result.fips).toBe("28163");
     expect(result.countyName).toBe("Yazoo");
     expect(result.stateCode).toBe("MS");
+    expect(result.tractFips).toBe("28163000100");
+    expect(result.blockFips).toBe("281630001001234");
     expect(fetchSpy).toHaveBeenCalledTimes(1);
 
     fetchSpy.mockClear();

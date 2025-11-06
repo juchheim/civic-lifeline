@@ -70,42 +70,7 @@ const STATE_DATA: Array<{ code: string; name: string; fips: string }> = [
   { code: "DC", name: "District of Columbia", fips: "11" },
 ];
 
-async function fetchCountiesFromCensus(): Promise<Array<{ name: string; fips: string; stateCode: string; stateFips: string }>> {
-  // Fetch from Census Bureau's official FIPS dataset
-  // This is a well-known endpoint that provides county FIPS codes
-  const url = "https://www2.census.gov/programs-surveys/popest/geographies/2023/all-geocodes-v2023.xlsx";
-  
-  // Since parsing XLSX is complex, we'll use a JSON alternative
-  // A common source is the data.gov API or a pre-built JSON
-  // For now, we'll fetch from a reliable JSON source
-  
-  try {
-    // Try to fetch from a reliable JSON source that maintains Census FIPS data
-    const response = await fetch("https://raw.githubusercontent.com/plotly/datasets/master/geojson-counties-fips.json");
-    if (!response.ok) {
-      throw new Error("Failed to fetch from primary source");
-    }
-    
-    // This JSON contains county boundaries but we need to extract FIPS codes
-    // For production, you might want to use a more structured source
-    // For now, we'll create the data from a known comprehensive list
-    
-    // Note: In production, you may want to:
-    // 1. Download the official Census CSV/Excel file
-    // 2. Parse it using a library like xlsx
-    // 3. Or use a pre-processed JSON file
-    
-    // For this implementation, we'll return an empty array and log a message
-    // You can populate this manually or use a CSV parser
-    console.log("Note: County data fetching from Census requires parsing CSV/Excel.");
-    console.log("For now, we'll use a comprehensive pre-built list.");
-    
-    return [];
-  } catch (error) {
-    console.error("Error fetching from Census:", error);
-    return [];
-  }
-}
+// Removed unused fetchCountiesFromCensus function
 
 /**
  * Fetch comprehensive county data from a reliable source.
@@ -120,7 +85,18 @@ async function getComprehensiveCountyData(): Promise<Array<{ name: string; fips:
       throw new Error(`HTTP ${response.status}`);
     }
     
-    const geoJson: any = await response.json();
+    interface GeoJsonFeature {
+      properties?: {
+        GEO_ID?: string;
+        NAME?: string;
+      };
+    }
+    
+    interface GeoJson {
+      features?: GeoJsonFeature[];
+    }
+    
+    const geoJson = (await response.json()) as GeoJson;
     
     // Extract county data from GeoJSON
     // The Plotly dataset has structure: { type: "FeatureCollection", features: [...] }

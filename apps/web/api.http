@@ -51,7 +51,7 @@ Accept: application/json
 ### ----------------------------------------------------
 ### LOCAL API — Broadband summary (from your DB after ETL)
 ### ----------------------------------------------------
-GET {{baseUrl}}/api/broadband/summary?geo=county&fips={{yazooFips}}
+GET {{baseUrl}}/api/broadband/summary?geo=county&q=Yazoo%20County%2C%20MS
 Accept: application/json
 
 ### ----------------------------------------------------

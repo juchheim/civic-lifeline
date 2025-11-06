@@ -45,13 +45,19 @@ describe("api zod schemas", () => {
 
   it("parses BroadbandSummaryResponse", () => {
     const resp = zBroadbandSummaryResponse.parse({
-      providerCount: 3,
-      speed: { "25_3": true, "100_20": true, "1000_100": false },
-      tech: ["Fiber", "Cable"],
+      fips: "28163",
       asOf: "2025-06-30",
+      coverage: { "25_3": 98.5, "100_20": 90.1, "1000_100": 42.3 },
+      totalUnits: 12345,
+      technologies: [
+        { name: "Fiber", coverage: 42.3 },
+        { name: "Cable", coverage: 90.1 },
+      ],
+      resolvedLocation: { name: "Yazoo County, MS", postalCode: "39194" },
       ...meta,
     });
-    expect(resp.providerCount).toBe(3);
+    expect(resp.fips).toBe("28163");
+    expect(resp.resolvedLocation?.name).toBe("Yazoo County, MS");
   });
 
   it("parses CounselorsResponse", () => {

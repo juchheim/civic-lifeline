@@ -1,3 +1,5 @@
+import { resolve } from "node:path";
+
 /** @type {import("next").NextConfig} */
 const nextConfig = {
   transpilePackages: ["@cl/types", "@cl/utils", "@cl/db"],
@@ -15,6 +17,9 @@ const nextConfig = {
       test: /\.hbs$/i,
       type: 'asset/source',
     });
+    config.resolve = config.resolve || {};
+    config.resolve.alias = config.resolve.alias || {};
+    config.resolve.alias.aws4 = resolve("./lib/aws4-stub.js");
     return config;
   },
 };

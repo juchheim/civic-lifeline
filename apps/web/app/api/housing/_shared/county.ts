@@ -6,6 +6,8 @@ export interface CountyLookupResult {
   countyName: string;
   stateCode: string;
   stateName?: string;
+  tractFips?: string;
+  blockFips?: string;
 }
 
 const CACHE_PREFIX = "housing:fcc:";
@@ -56,9 +58,16 @@ export async function lookupCountyFips(lat: number, lon: number, opts: { redis?:
   const json = await fetchWithRetry(url.toString(), 2, 8000);
   const county = json?.County;
   const state = json?.State;
+  const block = json?.Block;
 
   const rawFips = county?.FIPS ?? county?.fips ?? state?.FIPS;
   const fips = typeof rawFips === "string" ? rawFips.padStart(5, "0") : undefined;
+  const rawBlockFips = block?.FIPS ?? block?.fips;
+  const blockFips =
+    typeof rawBlockFips === "string" && rawBlockFips.trim()
+      ? rawBlockFips.trim().padStart(15, "0").slice(0, 15)
+      : undefined;
+  const tractFips = blockFips ? blockFips.slice(0, 11) : undefined;
   const countyName = typeof county?.name === "string" ? county.name : undefined;
   const stateCode = typeof state?.code === "string" ? state.code : undefined;
   const stateName = typeof state?.name === "string" ? state.name : undefined;
@@ -75,6 +84,8 @@ export async function lookupCountyFips(lat: number, lon: number, opts: { redis?:
     countyName: countyName ?? "",
     stateCode,
     stateName,
+    tractFips,
+    blockFips,
   };
 
   if (redis) {

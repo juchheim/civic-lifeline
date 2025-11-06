@@ -15,7 +15,7 @@ const sections = [
   {
     href: "/housing",
     title: "Housing Support",
-    description: "Find HUD housing counselors near you and check rent prices.",
+    description: "Check rent prices and find HUD housing counselors near you.",
   },
   {
     href: "/broadband",
@@ -25,7 +25,7 @@ const sections = [
   {
     href: "/stats",
     title: "Stats — Unemployment",
-    description: "See job and unemployment numbers by county.",
+    description: "See unemployment numbers by county.",
   },
 ];
 
@@ -77,7 +77,7 @@ const highlightPoints = [
   },
   {
     title: "Resume Builder",
-    detail: "Type your work history in simple words and download a ready-to-use resume.",
+    detail: "Enter your details and download a ready-to-use resume.",
   },
   {
     title: "Housing Help",
@@ -100,7 +100,7 @@ export default function HomePage() {
               Find the help you need to stay positive and in charge of your life.
             </h1>
             <p className="max-w-xl text-base text-white/85 sm:text-lg">
-              Get food, make a strong resume, find housing help, and use facts to make smart choices.
+              Locate food choices. Make a strong resume. Know the facts about local housing and find help.
             </p>
           </div>
           <ul className="space-y-3">
@@ -120,7 +120,7 @@ export default function HomePage() {
             <p className="text-xs font-semibold uppercase tracking-[0.35em] text-civic-blue">Pick the help you need.</p>
             <h2 className="text-3xl font-semibold text-slate-900">What kind of help do you need today?</h2>
             <p className="text-sm text-slate-600">
-              Each card opens one simple tool. Click the one that fits what you need.
+              Our tools are simple. Click the one that fits what you need.
             </p>
           </div>
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">

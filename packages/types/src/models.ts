@@ -39,20 +39,42 @@ export const zLausSeries = z.object({
 export type LausSeries = z.infer<typeof zLausSeries>;
 
 // fccBroadband
-export const zBroadbandSpeed = z.object({
-  "25_3": z.boolean(),
-  "100_20": z.boolean(),
-  "1000_100": z.boolean(),
+export const zFccBroadbandCoverage = z.object({
+  "25_3": z.number().nullable(),
+  "100_20": z.number().nullable(),
+  "1000_100": z.number().nullable(),
 });
+
+export const zFccBroadbandTechEntry = z.object({
+  name: z.string(),
+  coverage: z.number(),
+});
+
 export const zFccBroadband = z.object({
   _id: z.string(),
-  geoType: z.union([z.literal("county"), z.literal("tract")]),
-  fips: z.string(),
+  geoType: z.literal("county"),
+  fips: zFips,
+  stateFips: z.string().regex(/^\d{2}$/),
   asOf: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  providerCount: z.number().int().nonnegative(),
-  speed: zBroadbandSpeed,
-  tech: z.array(z.string()),
-  source: z.literal("FCC NBM CSV"),
+  countyName: z.string().optional(),
+  stateName: z.string().optional(),
+  totalUnits: z
+    .object({
+      residential: z.number().int().nonnegative().optional(),
+      business: z.number().int().nonnegative().optional(),
+    })
+    .optional(),
+  coverage: z.object({
+    residential: zFccBroadbandCoverage.optional(),
+    business: zFccBroadbandCoverage.optional(),
+  }),
+  technologies: z
+    .object({
+      residential: z.array(zFccBroadbandTechEntry).optional(),
+      business: z.array(zFccBroadbandTechEntry).optional(),
+    })
+    .optional(),
+  source: z.union([z.literal("FCC NBM CSV"), z.literal("FCC NBM Summary CSV")]),
   sourceUrl: z.string(),
   fetchedAt: zISODate,
   createdAt: zISODate,

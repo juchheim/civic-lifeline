@@ -11,7 +11,7 @@
     "format": "prettier --write .",
     "prettier": "prettier --check .",
     "test": "vitest",
-    "workers:ingest:fcc": "tsx packages/workers/src/ingest-fcc.ts",
+    "workers:ingest:fcc": "tsx packages/workers/src/ingest-fcc-summary.ts",
     "workers:seed:states-counties": "tsx packages/workers/src/seed-states-counties.ts"
   },
   "devDependencies": {

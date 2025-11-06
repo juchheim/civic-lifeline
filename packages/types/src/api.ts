@@ -54,17 +54,38 @@ export const zUnemploymentResponse = z
 
 // BroadbandSummaryResponse
 export interface BroadbandSummaryResponse extends SourceMeta {
-  providerCount: number;
-  speed: { "25_3": boolean; "100_20": boolean; "1000_100": boolean };
-  tech: string[];
-  asOf: string; // YYYY-MM-DD
+  fips: string;
+  asOf: string;
+  coverage: { "25_3": number | null; "100_20": number | null; "1000_100": number | null };
+  totalUnits?: number;
+  technologies?: Array<{ name: string; coverage: number }>;
+  resolvedLocation?: { name?: string | null; postalCode?: string | null } | null;
 }
 export const zBroadbandSummaryResponse = z
   .object({
-    providerCount: z.number().int(),
-    speed: z.object({ "25_3": z.boolean(), "100_20": z.boolean(), "1000_100": z.boolean() }),
-    tech: z.array(z.string()),
+    fips: z.string(),
     asOf: z.string(),
+    coverage: z.object({
+      "25_3": z.number().nullable(),
+      "100_20": z.number().nullable(),
+      "1000_100": z.number().nullable(),
+    }),
+    totalUnits: z.number().optional(),
+    technologies: z
+      .array(
+        z.object({
+          name: z.string(),
+          coverage: z.number(),
+        }),
+      )
+      .optional(),
+    resolvedLocation: z
+      .object({
+        name: z.string().nullable().optional(),
+        postalCode: z.string().nullable().optional(),
+      })
+      .nullable()
+      .optional(),
   })
   .and(zSourceMeta);
 
