@@ -5,10 +5,10 @@
     "declaration": true,
     "emitDeclarationOnly": false,
     "outDir": "dist",
+    "rootDir": "src",
     "noEmit": false
   },
-  "include": ["src"]
-  ,
+  "include": ["src"],
   "references": [
     { "path": "../types" }
   ]

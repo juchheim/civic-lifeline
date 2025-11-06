@@ -1,19 +1,50 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { MS_COUNTIES } from "@/data/ms-counties";
 import SourceChip from "@/components/SourceChip";
-import { zUnemploymentResponse } from "@cl/types";
+import { zUnemploymentResponse, State, County } from "@cl/types";
 
 const TimeSeriesChart = dynamic(() => import("@/components/TimeSeriesChart"), { ssr: false });
 
 export default function StatsPage() {
   const isBrowser = typeof window !== "undefined";
-  const [countyFips, setCountyFips] = useState<string>(MS_COUNTIES[0]?.fips ?? "28163");
+  const [selectedStateCode, setSelectedStateCode] = useState<string>("MS");
+  const [countyFips, setCountyFips] = useState<string>("28163");
   const start = 2018;
   const end = 2025;
+
+  // Fetch states
+  const { data: states = [] } = useQuery<State[]>({
+    queryKey: ["states"],
+    queryFn: async () => {
+      const res = await fetch("/api/states");
+      if (!res.ok) throw new Error("Failed to fetch states");
+      return res.json();
+    },
+    staleTime: Infinity, // States don't change
+    enabled: isBrowser,
+  });
+
+  // Fetch counties for selected state
+  const { data: counties = [] } = useQuery<County[]>({
+    queryKey: ["counties", selectedStateCode],
+    queryFn: async () => {
+      const res = await fetch(`/api/counties?stateCode=${selectedStateCode}`);
+      if (!res.ok) throw new Error("Failed to fetch counties");
+      return res.json();
+    },
+    staleTime: Infinity, // Counties don't change often
+    enabled: isBrowser && !!selectedStateCode,
+  });
+
+  // Reset county selection when state changes
+  useEffect(() => {
+    if (counties.length > 0 && !counties.find((c) => c.fips === countyFips)) {
+      setCountyFips(counties[0]?.fips ?? "");
+    }
+  }, [selectedStateCode, counties, countyFips]);
 
   const fetcher = async () => {
     if (!isBrowser) {
@@ -44,31 +75,58 @@ export default function StatsPage() {
     <div className="space-y-6">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold">Stats — Mississippi Unemployment</h1>
+          <h1 className="text-2xl font-semibold">Stats — Unemployment by County</h1>
           <p className="mt-1 text-sm text-gray-600">
-            Choose a county to compare unemployment trends using BLS Local Area Unemployment Statistics.
+            Choose a state and county to compare unemployment trends using BLS Local Area Unemployment Statistics.
           </p>
         </div>
         <SourceChip source="BLS LAUS" lastUpdated={data?.lastUpdated ?? new Date().toISOString()} />
       </header>
 
-      <div className="flex items-center gap-3">
-        <label className="text-sm" htmlFor="stats-county-select">
-          County
-        </label>
-        <select
-          id="stats-county-select"
-          className="border rounded px-2 py-1 text-sm"
-          value={countyFips}
-          onChange={(e) => setCountyFips(e.target.value)}
-          aria-label="Select county"
-        >
-          {MS_COUNTIES.map((c) => (
-            <option key={c.fips} value={c.fips}>
-              {c.name}
-            </option>
-          ))}
-        </select>
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="flex items-center gap-2">
+          <label className="text-sm font-medium" htmlFor="stats-state-select">
+            State
+          </label>
+          <select
+            id="stats-state-select"
+            className="border rounded px-2 py-1 text-sm min-w-[180px]"
+            value={selectedStateCode}
+            onChange={(e) => setSelectedStateCode(e.target.value)}
+            aria-label="Select state"
+          >
+            {states.map((state) => (
+              <option key={state.code} value={state.code}>
+                {state.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <label className="text-sm font-medium" htmlFor="stats-county-select">
+            County
+          </label>
+          <select
+            id="stats-county-select"
+            className="border rounded px-2 py-1 text-sm min-w-[200px]"
+            value={countyFips}
+            onChange={(e) => setCountyFips(e.target.value)}
+            aria-label="Select county"
+            disabled={counties.length === 0}
+          >
+            {counties.length === 0 ? (
+              <option value="">Loading counties...</option>
+            ) : (
+              counties.map((county) => (
+                <option key={county.fips} value={county.fips}>
+                  {county.name}
+                </option>
+              ))
+            )}
+          </select>
+        </div>
+
         <div className="text-xs text-gray-500">
           Range: {start}–{end}
         </div>
@@ -86,6 +144,8 @@ export default function StatsPage() {
 
       <section className="rounded border bg-white p-3 shadow-sm">
         {isLoading ? (
+          <div className="h-64 animate-pulse rounded bg-gray-100" />
+        ) : points.length === 0 && !isBrowser ? (
           <div className="h-64 animate-pulse rounded bg-gray-100" />
         ) : points.length === 0 ? (
           <div className="p-6 text-center text-sm text-gray-600">

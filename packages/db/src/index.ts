@@ -1,5 +1,5 @@
 import { MongoClient, Db, Collection, ObjectId } from "mongodb";
-import { FccBroadband, Resource } from "@cl/types";
+import { FccBroadband, State, County } from "@cl/types";
 
 let _client: MongoClient | null = null;
 let _db: Db | null = null;
@@ -25,24 +25,14 @@ export async function getFccBroadbandCollection(): Promise<Collection<FccBroadba
   return db.collection<FccBroadband & { _id: string }>("fccBroadband");
 }
 
-export async function getResourcesCollection(): Promise<Collection<Resource & { _id: string }>> {
+export async function getStatesCollection(): Promise<Collection<State & { _id: string }>> {
   const db = await getDb();
-  return db.collection<Resource & { _id: string }>("resources");
+  return db.collection<State & { _id: string }>("states");
 }
 
-export interface ResourceAudit {
-  _id?: string;
-  resourceId: string;
-  action: "verify" | "create" | "update";
-  by: string;
-  at: string;
-  method?: "phone" | "site" | "email";
-  notes?: string;
-}
-
-export async function getResourceAuditsCollection(): Promise<Collection<ResourceAudit>> {
+export async function getCountiesCollection(): Promise<Collection<County & { _id: string }>> {
   const db = await getDb();
-  return db.collection<ResourceAudit>("resourceAudits");
+  return db.collection<County & { _id: string }>("counties");
 }
 
 export { ObjectId };

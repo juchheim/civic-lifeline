@@ -103,35 +103,6 @@ export const zHudFmr = z.object({
 });
 export type HudFmr = z.infer<typeof zHudFmr>;
 
-// resources
-export const zResourceType = z.union([
-  z.literal("wifi"),
-  z.literal("food_pantry"),
-  z.literal("meal_site"),
-  z.literal("clinic"),
-  z.literal("other"),
-]);
-export type ResourceType = z.infer<typeof zResourceType>;
-export const zResource = z.object({
-  _id: z.string(),
-  type: zResourceType,
-  name: z.string(),
-  description: z.string().optional(),
-  loc: zPoint,
-  address: z.string().optional(),
-  contact: z
-    .object({ phone: z.string().optional(), email: z.string().optional(), site: z.string().optional() })
-    .optional(),
-  hours: z.string().optional(),
-  submittedBy: z.string().nullable().optional(),
-  verified: z
-    .object({ by: z.string(), at: zISODate, method: z.union([z.literal("phone"), z.literal("site"), z.literal("email")]) })
-    .optional(),
-  createdAt: zISODate,
-  updatedAt: zISODate,
-});
-export type Resource = z.infer<typeof zResource>;
-
 // users
 export const zUserRole = z.union([z.literal("user"), z.literal("moderator"), z.literal("admin")]);
 export type UserRole = z.infer<typeof zUserRole>;
@@ -160,3 +131,21 @@ export const zLetter = z.object({
   updatedAt: zISODate,
 });
 export type Letter = z.infer<typeof zLetter>;
+
+// statesCounties - Reference data for states and counties
+export const zState = z.object({
+  _id: z.string(),
+  code: z.string().length(2), // e.g., "MS"
+  name: z.string(), // e.g., "Mississippi"
+  fips: z.string().length(2), // State FIPS code, e.g., "28"
+});
+export type State = z.infer<typeof zState>;
+
+export const zCounty = z.object({
+  _id: z.string(),
+  name: z.string(), // e.g., "Yazoo County"
+  fips: zFips, // 5-digit county FIPS, e.g., "28163"
+  stateCode: z.string().length(2), // e.g., "MS"
+  stateFips: z.string().length(2), // State FIPS, e.g., "28"
+});
+export type County = z.infer<typeof zCounty>;

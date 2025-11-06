@@ -5,27 +5,27 @@ const sections = [
   {
     href: "/food",
     title: "Food Access",
-    description: "Search for USDA SNAP retailers within a map view.",
+    description: "Find stores that take SNAP on a map.",
   },
   {
     href: "/resume",
     title: "Resume Builder",
-    description: "Create a resume with our guided, multi-step process.",
+    description: "Make a resume quickly with easy guidance.",
   },
   {
     href: "/housing",
     title: "Housing Support",
-    description: "Find nearby HUD housing counselors and fetch Fair Market Rents.",
+    description: "Find HUD housing counselors near you and check rent prices.",
   },
   {
     href: "/broadband",
     title: "Broadband Coverage",
-    description: "Look up FCC NBM broadband summaries by county FIPS code.",
+    description: "See internet coverage by county.",
   },
   {
     href: "/stats",
     title: "Stats — Unemployment",
-    description: "Query BLS LAUS unemployment series by county and visualise the trend.",
+    description: "See job and unemployment numbers by county.",
   },
 ];
 
@@ -72,20 +72,20 @@ const essentialStyles: Record<
 
 const highlightPoints = [
   {
-    title: "Food access finder",
-    detail: "Pinpoint SNAP retailers nearby, filter by store type, and map an affordable grocery run.",
+    title: "Food Finder",
+    detail: "See stores near you that take SNAP, choose the kind you want, and plan a low-cost trip.",
   },
   {
     title: "Resume Builder",
-    detail: "Capture work history in plain language and download a PDF ready for job coaches or AI helpers.",
+    detail: "Type your work history in simple words and download a ready-to-use resume.",
   },
   {
-    title: "Housing guidance",
-    detail: "Match residents with HUD counselors and Fair Market Rent data before you make a referral.",
+    title: "Housing Help",
+    detail: "Connect with HUD housing counselors and see rent prices before you move or share info.",
   },
   {
-    title: "Civic data snapshots",
-    detail: "Check broadband coverage and unemployment trends while coordinating community support.",
+    title: "Community Data",
+    detail: "See internet and job numbers in your area to understand local needs.",
   },
 ];
 
@@ -97,10 +97,10 @@ export default function HomePage() {
           <div className="space-y-4">
             <p className="text-xs font-semibold uppercase tracking-[0.35em] text-white/80">Civic Lifeline</p>
             <h1 className="text-4xl font-semibold leading-[1.15] sm:text-[2.75rem]">
-              Find the help you need to stay hopeful, and maintain ownership of your journey.
+              Find the help you need to stay positive and in charge of your life.
             </h1>
             <p className="max-w-xl text-base text-white/85 sm:text-lg">
-              Find groceries, draft a job-ready resume, discover housing counseling, and learn to make data-backed decisions.
+              Get food, make a strong resume, find housing help, and use facts to make smart choices.
             </p>
           </div>
           <ul className="space-y-3">
@@ -117,10 +117,10 @@ export default function HomePage() {
         </div>
         <div className="flex flex-col gap-8">
           <div className="space-y-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.35em] text-civic-blue">Choose support</p>
-            <h2 className="text-3xl font-semibold text-slate-900">How can we help today?</h2>
+            <p className="text-xs font-semibold uppercase tracking-[0.35em] text-civic-blue">Pick the help you need.</p>
+            <h2 className="text-3xl font-semibold text-slate-900">What kind of help do you need today?</h2>
             <p className="text-sm text-slate-600">
-              Each card opens a focused tool—jump straight into what you need.
+              Each card opens one simple tool. Click the one that fits what you need.
             </p>
           </div>
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
