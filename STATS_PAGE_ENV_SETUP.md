@@ -14,6 +14,7 @@ The Next.js API routes (`/api/states` and `/api/counties`) run on Vercel and nee
 1. **`MONGO_URI`** (Required)
    - MongoDB connection string
    - Format: `mongodb+srv://<username>:<password>@<cluster>.mongodb.net/?retryWrites=true&w=majority`
+   - Replace `<username>`, `<password>`, and `<cluster>` with your actual MongoDB Atlas credentials
    - This is the same connection string used by your Koyeb workers
 
 2. **`MONGO_DB`** (Optional)
@@ -38,6 +39,7 @@ The seed script should run on Koyeb to populate the states/counties collections:
 
    **Variable Name:** `MONGO_URI`  
    **Value:** `mongodb+srv://<username>:<password>@<cluster>.mongodb.net/?retryWrites=true&w=majority`  
+   (Replace placeholders with your actual MongoDB Atlas credentials)  
    **Environment:** Production, Preview, Development (select all that apply)
 
    **Variable Name:** `MONGO_DB` (if needed)  
@@ -69,6 +71,7 @@ You need to run the seed script to populate the `states` and `counties` collecti
    MONGO_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/?retryWrites=true&w=majority
    MONGO_DB=cl
    ```
+   (Replace `<username>`, `<password>`, and `<cluster>` with your actual MongoDB Atlas credentials)
 2. Run the seed script:
    ```bash
    pnpm tsx packages/workers/src/seed-states-counties.ts
