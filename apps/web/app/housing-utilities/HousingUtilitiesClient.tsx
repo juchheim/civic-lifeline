@@ -8,30 +8,12 @@ import type { LucideIcon } from "lucide-react";
 import { ChevronDown, Clock, Droplets, Home, Sparkles, Wifi } from "lucide-react";
 import UtilitiesExperience from "./UtilitiesExperience";
 
-type HousingExperienceProps = {
-  showIntro?: boolean;
-  wrapperClassName?: string;
-  id?: string;
-};
-
-type BroadbandExperienceProps = {
-  showIntro?: boolean;
-  wrapperClassName?: string;
-  id?: string;
-};
-
-const HousingExperience = dynamic(
-  () => import("../housing/page").then((mod: any) => ({ default: mod.HousingExperience as React.ComponentType<HousingExperienceProps> })),
-  {
-    ssr: false,
-  }
-);
-const BroadbandExperience = dynamic(
-  () => import("../broadband/page").then((mod: any) => ({ default: mod.BroadbandExperience as React.ComponentType<BroadbandExperienceProps> })),
-  {
-    ssr: false,
-  }
-);
+const HousingExperience = dynamic(() => import("../housing/HousingExperience"), {
+  ssr: false,
+});
+const BroadbandExperience = dynamic(() => import("../broadband/BroadbandExperience"), {
+  ssr: false,
+});
 
 interface ServiceConfig {
   id: string;

@@ -1,6 +1,6 @@
 {
-  "/housing/page": "app/housing/page.js",
-  "/broadband/page": "app/broadband/page.js",
-  "/api/housing/counselors/route": "app/api/housing/counselors/route.js",
-  "/api/housing/fmr/route": "app/api/housing/fmr/route.js"
+  "/_not-found/page": "app/_not-found/page.js",
+  "/housing-utilities/page": "app/housing-utilities/page.js",
+  "/api/states/route": "app/api/states/route.js",
+  "/api/counties/route": "app/api/counties/route.js"
 }

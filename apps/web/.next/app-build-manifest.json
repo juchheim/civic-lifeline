@@ -1,9 +1,9 @@
 {
   "pages": {
-    "/housing/page": [
+    "/housing-utilities/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/housing/page.js"
+      "static/chunks/app/housing-utilities/page.js"
     ],
     "/layout": [
       "static/chunks/webpack.js",
@@ -11,15 +11,10 @@
       "static/css/app/layout.css",
       "static/chunks/app/layout.js"
     ],
-    "/resume/page": [
+    "/_not-found/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/resume/page.js"
-    ],
-    "/broadband/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/broadband/page.js"
+      "static/chunks/app/_not-found/page.js"
     ]
   }
 }
