@@ -472,9 +472,15 @@ export async function getPublicWaterSystemsByCounty(countyFips5: string): Promis
         serviceLog.info("sdwis fallback fips used", { requested: countyFips5, fallback: fips, rows: rows.length });
       }
       return rows.map((row) => ({
-        systemName: row.PWS_NAME?.trim() || "Unnamed system",
-        populationServed: row.POP_SERVED_COUNTY ? Number(row.POP_SERVED_COUNTY) || undefined : undefined,
-        pwsId: row.PWSID?.trim() || undefined,
+        systemName:
+          (row.PWS_NAME ?? (row as any).pwsname ?? (row as any).PWSNAME ?? "").trim() || "Unnamed system",
+        populationServed: (() => {
+          const value = row.POP_SERVED_COUNTY ?? (row as any).populationserved ?? (row as any).POPULATIONSERVED ?? null;
+          if (value === null || value === undefined) return undefined;
+          const num = Number(value);
+          return Number.isFinite(num) ? num : undefined;
+        })(),
+        pwsId: (row.PWSID ?? (row as any).pwsid ?? (row as any).PwsId ?? "").trim() || undefined,
       }));
     }
   }

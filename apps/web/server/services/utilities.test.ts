@@ -141,6 +141,13 @@ describe("utilities data layer", () => {
     );
   });
 
+  it("maps lowercase sdwis fields to response shape", async () => {
+    vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(mockJsonResponse([{ pwsname: "Lowercase System", populationserved: "123", pwsid: "abc123" }]));
+    const results = await getPublicWaterSystemsByCounty("28163");
+    expect(results).toEqual([{ systemName: "Lowercase System", populationServed: 123, pwsId: "abc123" }]);
+  });
+
   it("queries gas utilities with both 5- and 6-digit county FIPS", async () => {
     const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
       mockJsonResponse({
