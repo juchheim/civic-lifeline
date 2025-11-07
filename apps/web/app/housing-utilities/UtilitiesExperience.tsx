@@ -441,6 +441,15 @@ export default function UtilitiesExperience() {
           )}
           {activeProviderQuery.data && (
             <div className="mt-4 space-y-3">
+              {activeProviderTab === "water" &&
+                "summary" in activeProviderQuery.data &&
+                activeProviderQuery.data.summary && (
+                  <p className="text-xs text-slate-500">
+                    {activeProviderQuery.data.summary.total && activeProviderQuery.data.summary.returned
+                      ? `Showing the top ${numberFormatter.format(activeProviderQuery.data.summary.returned ?? 0)} of ${numberFormatter.format(activeProviderQuery.data.summary.total ?? 0)} water systems by population served.`
+                      : "Showing the largest water systems reported for this county."}
+                  </p>
+                )}
               {activeProviderQuery.data.items.length === 0 && (
                 <p className="text-sm text-slate-500">No providers listed for this county yet.</p>
               )}

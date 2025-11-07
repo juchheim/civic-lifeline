@@ -234,6 +234,12 @@ const zUtilitiesProvidersBaseFields = z.object({
 export const zUtilitiesWaterProvidersResponse = zUtilitiesProvidersBaseFields
   .extend({
     items: z.array(zUtilitiesWaterProvider),
+    summary: z
+      .object({
+        total: z.number().optional(),
+        returned: z.number().optional(),
+      })
+      .optional(),
   })
   .and(zSourceMeta);
 export type UtilitiesWaterProvidersResponse = z.infer<typeof zUtilitiesWaterProvidersResponse>;

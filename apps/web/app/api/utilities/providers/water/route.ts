@@ -45,7 +45,9 @@ export async function GET(req: NextRequest) {
     ]);
     const systems = await getPublicWaterSystemsByCounty(countyFips);
     log.info("sdwis systems fetched", { countyFips, count: systems.length });
-    systems.sort((a, b) => (b.populationServed ?? 0) - (a.populationServed ?? 0));
+    const sorted = systems.sort((a, b) => (b.populationServed ?? 0) - (a.populationServed ?? 0));
+    const truncated = sorted.slice(0, 1000);
+    const meta = { total: systems.length, returned: truncated.length };
 
     const response = {
       area: { ...areaSummary, label: formatAreaLabel(areaSummary) },
@@ -55,10 +57,11 @@ export async function GET(req: NextRequest) {
         countyName: coverageArea.countyName,
         stateCode: coverageArea.stateCode,
       },
-      items: systems,
+      items: truncated,
+      summary: meta,
       source: SOURCE,
       lastUpdated: new Date().toISOString(),
-      notes: "County-level coverage for public water systems from SDWIS county summary.",
+      notes: "County-level coverage for public water systems from SDWIS county summary. Large counties capped at the first 1,000 systems by served population.",
     };
 
     if (redis) {
