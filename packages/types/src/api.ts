@@ -154,6 +154,104 @@ export const zFmrResponse = z
   })
   .and(zSourceMeta);
 
+// Utilities
+export const zUtilitiesAreaSummary = z.object({
+  kind: z.union([z.literal("county"), z.literal("place")]),
+  stateCode: z.string().length(2),
+  stateName: z.string(),
+  stateFips: z.string().length(2),
+  countyFips: z.string().length(5).optional(),
+  countyName: z.string().optional(),
+  placeCode: z.string().optional(),
+  placeName: z.string().optional(),
+  label: z.string().optional(),
+});
+export type UtilitiesAreaSummary = z.infer<typeof zUtilitiesAreaSummary>;
+
+export const zUtilitiesCoverageSummary = z.object({
+  countyFips: z.string().length(5),
+  stateFips: z.string().length(2),
+  countyName: z.string().optional(),
+  stateCode: z.string().length(2),
+});
+export type UtilitiesCoverageSummary = z.infer<typeof zUtilitiesCoverageSummary>;
+
+export const zUtilitiesCostBucket = z.object({
+  label: z.string(),
+  var: z.string(),
+  count: z.number(),
+});
+export type UtilitiesCostBucket = z.infer<typeof zUtilitiesCostBucket>;
+
+export const zUtilitiesCostDistribution = z.object({
+  total: z.number(),
+  buckets: z.array(zUtilitiesCostBucket),
+  estTypicalMonthly: z.number().nullable(),
+});
+export type UtilitiesCostDistribution = z.infer<typeof zUtilitiesCostDistribution>;
+
+export const zUtilitiesCostsResponse = z
+  .object({
+    area: zUtilitiesAreaSummary,
+    electric: zUtilitiesCostDistribution,
+    gas: zUtilitiesCostDistribution,
+    waterSewer: z.object({
+      estTypicalMonthly: z.number().nullable(),
+      annual: zUtilitiesCostDistribution,
+    }),
+    assumptions: z.object({
+      topBucketMidpoints: z.object({
+        electricGas: z.number(),
+        waterSewerAnnual: z.number(),
+      }),
+      notes: z.array(z.string()),
+    }),
+  })
+  .and(zSourceMeta);
+export type UtilitiesCostsResponse = z.infer<typeof zUtilitiesCostsResponse>;
+
+export const zUtilitiesWaterProvider = z.object({
+  systemName: z.string(),
+  populationServed: z.number().optional(),
+  pwsId: z.string().optional(),
+});
+export type UtilitiesWaterProvider = z.infer<typeof zUtilitiesWaterProvider>;
+
+export const zUtilitiesCompanyProvider = z.object({
+  name: z.string(),
+  state: z.string(),
+  phone: z.string().optional(),
+  website: z.string().optional(),
+});
+export type UtilitiesCompanyProvider = z.infer<typeof zUtilitiesCompanyProvider>;
+
+const zUtilitiesProvidersBaseFields = z.object({
+  area: zUtilitiesAreaSummary,
+  coverage: zUtilitiesCoverageSummary,
+  notes: z.string().optional(),
+});
+
+export const zUtilitiesWaterProvidersResponse = zUtilitiesProvidersBaseFields
+  .extend({
+    items: z.array(zUtilitiesWaterProvider),
+  })
+  .and(zSourceMeta);
+export type UtilitiesWaterProvidersResponse = z.infer<typeof zUtilitiesWaterProvidersResponse>;
+
+export const zUtilitiesElectricProvidersResponse = zUtilitiesProvidersBaseFields
+  .extend({
+    items: z.array(zUtilitiesCompanyProvider),
+  })
+  .and(zSourceMeta);
+export type UtilitiesElectricProvidersResponse = z.infer<typeof zUtilitiesElectricProvidersResponse>;
+
+export const zUtilitiesGasProvidersResponse = zUtilitiesProvidersBaseFields
+  .extend({
+    items: z.array(zUtilitiesCompanyProvider),
+  })
+  .and(zSourceMeta);
+export type UtilitiesGasProvidersResponse = z.infer<typeof zUtilitiesGasProvidersResponse>;
+
 // Optional: generic API error (kept for convenience)
 export const zApiError = z.object({ error: z.object({ code: z.string(), message: z.string(), upstream: z.string().optional() }) });
 export type ApiError = z.infer<typeof zApiError>;
