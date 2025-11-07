@@ -1,13 +1,19 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { createPortal } from "react-dom";
 import type { LucideIcon } from "lucide-react";
 import { ChevronDown, Clock, Droplets, Home, Sparkles, Wifi } from "lucide-react";
-import { HousingExperience } from "../housing/page";
-import { BroadbandExperience } from "../broadband/page";
 import UtilitiesExperience from "./UtilitiesExperience";
+
+const HousingExperience = dynamic(() => import("../housing/page").then((mod) => ({ default: mod.HousingExperience })), {
+  ssr: false,
+});
+const BroadbandExperience = dynamic(() => import("../broadband/page").then((mod) => ({ default: mod.BroadbandExperience })), {
+  ssr: false,
+});
 
 interface ServiceConfig {
   id: string;
