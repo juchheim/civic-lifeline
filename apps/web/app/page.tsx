@@ -13,6 +13,11 @@ const sections = [
     description: "Make a resume quickly with easy guidance.",
   },
   {
+    href: "/housing-utilities",
+    title: "Housing & Utilities",
+    description: "Try the combined housing and internet tools in one place.",
+  },
+  {
     href: "/housing",
     title: "Housing Support",
     description: "Check rent prices and find HUD housing counselors near you.",
@@ -80,8 +85,8 @@ const highlightPoints = [
     detail: "Enter your details and download a ready-to-use resume.",
   },
   {
-    title: "Housing Help",
-    detail: "Connect with HUD housing counselors and see rent prices before you move or share info.",
+    title: "Housing & Utilities",
+    detail: "Try the combined housing and internet tools, then send feedback before we retire the old pages.",
   },
   {
     title: "Community Data",

@@ -10,6 +10,12 @@ type Suggestion = { id: string; name: string; lat: number; lon: number; kind: st
 
 const DEFAULT_QUERY = "";
 
+interface BroadbandExperienceProps {
+  showIntro?: boolean;
+  wrapperClassName?: string;
+  id?: string;
+}
+
 function useDebouncedValue<T>(value: T, delayMs: number): T {
   const [debounced, setDebounced] = useState(value);
   useEffect(() => {
@@ -41,7 +47,7 @@ async function fetchBroadband(query: string) {
   return zBroadbandSummaryResponse.parse(json);
 }
 
-export default function BroadbandPage() {
+export function BroadbandExperience({ showIntro = true, wrapperClassName, id }: BroadbandExperienceProps) {
   const [locationInput, setLocationInput] = useState(DEFAULT_QUERY);
   const [searchQuery, setSearchQuery] = useState(DEFAULT_QUERY);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
@@ -258,17 +264,23 @@ export default function BroadbandPage() {
     return `${value.toFixed(1)}% of households`;
   }
 
+  const containerClassName = ["space-y-5", wrapperClassName].filter(Boolean).join(" ");
+
   return (
-    <div className="space-y-5">
-      <header className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-slate-900">Broadband Coverage</h1>
-          <p className="text-sm text-slate-600">
-            Fetch the FCC National Broadband Map summary for a county. Enter an address or ZIP code to locate it automatically.
-          </p>
-        </div>
-        {data && <SourceChip source={data.source} lastUpdated={data.lastUpdated} />}
-      </header>
+    <div id={id} className={containerClassName}>
+      {(showIntro || data) && (
+        <header className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+          {showIntro && (
+            <div>
+              <h1 className="text-2xl font-semibold text-slate-900">Broadband Coverage</h1>
+              <p className="text-sm text-slate-600">
+                Fetch the FCC National Broadband Map summary for a county. Enter an address or ZIP code to locate it automatically.
+              </p>
+            </div>
+          )}
+          {data && <SourceChip source={data.source} lastUpdated={data.lastUpdated} />}
+        </header>
+      )}
 
       <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
         <form className="flex flex-col gap-4 md:flex-row md:items-end" onSubmit={handleSubmit}>
@@ -401,4 +413,8 @@ export default function BroadbandPage() {
       </section>
     </div>
   );
+}
+
+export default function BroadbandPage() {
+  return <BroadbandExperience />;
 }

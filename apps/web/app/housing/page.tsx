@@ -29,6 +29,12 @@ interface FmrSearchParams {
   q?: string;
 }
 
+interface HousingExperienceProps {
+  showIntro?: boolean;
+  wrapperClassName?: string;
+  id?: string;
+}
+
 const DEFAULT_RADIUS = "100";
 // During the HUD shutdown we pin to the static dataset year. Update when live HUD API resumes (docs/hud-fmr-static.md).
 const DEFAULT_FMR_YEAR = "2024";
@@ -104,7 +110,7 @@ async function geocodeQuery(query: string): Promise<LocationSelection> {
   };
 }
 
-export default function HousingPage() {
+export function HousingExperience({ showIntro = true, wrapperClassName, id }: HousingExperienceProps) {
   const [locationInput, setLocationInput] = useState("");
   const [selectedLocation, setSelectedLocation] = useState<LocationSelection | null>(null);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
@@ -431,14 +437,18 @@ export default function HousingPage() {
     return "No location selected";
   }, [advanced.lat, advanced.lon, counselorSearch, fmrSearch, locationInput, selectedLocation]);
 
+  const containerClassName = ["space-y-6", wrapperClassName].filter(Boolean).join(" ");
+
   return (
-    <div className="space-y-6">
-      <header className="flex flex-col gap-2">
-        <h1 className="text-2xl font-semibold text-slate-900">Housing Support</h1>
-        <p className="text-sm text-slate-600">
-          Search by address or ZIP code to find HUD-approved housing counselors and the latest Fair Market Rent (FMR) figures.
-        </p>
-      </header>
+    <div id={id} className={containerClassName}>
+      {showIntro && (
+        <header className="flex flex-col gap-2">
+          <h1 className="text-2xl font-semibold text-slate-900">Housing Support</h1>
+          <p className="text-sm text-slate-600">
+            Search by address or ZIP code to find HUD-approved housing counselors and the latest Fair Market Rent (FMR) figures.
+          </p>
+        </header>
+      )}
 
       <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -762,4 +772,8 @@ export default function HousingPage() {
       </section>
     </div>
   );
+}
+
+export default function HousingPage() {
+  return <HousingExperience />;
 }

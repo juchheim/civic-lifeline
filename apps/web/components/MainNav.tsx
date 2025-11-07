@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 
 const links = [
   { href: "/", label: "Home" },
   { href: "/food", label: "Food" },
   { href: "/resume", label: "Resume Builder" },
+  { href: "/housing-utilities", label: "Housing & Utilities" },
   { href: "/housing", label: "Housing" },
   { href: "/broadband", label: "Broadband" },
   { href: "/stats", label: "Stats" },
@@ -16,6 +17,14 @@ const links = [
 
 export default function MainNav() {
   const pathname = usePathname() || "/";
+  const isLinkActive = useCallback(
+    (href: string) => {
+      if (href === "/") return pathname === "/";
+      if (pathname === href) return true;
+      return pathname.startsWith(`${href}/`);
+    },
+    [pathname],
+  );
   const [isOpen, setIsOpen] = useState(false);
 
   // Close menu when route changes
@@ -91,7 +100,7 @@ export default function MainNav() {
           <div className="flex-1 overflow-y-auto px-4 py-4">
             <ul className="space-y-1">
               {links.map(({ href, label }) => {
-                const active = pathname === href || (href !== "/" && pathname.startsWith(href));
+                const active = isLinkActive(href);
                 return (
                   <li key={href}>
                     <Link
@@ -123,7 +132,7 @@ export default function MainNav() {
       {/* Desktop Navigation */}
       <nav className="hidden md:flex md:flex-wrap md:items-center md:gap-2 md:text-sm">
         {links.map(({ href, label }) => {
-          const active = pathname === href || (href !== "/" && pathname.startsWith(href));
+          const active = isLinkActive(href);
           return (
             <Link
               key={href}

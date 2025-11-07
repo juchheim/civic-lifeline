@@ -10,6 +10,7 @@ import { Providers } from "./providers";
 const footerLinks = [
   { href: "/food", label: "Food Help" },
   { href: "/resume", label: "Resume Tool" },
+  { href: "/housing-utilities", label: "Housing & Utilities" },
   { href: "/housing", label: "Housing Help" },
   { href: "/broadband", label: "Internet Map" },
   { href: "/stats", label: "Job Numbers" },
