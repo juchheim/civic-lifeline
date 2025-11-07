@@ -89,10 +89,20 @@ describe("utilities api routes", () => {
 
   it("returns water providers for a county", async () => {
     const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
-      mockJsonResponse([
-        { PWS_NAME: "Yazoo Water", POP_SERVED_COUNTY: "1200", PWSID: "MS12345", STATE: "28" },
-        { PWS_NAME: "Second System", POP_SERVED_COUNTY: "800", STATE: "28" },
-      ]),
+      mockJsonResponse({
+        Results: {
+          Facilities: [
+            {
+              FacName: "Yazoo Water",
+              ProgramSystems: [{ ProgramSystemAcronym: "SDWIS", ProgramSystemID: "MS12345", ProgramSystemName: "Yazoo Water" }],
+            },
+            {
+              FacName: "Second System",
+              ProgramSystems: [{ ProgramSystemAcronym: "SDWIS", ProgramSystemID: "MS67890", ProgramSystemName: "Second System" }],
+            },
+          ],
+        },
+      }),
     );
     const request = new NextRequest("http://localhost/api/utilities/providers/water?state=MS&county=28163");
     const response = await getWaterProviders(request);

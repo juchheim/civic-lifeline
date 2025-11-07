@@ -123,30 +123,41 @@ describe("utilities data layer", () => {
   });
 
   it("requests water systems using 5-digit FIPS and falls back to 6-digit when empty", async () => {
-    const fetchMock = vi
-      .spyOn(globalThis, "fetch")
-      .mockResolvedValueOnce(mockJsonResponse([]))
-      .mockResolvedValueOnce(mockJsonResponse([{ PWS_NAME: "Test", POP_SERVED_COUNTY: "100", STATE: "28" }]));
-    const results = await getPublicWaterSystemsByCounty("28163", "28");
-    expect(results).toHaveLength(1);
-    expect(fetchMock).toHaveBeenNthCalledWith(
-      1,
-      "https://data.epa.gov/efservice/SDW_COUNTY_SERVED/FIPS_COUNTY_CODE/28163/JSON",
-      expect.any(Object),
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      mockJsonResponse({
+        Results: {
+          Facilities: [
+            {
+              FacName: "Yazoo Water",
+              ProgramSystems: [{ ProgramSystemAcronym: "SDWIS", ProgramSystemID: "MS12345", ProgramSystemName: "Yazoo Water" }],
+            },
+          ],
+        },
+      }),
     );
-    expect(fetchMock).toHaveBeenNthCalledWith(
-      2,
-      "https://data.epa.gov/efservice/SDW_COUNTY_SERVED/FIPS_COUNTY_CODE/280163/JSON",
-      expect.any(Object),
+    const results = await getPublicWaterSystemsByCounty("MS", "Yazoo County");
+    expect(results).toHaveLength(1);
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining("state_abbr=MS"),
+      expect.objectContaining({ cache: "no-store" }),
     );
   });
 
   it("maps lowercase sdwis fields to response shape", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
-      mockJsonResponse([{ pwsname: "Lowercase System", populationserved: "123", pwsid: "abc123", state: "28" }]),
+      mockJsonResponse({
+        Results: {
+          Facilities: [
+            {
+              facname: "Lowercase Facility",
+              programs: [{ pgm_sys_acrnm: "SDWIS", pgm_sys_id: "abc123", pgm_sys_name: "Lowercase System" }],
+            },
+          ],
+        },
+      }),
     );
-    const results = await getPublicWaterSystemsByCounty("28163", "28");
-    expect(results).toEqual([{ systemName: "Lowercase System", populationServed: 123, pwsId: "abc123" }]);
+    const results = await getPublicWaterSystemsByCounty("MS", "Yazoo County");
+    expect(results).toEqual([{ systemName: "Lowercase System", populationServed: undefined, pwsId: "abc123" }]);
   });
 
   it("queries gas utilities with both 5- and 6-digit county FIPS", async () => {

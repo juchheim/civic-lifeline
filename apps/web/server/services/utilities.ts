@@ -70,6 +70,12 @@ const HOST_TIMEOUTS: Record<string, number> = {
   "services3.arcgis.com": 20000,
   "tigerweb.geo.census.gov": 20000,
 };
+function expandCountyFipsVariants(countyFips5: string): { stateFips: string; countyCode3: string; countyFips5: string; countyFips6: string } {
+  const stateFips = countyFips5.slice(0, 2);
+  const countyCode3 = countyFips5.slice(2);
+  const countyFips6 = `${stateFips}${countyCode3.padStart(4, "0")}`;
+  return { stateFips, countyCode3, countyFips5, countyFips6 };
+}
 
 const statesByCode = new Map<string, StateMeta>();
 const statesByName = new Map<string, StateMeta>();
@@ -431,84 +437,105 @@ export async function getWaterSewerAnnualCosts(area: Area, resolved?: ResolvedAr
   return buildDistribution(row, "B25134_001E", WATER_BUCKETS, 12);
 }
 
-interface SdwCountyRecord {
-  PWSID?: string;
-  PWS_NAME?: string;
-  POP_SERVED_COUNTY?: string;
-  STATE?: string;
+interface FrsFacility {
+  [key: string]: unknown;
 }
 
-function expandCountyFipsVariants(countyFips5: string): { stateFips: string; countyCode3: string; countyFips5: string; countyFips6: string } {
-  const stateFips = countyFips5.slice(0, 2);
-  const countyCode3 = countyFips5.slice(2);
-  const countyFips6 = `${stateFips}${countyCode3.padStart(4, "0")}`;
-  return { stateFips, countyCode3, countyFips5, countyFips6 };
+function normalizeCountyNameForFrs(countyName: string | undefined | null): string {
+  if (!countyName) return "";
+  return countyName
+    .replace(/\b(county|parish|borough|municipality|city|township|census area)\b/gi, "")
+    .replace(/[^a-zA-Z]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toUpperCase();
 }
 
-async function fetchWaterSystemsByCode(fips: string): Promise<SdwCountyRecord[]> {
-  const url = `https://data.epa.gov/efservice/SDW_COUNTY_SERVED/FIPS_COUNTY_CODE/${fips}/JSON`;
-  serviceLog.debug("sdwis request start", { fips, url });
-  try {
-    const rows = await fetchJson<SdwCountyRecord[]>(url);
-    serviceLog.info("sdwis response received", { fips, rowCount: rows.length });
-    return rows;
-  } catch (error) {
-    serviceLog.error("sdwis request failed", { fips, error: error instanceof Error ? error.message : String(error) });
-    throw error;
+function extractFrsFacilities(payload: unknown): FrsFacility[] {
+  if (!payload) return [];
+  if (Array.isArray(payload)) return payload as FrsFacility[];
+  const obj = payload as Record<string, unknown>;
+  const results = (obj.Results ?? obj.results ?? obj) as Record<string, unknown> | undefined;
+  if (!results) return [];
+  const candidates = [results.Facilities, results.Facility, (results as any).ROW, (results as any).ROWS, results];
+  for (const candidate of candidates) {
+    if (Array.isArray(candidate)) return candidate as FrsFacility[];
+    if (candidate && Array.isArray((candidate as any).ROW)) return (candidate as any).ROW;
   }
+  return [];
+}
+
+function extractProgramsFromFacility(facility: FrsFacility): FrsFacility[] {
+  const candidates = [
+    facility.ProgramSystems,
+    facility.ProgramSystem,
+    facility.Programs,
+    facility.Program,
+    (facility as any).program_systems,
+    (facility as any).programs,
+  ];
+  const programs: FrsFacility[] = [];
+  candidates.forEach((candidate) => {
+    if (Array.isArray(candidate)) programs.push(...(candidate as FrsFacility[]));
+    else if (candidate && typeof candidate === "object") programs.push(candidate as FrsFacility);
+  });
+  return programs;
+}
+
+function mapFrsFacility(facility: FrsFacility) {
+  const programs = extractProgramsFromFacility(facility);
+  const sdwisProgram =
+    programs.find((program) => {
+      const acr =
+        (program.ProgramSystemAcronym ??
+          program.pgm_sys_acrnm ??
+          program.programSystemAcronym ??
+          program.PROGRAMSYSTEMACRONYM ??
+          "").toString() || "";
+      return acr.toUpperCase() === "SDWIS";
+    }) ?? programs[0];
+
+  const rawName =
+    sdwisProgram?.ProgramSystemName ??
+    sdwisProgram?.pgm_sys_name ??
+    facility.FacName ??
+    facility.facname ??
+    facility.FacilityName ??
+    facility.facility_name ??
+    "";
+  const systemName = typeof rawName === "string" && rawName.trim() ? rawName.trim() : "Unnamed system";
+  const rawPwsId =
+    sdwisProgram?.ProgramSystemID ??
+    sdwisProgram?.pgm_sys_id ??
+    sdwisProgram?.PROGRAMSYSTEMID ??
+    sdwisProgram?.program_system_id ??
+    "";
+  const pwsId = typeof rawPwsId === "string" && rawPwsId.trim().length > 0 ? rawPwsId.trim() : undefined;
+  return { systemName, populationServed: undefined, pwsId };
 }
 
 export async function getPublicWaterSystemsByCounty(
-  countyFips5: string,
-  stateFips: string,
+  stateCode: string,
+  countyName?: string | null,
 ): Promise<Array<{ systemName: string; populationServed?: number; pwsId?: string }>> {
-  if (!/^\d{5}$/.test(countyFips5)) {
-    throw new UtilitiesDataError("INVALID_INPUT", "County FIPS must include 5 digits.");
+  if (!stateCode) throw new UtilitiesDataError("INVALID_INPUT", "State is required for SDWIS lookup.");
+  const formattedCounty = normalizeCountyNameForFrs(countyName);
+  const params = new URLSearchParams({
+    pgm_sys_acrnm: "SDWIS",
+    state_abbr: stateCode.toUpperCase(),
+    program_output: "yes",
+    output: "JSON",
+  });
+  if (formattedCounty) params.set("county_name", formattedCounty);
+  const url = `https://ofmpub.epa.gov/frs_public2/frs_rest_services.get_facilities?${params.toString()}`;
+  serviceLog.info("frs sdwis lookup", { stateCode, countyName: formattedCounty || null, url });
+  const payload = await fetchJson<unknown>(url, { timeoutMs: 25000 });
+  const facilities = extractFrsFacilities(payload);
+  const mapped = facilities.map(mapFrsFacility).filter((item) => item.systemName);
+  if (mapped.length === 0) {
+    serviceLog.warn("frs sdwis returned no facilities", { stateCode, countyName: formattedCounty || null });
   }
-  const { countyFips6 } = expandCountyFipsVariants(countyFips5);
-  const variants = countyFips6 !== countyFips5 ? [countyFips5, countyFips6] : [countyFips5];
-
-  serviceLog.info("sdwis lookup start", { countyFips5, variants });
-  for (const fips of variants) {
-    const rows = await fetchWaterSystemsByCode(fips);
-    let filtered = rows;
-    if (stateFips) {
-      filtered = rows.filter((row) => {
-        const stateField = (row.STATE ?? (row as any).state ?? "").trim();
-        const pwsId = (row.PWSID ?? (row as any).pwsid ?? "").trim();
-        const matchesState = stateField === stateFips;
-        const matchesPrefix = pwsId.startsWith(stateFips);
-        return matchesState || matchesPrefix;
-      });
-      if (filtered.length !== rows.length) {
-        serviceLog.warn("sdwis state filter applied", {
-          requestedCounty: countyFips5,
-          stateFips,
-          before: rows.length,
-          after: filtered.length,
-        });
-      }
-    }
-    if (filtered.length > 0) {
-      if (fips !== countyFips5) {
-        serviceLog.info("sdwis fallback fips used", { requested: countyFips5, fallback: fips, rows: filtered.length });
-      }
-      return filtered.map((row) => ({
-        systemName:
-          (row.PWS_NAME ?? (row as any).pwsname ?? (row as any).PWSNAME ?? "").trim() || "Unnamed system",
-        populationServed: (() => {
-          const value = row.POP_SERVED_COUNTY ?? (row as any).populationserved ?? (row as any).POPULATIONSERVED ?? null;
-          if (value === null || value === undefined) return undefined;
-          const num = Number(value);
-          return Number.isFinite(num) ? num : undefined;
-        })(),
-        pwsId: (row.PWSID ?? (row as any).pwsid ?? (row as any).PwsId ?? "").trim() || undefined,
-      }));
-    }
-  }
-
-  serviceLog.warn("sdwis returned no systems", { countyFips5, stateFips });
-  return [];
+  return mapped.slice(0, 1000);
 }
 
 interface ArcgisResponse {
