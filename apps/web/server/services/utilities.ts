@@ -435,6 +435,7 @@ interface SdwCountyRecord {
   PWSID?: string;
   PWS_NAME?: string;
   POP_SERVED_COUNTY?: string;
+  STATE?: string;
 }
 
 function expandCountyFipsVariants(countyFips5: string): { stateFips: string; countyCode3: string; countyFips5: string; countyFips6: string } {
@@ -457,7 +458,10 @@ async function fetchWaterSystemsByCode(fips: string): Promise<SdwCountyRecord[]>
   }
 }
 
-export async function getPublicWaterSystemsByCounty(countyFips5: string): Promise<Array<{ systemName: string; populationServed?: number; pwsId?: string }>> {
+export async function getPublicWaterSystemsByCounty(
+  countyFips5: string,
+  stateFips: string,
+): Promise<Array<{ systemName: string; populationServed?: number; pwsId?: string }>> {
   if (!/^\d{5}$/.test(countyFips5)) {
     throw new UtilitiesDataError("INVALID_INPUT", "County FIPS must include 5 digits.");
   }
@@ -467,11 +471,29 @@ export async function getPublicWaterSystemsByCounty(countyFips5: string): Promis
   serviceLog.info("sdwis lookup start", { countyFips5, variants });
   for (const fips of variants) {
     const rows = await fetchWaterSystemsByCode(fips);
-    if (rows.length > 0) {
-      if (fips !== countyFips5) {
-        serviceLog.info("sdwis fallback fips used", { requested: countyFips5, fallback: fips, rows: rows.length });
+    let filtered = rows;
+    if (stateFips) {
+      filtered = rows.filter((row) => {
+        const stateField = (row.STATE ?? (row as any).state ?? "").trim();
+        const pwsId = (row.PWSID ?? (row as any).pwsid ?? "").trim();
+        const matchesState = stateField === stateFips;
+        const matchesPrefix = pwsId.startsWith(stateFips);
+        return matchesState || matchesPrefix;
+      });
+      if (filtered.length !== rows.length) {
+        serviceLog.warn("sdwis state filter applied", {
+          requestedCounty: countyFips5,
+          stateFips,
+          before: rows.length,
+          after: filtered.length,
+        });
       }
-      return rows.map((row) => ({
+    }
+    if (filtered.length > 0) {
+      if (fips !== countyFips5) {
+        serviceLog.info("sdwis fallback fips used", { requested: countyFips5, fallback: fips, rows: filtered.length });
+      }
+      return filtered.map((row) => ({
         systemName:
           (row.PWS_NAME ?? (row as any).pwsname ?? (row as any).PWSNAME ?? "").trim() || "Unnamed system",
         populationServed: (() => {
@@ -485,7 +507,7 @@ export async function getPublicWaterSystemsByCounty(countyFips5: string): Promis
     }
   }
 
-  serviceLog.warn("sdwis returned no systems", { countyFips5 });
+  serviceLog.warn("sdwis returned no systems", { countyFips5, stateFips });
   return [];
 }
 

@@ -126,8 +126,8 @@ describe("utilities data layer", () => {
     const fetchMock = vi
       .spyOn(globalThis, "fetch")
       .mockResolvedValueOnce(mockJsonResponse([]))
-      .mockResolvedValueOnce(mockJsonResponse([{ PWS_NAME: "Test", POP_SERVED_COUNTY: "100" }]));
-    const results = await getPublicWaterSystemsByCounty("28163");
+      .mockResolvedValueOnce(mockJsonResponse([{ PWS_NAME: "Test", POP_SERVED_COUNTY: "100", STATE: "28" }]));
+    const results = await getPublicWaterSystemsByCounty("28163", "28");
     expect(results).toHaveLength(1);
     expect(fetchMock).toHaveBeenNthCalledWith(
       1,
@@ -142,9 +142,10 @@ describe("utilities data layer", () => {
   });
 
   it("maps lowercase sdwis fields to response shape", async () => {
-    vi.spyOn(globalThis, "fetch")
-      .mockResolvedValueOnce(mockJsonResponse([{ pwsname: "Lowercase System", populationserved: "123", pwsid: "abc123" }]));
-    const results = await getPublicWaterSystemsByCounty("28163");
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      mockJsonResponse([{ pwsname: "Lowercase System", populationserved: "123", pwsid: "abc123", state: "28" }]),
+    );
+    const results = await getPublicWaterSystemsByCounty("28163", "28");
     expect(results).toEqual([{ systemName: "Lowercase System", populationServed: 123, pwsId: "abc123" }]);
   });
 

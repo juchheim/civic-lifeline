@@ -90,8 +90,8 @@ describe("utilities api routes", () => {
   it("returns water providers for a county", async () => {
     const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
       mockJsonResponse([
-        { PWS_NAME: "Yazoo Water", POP_SERVED_COUNTY: "1200", PWSID: "MS12345" },
-        { PWS_NAME: "Second System", POP_SERVED_COUNTY: "800" },
+        { PWS_NAME: "Yazoo Water", POP_SERVED_COUNTY: "1200", PWSID: "MS12345", STATE: "28" },
+        { PWS_NAME: "Second System", POP_SERVED_COUNTY: "800", STATE: "28" },
       ]),
     );
     const request = new NextRequest("http://localhost/api/utilities/providers/water?state=MS&county=28163");
@@ -99,6 +99,7 @@ describe("utilities api routes", () => {
     expect(response.status).toBe(200);
     const body = (await response.json()) as any;
     expect(body.items).toHaveLength(2);
+    expect(body.summary.total).toBe(2);
     expect(body.coverage?.countyFips).toBe("28163");
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
