@@ -69,6 +69,11 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(response, { headers: { "x-cache": "miss" } });
   } catch (error) {
     if (error instanceof UtilitiesDataError) {
+      log.warn("utilities data error", {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+      });
       const mapped = mapUtilitiesError(error);
       return NextResponse.json(mapped.body, { status: mapped.status });
     }

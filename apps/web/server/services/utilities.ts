@@ -1,4 +1,5 @@
 import { getCountiesCollection, getStatesCollection } from "@cl/db";
+import { createLogger } from "@/lib/logger";
 import type { State } from "@cl/types";
 
 export type Area = { state: string; county?: string; city?: string };
@@ -77,6 +78,7 @@ let statesLoaded = false;
 const countyCache = new Map<string, CountyRecord[]>();
 const placeCache = new Map<string, PlaceRecord[]>();
 const hostSchedule = new Map<string, number>();
+const serviceLog = createLogger("services/utilities");
 
 function normalizeName(value: string): string {
   return value
@@ -444,7 +446,13 @@ function expandCountyFipsVariants(countyFips5: string): { stateFips: string; cou
 
 async function fetchWaterSystemsByCode(fips: string): Promise<SdwCountyRecord[]> {
   const url = `https://data.epa.gov/efservice/SDW_COUNTY_SERVED/FIPS_COUNTY_CODE/${fips}/JSON`;
-  return fetchJson<SdwCountyRecord[]>(url);
+  serviceLog.debug("querying sdwis", { fips, url });
+  try {
+    return await fetchJson<SdwCountyRecord[]>(url);
+  } catch (error) {
+    serviceLog.error("sdwis request failed", { fips, error: error instanceof Error ? error.message : String(error) });
+    throw error;
+  }
 }
 
 export async function getPublicWaterSystemsByCounty(countyFips5: string): Promise<Array<{ systemName: string; populationServed?: number; pwsId?: string }>> {
@@ -457,6 +465,9 @@ export async function getPublicWaterSystemsByCounty(countyFips5: string): Promis
   for (const fips of variants) {
     const rows = await fetchWaterSystemsByCode(fips);
     if (rows.length > 0) {
+      if (fips !== countyFips5) {
+        serviceLog.info("sdwis fallback fips used", { requested: countyFips5, fallback: fips, rows: rows.length });
+      }
       return rows.map((row) => ({
         systemName: row.PWS_NAME?.trim() || "Unnamed system",
         populationServed: row.POP_SERVED_COUNTY ? Number(row.POP_SERVED_COUNTY) || undefined : undefined,
@@ -465,6 +476,7 @@ export async function getPublicWaterSystemsByCounty(countyFips5: string): Promis
     }
   }
 
+  serviceLog.warn("sdwis returned no systems", { countyFips5 });
   return [];
 }
 
