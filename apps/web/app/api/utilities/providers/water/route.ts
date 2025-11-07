@@ -15,6 +15,7 @@ export async function GET(req: NextRequest) {
     const parsed = parseAreaParams(url);
     area = parsed.area;
     normalizedState = parsed.normalized.state;
+    log.info("request received", { area });
   } catch (error) {
     const mapped = mapUtilitiesError(error);
     return NextResponse.json(mapped.body, { status: mapped.status });
@@ -22,6 +23,7 @@ export async function GET(req: NextRequest) {
 
   try {
     const { stateFips, countyFips } = await fetchCountyFIPS(area);
+    log.info("fips resolved", { stateFips, countyFips });
     const cacheKey = `utilities:providers:water:${countyFips}`;
 
     const redis = getRedis();
@@ -42,6 +44,7 @@ export async function GET(req: NextRequest) {
       resolveUtilitiesArea({ state: normalizedState, county: countyFips }),
     ]);
     const systems = await getPublicWaterSystemsByCounty(countyFips);
+    log.info("sdwis systems fetched", { countyFips, count: systems.length });
     systems.sort((a, b) => (b.populationServed ?? 0) - (a.populationServed ?? 0));
 
     const response = {

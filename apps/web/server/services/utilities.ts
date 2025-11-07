@@ -446,9 +446,11 @@ function expandCountyFipsVariants(countyFips5: string): { stateFips: string; cou
 
 async function fetchWaterSystemsByCode(fips: string): Promise<SdwCountyRecord[]> {
   const url = `https://data.epa.gov/efservice/SDW_COUNTY_SERVED/FIPS_COUNTY_CODE/${fips}/JSON`;
-  serviceLog.debug("querying sdwis", { fips, url });
+  serviceLog.debug("sdwis request start", { fips, url });
   try {
-    return await fetchJson<SdwCountyRecord[]>(url);
+    const rows = await fetchJson<SdwCountyRecord[]>(url);
+    serviceLog.info("sdwis response received", { fips, rowCount: rows.length });
+    return rows;
   } catch (error) {
     serviceLog.error("sdwis request failed", { fips, error: error instanceof Error ? error.message : String(error) });
     throw error;
@@ -462,6 +464,7 @@ export async function getPublicWaterSystemsByCounty(countyFips5: string): Promis
   const { countyFips6 } = expandCountyFipsVariants(countyFips5);
   const variants = countyFips6 !== countyFips5 ? [countyFips5, countyFips6] : [countyFips5];
 
+  serviceLog.info("sdwis lookup start", { countyFips5, variants });
   for (const fips of variants) {
     const rows = await fetchWaterSystemsByCode(fips);
     if (rows.length > 0) {
@@ -581,15 +584,19 @@ export async function getGasLDCByCounty(
     returnGeometry: "false",
     f: "json",
   });
+  const queryUrl = `https://maps.nccs.nasa.gov/mapping/rest/services/hifld_open/energy/FeatureServer/29/query?${params.toString()}`;
+  serviceLog.info("gas ldc query start", { countyFips5, countyFips6, url: queryUrl });
   const json = await fetchJson<GasFeaturesResponse>(
-    `https://maps.nccs.nasa.gov/mapping/rest/services/hifld_open/energy/FeatureServer/29/query?${params.toString()}`,
+    queryUrl,
   );
-  return (json.features ?? []).map((feature) => ({
+  const rows = (json.features ?? []).map((feature) => ({
     name: feature.attributes?.name ?? "Unknown provider",
     state: feature.attributes?.state ?? "",
     phone: feature.attributes?.telephone ?? undefined,
     website: feature.attributes?.website ?? undefined,
   }));
+  serviceLog.info("gas ldc query complete", { countyFips5, featureCount: rows.length });
+  return rows;
 }
 
 export type ResolvedUtilitiesArea = {
