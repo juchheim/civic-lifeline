@@ -11,7 +11,7 @@ import {
   type FormEvent,
   type KeyboardEvent,
 } from "react";
-import { Navigation2, Sparkles } from "lucide-react";
+import { Check, Navigation2, Sparkles } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { zSnapResponse, type SnapResponse, type SnapItem } from "@cl/types";
 import { bboxToQueryParam } from "@cl/utils";
@@ -70,7 +70,7 @@ export default function FoodPage() {
     return zSnapResponse.parse(json);
   }, [bboxParam, typesParam]);
 
-  const { data, isFetching, isLoading, isError } = useQuery<SnapResponse | null>({
+  const { data, isLoading, isError } = useQuery<SnapResponse | null>({
     queryKey: ["snap", bboxParam, typesParam],
     queryFn: fetchSnap,
     enabled: !!bboxParam,
@@ -531,10 +531,10 @@ export default function FoodPage() {
           </div>
           <div className="relative">
             <div className="absolute inset-0 bg-info-tint" aria-hidden />
-            <div className="relative flex h-full flex-col gap-6 rounded-t-3xl bg-info-tint px-6 py-8 text-slate-900 sm:px-10 lg:rounded-none">
-              <div className="space-y-2">
-                <p className="text-sm font-semibold uppercase tracking-[0.3em] text-slate-600">Live map</p>
-                <p className="text-sm text-slate-600">Zoom and pan after you choose a location.</p>
+            <div className="relative flex h-full flex-col gap-5 rounded-t-3xl bg-info-tint px-6 py-8 text-slate-900 sm:px-10 lg:rounded-none">
+              <div className="space-y-1">
+                <p className="text-sm font-semibold uppercase tracking-[0.3em] text-slate-600">Live map & results</p>
+                <p className="text-sm text-slate-600">Choose a location, then refine the list without leaving the map.</p>
               </div>
               <div
                 ref={mapSectionRef}
@@ -561,11 +561,92 @@ export default function FoodPage() {
                   </div>
                 )}
               </div>
+
+              <div className="rounded-3xl border border-white/70 bg-white/90 p-5 shadow-lg shadow-slate-400/20">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Store types</p>
+                    <p className="text-base font-semibold text-slate-900">Filter the map</p>
+                    <p className="text-xs text-slate-500">Tap to highlight just the stores you need.</p>
+                  </div>
+                  {lastUpdated && <SourceChip source={source} lastUpdated={lastUpdated} href={datasetHref} />}
+                </div>
+                <div className="mt-4 flex flex-wrap gap-3">
+                  {!mapReady ? (
+                    <p className="text-sm text-slate-500">Pick a location to show available store types.</p>
+                  ) : availableTypes.length > 0 ? (
+                    availableTypes.map((t) => {
+                      const isChecked = selectedTypes.has(t);
+                      return (
+                        <button
+                          key={t}
+                          type="button"
+                          onClick={() => onToggleType(t)}
+                          aria-pressed={isChecked}
+                          className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold shadow-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40 ${
+                            isChecked
+                              ? "border-brand-primary bg-brand-primary text-white"
+                              : "border-slate-200 bg-white text-slate-700 hover:border-brand-primary/40"
+                          }`}
+                        >
+                          <span
+                            className={`flex h-5 w-5 items-center justify-center rounded-full border text-[0.65rem] ${
+                              isChecked ? "border-white/50 bg-white/20" : "border-slate-300 bg-slate-100"
+                            }`}
+                            aria-hidden
+                          >
+                            <Check className={`h-3 w-3 ${isChecked ? "opacity-100" : "opacity-0"}`} />
+                          </span>
+                          <span>{t}</span>
+                        </button>
+                      );
+                    })
+                  ) : (
+                    <p className="text-sm text-slate-500">No store type filters available for this area.</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="rounded-3xl border border-white/70 bg-white/90 shadow-lg shadow-slate-400/20">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-5 py-4">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Nearby retailers</p>
+                    <p className="text-2xl font-semibold text-slate-900">
+                      {mapReady ? `${items.length} ${items.length === 1 ? "match" : "matches"}` : "Waiting for location"}
+                    </p>
+                  </div>
+                  {mapReady && items.length > 0 && (
+                    <span className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600">Scroll inside to explore</span>
+                  )}
+                </div>
+                <div className="max-h-[20rem] overflow-y-auto divide-y divide-slate-100" aria-live="polite">
+                  {!mapReady ? (
+                    <div className="p-5 text-sm text-slate-500">Choose a location to load nearby retailers.</div>
+                  ) : isLoading ? (
+                    <div className="space-y-4 p-5">
+                      <div className="h-5 rounded-full bg-slate-200" />
+                      <div className="h-4 w-5/6 rounded-full bg-slate-200" />
+                      <div className="h-4 w-2/3 rounded-full bg-slate-200" />
+                    </div>
+                  ) : items.length === 0 ? (
+                    <div className="p-5">
+                      <EmptyState kind="food" />
+                    </div>
+                  ) : (
+                    <ul>
+                      {items.map((it) => (
+                        <li key={it.id}>
+                          <StoreCard item={it} onFocus={handleStoreFocus} />
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </section>
-
       {isError && (
         <div
           role="status"
@@ -575,97 +656,6 @@ export default function FoodPage() {
           USDA data is temporarily unavailable; showing last good results if available.
         </div>
       )}
-
-      <section className="rounded-[2.5rem] border border-slate-200 bg-white p-6 shadow-lg shadow-slate-400/10 sm:p-8">
-        <div className="flex flex-col gap-4 border-b border-slate-200 pb-6 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">USDA SNAP retailers</p>
-            <h2 className="text-2xl font-semibold text-slate-900">Live map of stores near you</h2>
-            <p className="text-sm text-slate-600">Select a location to see who accepts EBT in your community.</p>
-          </div>
-          {lastUpdated && (
-            <SourceChip source={source} lastUpdated={lastUpdated} href={datasetHref} />
-          )}
-        </div>
-
-        <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,0.55fr)_minmax(0,1fr)]">
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-lg shadow-slate-400/10" aria-label="Retailer filters">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Filters</p>
-                <p className="text-lg font-semibold text-slate-900">Store types</p>
-              </div>
-              {mapReady && (isFetching || isLoading) && <span className="text-xs text-slate-500">Refreshing…</span>}
-            </div>
-            <div className="mt-4">
-              {!mapReady ? (
-                <p className="text-sm text-slate-500">Choose a location to see available filters.</p>
-              ) : availableTypes.length > 0 ? (
-                <div className="flex flex-wrap gap-3">
-                  {availableTypes.map((t) => {
-                    const isChecked = selectedTypes.has(t);
-                    return (
-                      <label
-                        key={t}
-                        className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition focus-within:outline-none focus-within:ring-2 focus-within:ring-brand-primary/40 ${
-                          isChecked ? "border-brand-primary bg-brand-primary/10 text-brand-primary" : "border-slate-200 text-slate-600 hover:border-brand-primary/40"
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          className="h-4 w-4 rounded border-slate-300 text-brand-primary focus:ring-brand-primary"
-                          checked={isChecked}
-                          onChange={() => onToggleType(t)}
-                        />
-                        <span>{t}</span>
-                      </label>
-                    );
-                  })}
-                </div>
-              ) : (
-                <p className="text-sm text-slate-500">No type filters available.</p>
-              )}
-            </div>
-          </div>
-
-          <div className="rounded-3xl border border-slate-200 bg-white shadow-lg shadow-slate-400/10" aria-label="Retailer list">
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-6 py-4">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Retailers</p>
-                <p className="text-2xl font-semibold text-slate-900">
-                  {mapReady ? `${items.length} ${items.length === 1 ? "match" : "matches"}` : "Waiting for location"}
-                </p>
-              </div>
-              {mapReady && items.length > 0 && (
-                <span className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-500">Scroll to explore</span>
-              )}
-            </div>
-            <div className="divide-y divide-slate-100">
-              {!mapReady ? (
-                <div className="p-6 text-sm text-slate-500">Choose a location to load nearby retailers.</div>
-              ) : isLoading ? (
-                <div className="space-y-4 p-6">
-                  <div className="h-5 rounded-full bg-slate-200" />
-                  <div className="h-4 w-5/6 rounded-full bg-slate-200" />
-                  <div className="h-4 w-2/3 rounded-full bg-slate-200" />
-                </div>
-              ) : items.length === 0 ? (
-                <div className="p-6">
-                  <EmptyState kind="food" />
-                </div>
-              ) : (
-                <ul>
-                  {items.map((it) => (
-                    <li key={it.id}>
-                      <StoreCard item={it} onFocus={handleStoreFocus} />
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </div>
-        </div>
-      </section>
     </main>
   );
 }
