@@ -196,12 +196,12 @@ export default function HousingUtilitiesClient() {
   );
 
   return (
-    <div className="space-y-12 pb-16">
-      <section className="mt-4 overflow-hidden rounded-[2.5rem] border border-slate-200 bg-gradient-to-br from-white via-white to-slate-50 shadow-lg shadow-slate-400/10">
+    <div className="space-y-12 pb-16 bg-neutral-bg">
+      <section className="mt-4 overflow-hidden rounded-[2.5rem] border border-slate-200 bg-white shadow-lg shadow-slate-400/10">
         <div className="grid gap-8 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1fr)] lg:items-stretch">
           <div className="flex flex-col justify-between px-6 py-8 sm:px-10 sm:pt-8 sm:pb-12">
             <div className="space-y-4">
-              <span className="inline-flex w-fit items-center gap-2 rounded-full border border-civic-blue/20 bg-civic-blue/10 px-4 py-1.5 text-sm font-semibold uppercase tracking-[0.24em] text-civic-blue">
+              <span className="inline-flex w-fit items-center gap-2 rounded-full border border-brand-primary/20 bg-brand-primary/10 px-4 py-1.5 text-sm font-semibold uppercase tracking-[0.24em] text-brand-primary">
                 <Sparkles className="h-4 w-4" />
                 Housing & Utilities
               </span>
@@ -220,7 +220,7 @@ export default function HousingUtilitiesClient() {
                 aria-haspopup="menu"
                 aria-expanded={jumpMenuOpen}
                 aria-controls="hero-jump-menu"
-                className="inline-flex w-full items-center justify-between gap-3 rounded-full bg-civic-green px-5 py-3 text-base font-semibold text-white shadow-lg shadow-civic-green/30 transition-colors duration-200 hover:bg-emerald-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-civic-green focus-visible:ring-offset-2"
+                className="inline-flex w-full items-center justify-between gap-3 rounded-full bg-brand-primary px-5 py-3 text-base font-semibold text-white shadow-lg shadow-brand-primary/30 transition-colors duration-200 hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2"
               >
                 <span>Jump to a service</span>
                 <ChevronDown className={`h-4 w-4 transition-transform ${jumpMenuOpen ? "rotate-180" : ""}`} />
@@ -232,7 +232,7 @@ export default function HousingUtilitiesClient() {
                     id="hero-jump-menu"
                     ref={jumpMenuRef}
                     role="menu"
-                    className="z-[1000] rounded-2xl border border-civic-green/20 bg-white p-2 text-slate-700 shadow-2xl shadow-civic-green/20"
+                    className="z-[1000] rounded-2xl border border-brand-primary/20 bg-white p-2 text-slate-700 shadow-2xl shadow-brand-primary/20"
                     style={{
                       position: "fixed",
                       top: menuPosition.top,
@@ -248,9 +248,9 @@ export default function HousingUtilitiesClient() {
                           type="button"
                           role="menuitem"
                           onClick={() => handleJumpSelect(service.id)}
-                          className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm font-semibold transition hover:bg-emerald-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-civic-green"
+                          className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm font-semibold transition hover:bg-brand-primary/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
                         >
-                          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-50 text-civic-green">
+                          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-primary/10 text-brand-primary">
                             <Icon className="h-4 w-4" />
                           </span>
                           <div>
@@ -265,21 +265,21 @@ export default function HousingUtilitiesClient() {
             </div>
           </div>
           <div className="relative">
-            <div className="absolute inset-0 bg-gradient-to-br from-orange-200 via-amber-200 to-white" aria-hidden />
-            <div className="relative flex h-full flex-col justify-between gap-6 rounded-t-3xl bg-gradient-to-br from-white/60 via-amber-100/40 to-transparent px-6 py-8 text-slate-900 sm:px-10 lg:rounded-none">
+            <div className="absolute inset-0 bg-info-tint" aria-hidden />
+            <div className="relative flex h-full flex-col justify-between gap-6 rounded-t-3xl bg-info-tint px-6 py-8 text-slate-900 sm:px-10 lg:rounded-none">
               <div className="space-y-4">
-                <p className="text-sm font-semibold uppercase tracking-[0.3em] text-amber-700">Why it matters</p>
+                <p className="text-sm font-semibold uppercase tracking-[0.3em] text-slate-600">Why it matters</p>
                 <ul className="space-y-2">
                   {heroHighlights.map((highlight) => (
                     <li key={highlight} className="flex items-start gap-3 text-base leading-relaxed text-slate-700 sm:text-lg">
-                      <span className="mt-[0.625rem] h-2 w-2 shrink-0 rounded-full bg-amber-500/70" aria-hidden />
+                      <span className="mt-[0.625rem] h-2 w-2 shrink-0 rounded-full bg-brand-accent/60" aria-hidden />
                       <span>{highlight}</span>
                     </li>
                   ))}
                 </ul>
               </div>
-              <div className="rounded-2xl border border-amber-200 bg-white/70 p-5 text-base leading-relaxed text-slate-800 shadow-inner shadow-amber-100/60 sm:text-lg">
-                <p className="font-semibold text-amber-800">Simple help in one place</p>
+              <div className="rounded-2xl border border-brand-accent/20 bg-white/80 p-5 text-base leading-relaxed text-slate-800 shadow-inner shadow-brand-accent/10 sm:text-lg">
+                <p className="font-semibold text-slate-800">Simple help in one place</p>
                 <p className="mt-2">
                   All your government data in one place. No need to search multiple sites or agencies.
                 </p>
@@ -303,13 +303,13 @@ export default function HousingUtilitiesClient() {
                     type="button"
                     data-nav-target={service.id}
                     onClick={() => handleNavClick(service.id)}
-                    className={`flex min-w-[220px] items-center gap-3 rounded-2xl border px-4 py-3 text-left text-sm font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-civic-blue focus-visible:ring-offset-2 ${
+                    className={`flex min-w-[220px] items-center gap-3 rounded-2xl border px-4 py-3 text-left text-sm font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2 ${
                       isActive
-                        ? "border-civic-blue bg-civic-blue/10 text-civic-blue shadow-inner shadow-civic-blue/20"
-                        : "border-slate-200 bg-white text-slate-700 hover:border-civic-blue/40 hover:text-civic-blue"
+                        ? "border-brand-primary bg-brand-primary/10 text-brand-primary shadow-inner shadow-brand-primary/20"
+                        : "border-slate-200 bg-white text-slate-700 hover:border-brand-primary/40 hover:text-brand-primary"
                     }`}
                   >
-                    <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-civic-blue shadow-sm">
+                    <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-brand-primary shadow-sm">
                       <Icon className="h-4 w-4" />
                     </span>
                     <span>{service.label}</span>
@@ -317,18 +317,18 @@ export default function HousingUtilitiesClient() {
                 );
               })}
             </div>
-            <div className="mt-3 flex gap-3 text-xs font-semibold text-civic-blue">
+            <div className="mt-3 flex gap-3 text-xs font-semibold text-brand-primary">
               <button
                 type="button"
                 onClick={expandAll}
-                className="rounded-full border border-civic-blue/30 px-3 py-1 transition hover:bg-civic-blue/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-civic-blue focus-visible:ring-offset-2"
+                className="rounded-full border border-brand-primary/30 px-3 py-1 transition hover:bg-brand-primary/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2"
               >
                 Expand all
               </button>
               <button
                 type="button"
                 onClick={collapseToPrimary}
-                className="rounded-full border border-civic-blue/30 px-3 py-1 transition hover:bg-civic-blue/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-civic-blue focus-visible:ring-offset-2"
+                className="rounded-full border border-brand-primary/30 px-3 py-1 transition hover:bg-brand-primary/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2"
               >
                 Collapse to housing
               </button>
@@ -341,18 +341,18 @@ export default function HousingUtilitiesClient() {
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Jump to a service</p>
                 </div>
-                <div className="flex gap-2 text-xs font-semibold text-civic-blue">
+                <div className="flex gap-2 text-xs font-semibold text-brand-primary">
                   <button
                     type="button"
                     onClick={expandAll}
-                    className="rounded-full border border-civic-blue/30 px-3 py-1 transition hover:bg-civic-blue/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-civic-blue focus-visible:ring-offset-2"
+                    className="rounded-full border border-brand-primary/30 px-3 py-1 transition hover:bg-brand-primary/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2"
                   >
                     Expand all
                   </button>
                   <button
                     type="button"
                     onClick={collapseToPrimary}
-                    className="rounded-full border border-civic-blue/30 px-3 py-1 transition hover:bg-civic-blue/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-civic-blue focus-visible:ring-offset-2"
+                    className="rounded-full border border-brand-primary/30 px-3 py-1 transition hover:bg-brand-primary/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2"
                   >
                     Collapse to housing
                   </button>
@@ -368,15 +368,15 @@ export default function HousingUtilitiesClient() {
                       type="button"
                       data-nav-target={service.id}
                       onClick={() => handleNavClick(service.id)}
-                      className={`flex items-center justify-between gap-3 rounded-2xl px-4 py-3 text-left text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-civic-blue focus-visible:ring-offset-2 ${
-                        isActive
-                          ? "bg-civic-blue text-white shadow-lg shadow-civic-blue/30"
-                          : "bg-slate-100 text-slate-600 hover:bg-civic-blue/10 hover:text-civic-blue"
-                      }`}
+                    className={`flex items-center justify-between gap-3 rounded-2xl px-4 py-3 text-left text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2 ${
+                      isActive
+                        ? "bg-brand-primary text-white shadow-lg shadow-brand-primary/30"
+                        : "bg-slate-100 text-slate-600 hover:bg-brand-primary/10 hover:text-brand-primary"
+                    }`}
                       aria-current={isActive ? "true" : "false"}
                     >
                       <span className="flex items-center gap-2">
-                        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/60 text-civic-blue shadow-sm">
+                        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/60 text-brand-primary shadow-sm">
                           <Icon className="h-4 w-4" />
                         </span>
                         {service.label}
@@ -447,8 +447,8 @@ function ServicePanel({ service, isOpen, onToggle, isActive }: ServicePanelProps
     <section
       id={`service-${service.id}`}
       data-service-id={service.id}
-      className={`overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-lg shadow-slate-400/10 transition ring-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-civic-blue ${
-        isActive ? "ring-1 ring-civic-blue/40" : ""
+      className={`overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-lg shadow-slate-400/10 transition ring-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary ${
+        isActive ? "ring-1 ring-brand-primary/40" : ""
       }`}
       tabIndex={-1}
       aria-labelledby={buttonId}
@@ -457,12 +457,12 @@ function ServicePanel({ service, isOpen, onToggle, isActive }: ServicePanelProps
         id={buttonId}
         type="button"
         onClick={() => onToggle(service.id)}
-        className="flex w-full items-center justify-between gap-4 px-6 py-5 text-left transition hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-civic-blue focus-visible:ring-offset-2"
+        className="flex w-full items-center justify-between gap-4 px-6 py-5 text-left transition hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2"
         aria-expanded={isOpen}
         aria-controls={panelId}
       >
         <div className="flex flex-1 items-center gap-4">
-          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-civic-blue/10 text-civic-blue shadow-inner shadow-civic-blue/10">
+          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-brand-primary/10 text-brand-primary shadow-inner shadow-brand-primary/10">
             <Icon className="h-5 w-5" />
           </span>
           <div className="flex flex-col gap-1">
