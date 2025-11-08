@@ -18,8 +18,7 @@ const BroadbandExperience = dynamic(() => import("../broadband/BroadbandExperien
 interface ServiceConfig {
   id: string;
   label: string;
-  description: string;
-  longDescription: string;
+  pillText: string;
   icon: LucideIcon;
   render: () => ReactNode;
   status?: "new" | "coming-soon";
@@ -29,28 +28,22 @@ const SERVICE_CONFIGS: ServiceConfig[] = [
   {
     id: "housing",
     label: "Housing Support",
-    description: "Find HUD housing counselors and Fair Market Rent numbers.",
-    longDescription: "Search by address to get a list of HUD-approved counselors nearby and see the latest HUD Fair Market Rent limits before you move or help a neighbor.",
+    pillText: "Find counselors and rent limits",
     icon: Home,
-    status: "new",
     render: () => <HousingExperience showIntro={false} />,
   },
   {
     id: "internet",
     label: "Internet & Broadband",
-    description: "Check county-level coverage and speed availability.",
-    longDescription: "Use a quick lookup to see who serves your county, the speeds they advertise, and how many homes are covered so you can plan installs or share facts.",
+    pillText: "Find coverage and speeds",
     icon: Wifi,
     render: () => <BroadbandExperience showIntro={false} />,
   },
   {
     id: "utilities",
     label: "Utilities Assistance",
-    description: "See typical monthly costs and which utilities cover your county.",
-    longDescription:
-      "Look up estimated electricity, gas, and water bills plus the public water systems, electric retailers, and gas distributors serving your county. City lookups are mapped to the county they sit in.",
+    pillText: "Find costs and providers",
     icon: Droplets,
-    status: "new",
     render: () => <UtilitiesExperience />,
   },
 ];
@@ -65,6 +58,7 @@ export default function HousingUtilitiesClient() {
   const [menuPosition, setMenuPosition] = useState<{ top: number; left: number; width: number } | null>(null);
   const jumpButtonRef = useRef<HTMLButtonElement | null>(null);
   const jumpMenuRef = useRef<HTMLDivElement | null>(null);
+  const isManualNavigationRef = useRef<boolean>(false);
 
   const updateMenuPosition = useCallback(() => {
     if (!jumpButtonRef.current) return;
@@ -99,6 +93,7 @@ export default function HousingUtilitiesClient() {
 
     const observer = new IntersectionObserver(
       (entries) => {
+        if (isManualNavigationRef.current) return;
         const visible = entries.filter((entry) => entry.isIntersecting);
         if (visible.length === 0) return;
         visible.sort((a, b) => Math.abs(a.boundingClientRect.top) - Math.abs(b.boundingClientRect.top));
@@ -171,9 +166,15 @@ export default function HousingUtilitiesClient() {
   const handleNavClick = useCallback((id: string) => {
     setOpenSections((prev) => (prev.includes(id) ? prev : [...prev, id]));
     setActiveSection(id);
+    isManualNavigationRef.current = true;
     const section = document.getElementById(`service-${id}`);
     if (section) {
       section.scrollIntoView({ behavior: "smooth", block: "start" });
+      setTimeout(() => {
+        isManualNavigationRef.current = false;
+      }, 1000);
+    } else {
+      isManualNavigationRef.current = false;
     }
   }, []);
 
@@ -254,7 +255,6 @@ export default function HousingUtilitiesClient() {
                           </span>
                           <div>
                             <p>{service.label}</p>
-                            <p className="text-xs font-normal text-slate-500">{service.description}</p>
                           </div>
                         </button>
                       );
@@ -458,13 +458,12 @@ function ServicePanel({ service, isOpen, onToggle, isActive }: ServicePanelProps
         aria-expanded={isOpen}
         aria-controls={panelId}
       >
-        <div className="flex flex-1 items-start gap-4">
-          <span className="flex h-12 w-12 items-center justify-center rounded-full bg-civic-blue/10 text-civic-blue shadow-inner shadow-civic-blue/10">
+        <div className="flex flex-1 items-center gap-4">
+          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-civic-blue/10 text-civic-blue shadow-inner shadow-civic-blue/10">
             <Icon className="h-5 w-5" />
           </span>
           <div className="flex flex-col gap-1">
-            <span className="text-base font-semibold text-slate-900">{service.label}</span>
-            <span className="text-sm text-slate-600">{service.description}</span>
+            <span className="text-2xl font-semibold text-slate-900">{service.label}</span>
             {statusChip && (
               <span
                 className={`mt-2 inline-flex w-fit items-center gap-1 rounded-full border px-3 py-0.5 text-xs font-semibold ${statusChip.className}`}
@@ -493,13 +492,9 @@ function ServicePanel({ service, isOpen, onToggle, isActive }: ServicePanelProps
           tabIndex={-1}
           className="space-y-4 border-t border-slate-200 px-6 pb-6 pt-5 focus:outline-none"
         >
-          <p className="text-sm text-slate-600">{service.longDescription}</p>
-          <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Get started</p>
-            <p className="mt-1 text-sm text-slate-600">
-              Fill in the form below. Results and next steps update right under it with no extra pages.
-            </p>
-          </div>
+          <span className="inline-flex items-center rounded-full border border-orange-200 bg-orange-100 px-3 py-1 text-sm font-medium text-orange-700">
+            {service.pillText}
+          </span>
           <div className="space-y-6">{content}</div>
         </div>
       </div>

@@ -192,12 +192,6 @@ export default function UtilitiesExperience() {
   return (
     <div className="space-y-6">
       <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Search</p>
-            <p className="text-sm text-slate-600">Pick a state, then search by county name.</p>
-          </div>
-        </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <label className="text-sm font-medium text-slate-700">
             State

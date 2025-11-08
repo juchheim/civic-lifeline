@@ -451,13 +451,6 @@ export default function HousingExperience({ showIntro = true, wrapperClassName, 
       )}
 
       <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="text-xl font-semibold text-slate-900">Find Housing Resources</h2>
-            <p className="text-sm text-slate-600">Enter a ZIP code, city, or full address. We will locate nearby counselors and the matching FMR area.</p>
-          </div>
-        </div>
-
         <form
           className="mt-4 space-y-4"
           onSubmit={(event) => {
