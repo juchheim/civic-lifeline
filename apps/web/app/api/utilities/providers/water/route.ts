@@ -5,7 +5,7 @@ import { getRedis } from "../../../housing/_shared/redis";
 import { CACHE_TTL_SECONDS, formatAreaLabel, mapUtilitiesError, parseAreaParams } from "../../_shared";
 
 const log = createLogger("api/utilities/providers/water");
-const SOURCE = "EPA SDWIS / Envirofacts";
+const SOURCE = "EPA SDWIS county service (cached)";
 
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
@@ -44,12 +44,13 @@ export async function GET(req: NextRequest) {
       resolveUtilitiesArea({ state: normalizedState, county: countyFips }),
     ]);
     const stateCodeForWater = coverageArea.stateCode ?? areaSummary.stateCode ?? normalizedState;
-    const countyNameForWater = coverageArea.countyName ?? areaSummary.countyName ?? area.county ?? null;
-    const systems = await getPublicWaterSystemsByCounty(stateCodeForWater, countyNameForWater);
-    log.info("sdwis systems fetched", { countyFips, count: systems.length });
-    const sorted = systems.sort((a, b) => (b.populationServed ?? 0) - (a.populationServed ?? 0));
-    const truncated = sorted.slice(0, 1000);
-    const meta = { total: systems.length, returned: truncated.length };
+    const { items: systems, total, scope } = await getPublicWaterSystemsByCounty({
+      countyFips,
+      stateCode: stateCodeForWater,
+      limit: 1000,
+    });
+    log.info("water systems fetched", { countyFips, count: systems.length, scope });
+    const meta = { total, returned: systems.length };
 
     const response = {
       area: { ...areaSummary, label: formatAreaLabel(areaSummary) },
@@ -59,12 +60,14 @@ export async function GET(req: NextRequest) {
         countyName: coverageArea.countyName,
         stateCode: coverageArea.stateCode,
       },
-      items: truncated,
+      items: systems,
       summary: meta,
       source: SOURCE,
       lastUpdated: new Date().toISOString(),
       notes:
-        "Public water systems from EPA's Facility Registry Service (FRS) filtered by state and county name. Results are capped at the first 1,000 facilities to keep responses manageable.",
+        scope === "state"
+          ? "Showing the largest water systems in this state because no county-level SDWIS service area was listed."
+          : "Public water systems from EPA's SDWIS county service dataset. Results are capped at the first 1,000 facilities to keep responses manageable.",
     };
 
     if (redis) {
