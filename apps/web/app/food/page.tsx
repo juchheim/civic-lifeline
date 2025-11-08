@@ -15,7 +15,6 @@ import { Check, Navigation2, Sparkles } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { zSnapResponse, type SnapResponse, type SnapItem } from "@cl/types";
 import { bboxToQueryParam } from "@cl/utils";
-import SourceChip from "@/components/SourceChip";
 import EmptyState from "@/components/EmptyState";
 import StoreCard from "@/components/StoreCard";
 
@@ -81,8 +80,6 @@ export default function FoodPage() {
   });
 
   const items = useMemo(() => data?.items ?? [], [data]);
-  const source = data?.source ?? "USDA ArcGIS";
-  const lastUpdated = data?.lastUpdated;
   const [focusedItem, setFocusedItem] = useState<SnapItem | null>(null);
 
   const availableTypes = useMemo(() => {
@@ -384,14 +381,10 @@ export default function FoodPage() {
 
   const mapReady = !!initialCenter;
 
-  const datasetHref =
-    (process.env.NEXT_PUBLIC_USDA_SNAP_ARCGIS_FEATURE_URL as string | undefined) ??
-    (process.env.NEXT_PUBLIC_USDA_SNAP_ARCGIS_URL as string | undefined);
-
   return (
     <main className="space-y-12 bg-neutral-bg pb-16">
       <section className="mt-4 overflow-hidden rounded-[2.5rem] border border-slate-200 bg-white shadow-lg shadow-slate-400/10">
-        <div className="grid gap-8 lg:grid-cols-[minmax(0,0.6fr)_minmax(0,1.4fr)] lg:items-stretch">
+        <div className="grid gap-8 lg:grid-cols-[minmax(0,0.55fr)_minmax(0,1.45fr)] lg:items-stretch">
           <div className="flex flex-col justify-between px-6 py-8 sm:px-10 sm:pt-8 sm:pb-12">
             <div className="space-y-5">
               <span className="inline-flex w-fit items-center gap-2 rounded-full border border-brand-primary/20 bg-brand-primary/10 px-4 py-1.5 text-sm font-semibold uppercase tracking-[0.24em] text-brand-primary">
@@ -537,10 +530,10 @@ export default function FoodPage() {
                 <p className="text-sm text-slate-600">Stay on one view: locate, filter, and pick a store without scrolling away.</p>
               </div>
 
-              <div className="rounded-3xl border border-white/70 bg-white/90 p-4 shadow-lg shadow-slate-400/20">
-                <div className="flex flex-wrap items-center gap-3">
+              <div className="rounded-3xl border border-white/70 bg-white p-4 shadow-lg shadow-slate-400/20">
+                <div className="flex flex-wrap items-center gap-4">
                   <div className="flex flex-col">
-                    <span className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Store types</span>
+                    <span className="text-xs font-semibold uppercase tracking-[0.3em] text-brand-primary">Store types</span>
                     <span className="text-xs text-slate-500">Tap a chip to filter the pins and the list.</span>
                   </div>
                   <div className="flex flex-1 flex-wrap items-center gap-2">
@@ -577,15 +570,15 @@ export default function FoodPage() {
                       <p className="text-sm text-slate-500">No filters here.</p>
                     )}
                   </div>
-                  {lastUpdated && <SourceChip source={source} lastUpdated={lastUpdated} href={datasetHref} />}
                 </div>
               </div>
 
-              <div className="grid gap-4 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
+              <div className="grid h-full items-stretch gap-4 lg:min-h-[32rem] xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
                 <div
                   ref={mapSectionRef}
-                  className="overflow-hidden rounded-3xl border border-white/60 bg-white shadow-2xl shadow-brand-primary/10 h-[22.5rem] sm:h-[23.5rem] xl:h-[24.5rem]"
+                  className="h-full overflow-hidden rounded-3xl border border-white/60 bg-white shadow-2xl shadow-brand-primary/10"
                   aria-label="Map of SNAP retailers"
+                  style={{ height: "100%" }}
                 >
                   {mapReady ? (
                     <MapView
@@ -596,7 +589,7 @@ export default function FoodPage() {
                       height="100%"
                     />
                   ) : (
-                    <div className="flex h-full flex-col items-center justify-center gap-4 bg-gradient-to-b from-brand-accent/5 to-brand-primary/5 p-8 text-center text-slate-700">
+                    <div className="flex h-full flex-col items-center justify-center gap-4 bg-slate-50 p-8 text-center text-slate-700">
                       <span className="flex h-14 w-14 items-center justify-center rounded-full bg-white/70 text-brand-primary shadow-inner shadow-brand-primary/20">
                         <Navigation2 className="h-6 w-6" aria-hidden />
                       </span>
@@ -608,32 +601,29 @@ export default function FoodPage() {
                   )}
                 </div>
 
-                <div className="flex flex-col rounded-3xl border border-white/70 bg-white shadow-lg shadow-slate-400/20">
+                <div className="flex h-full flex-col rounded-3xl border border-white/70 bg-white shadow-lg shadow-slate-400/20">
                   <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-5 py-4">
                     <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Nearby retailers</p>
+                      <p className="text-xs font-semibold uppercase tracking-[0.3em] text-brand-primary">Nearby retailers</p>
                       <p className="text-2xl font-semibold text-slate-900">
                         {mapReady ? `${items.length} ${items.length === 1 ? "match" : "matches"}` : "Waiting for location"}
                       </p>
                       <p className="text-xs text-slate-500">Tap a store to highlight the pin.</p>
                     </div>
-                    {mapReady && items.length > 0 && (
-                      <span className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600">Scroll inside this list</span>
-                    )}
                   </div>
-                  <div className="max-h-[22rem] flex-1 overflow-y-auto divide-y divide-slate-100" aria-live="polite">
+                  <div className="custom-scrollbar flex-1 overflow-y-scroll divide-y divide-slate-100 bg-white" aria-live="polite" style={{ minHeight: 0 }}>
                     {!mapReady ? (
                       <div className="p-5 text-sm text-slate-500">Choose a location to load nearby retailers.</div>
                     ) : isLoading ? (
                       <div className="space-y-4 p-5">
-                        <div className="h-5 rounded-full bg-slate-200" />
-                        <div className="h-4 w-5/6 rounded-full bg-slate-200" />
-                        <div className="h-4 w-2/3 rounded-full bg-slate-200" />
-                      </div>
-                    ) : items.length === 0 ? (
-                      <div className="p-5">
-                        <EmptyState kind="food" />
-                      </div>
+                        <div className="h-5 rounded-full bg-brand-primary/10" />
+                        <div className="h-4 w-5/6 rounded-full bg-brand-primary/10" />
+                        <div className="h-4 w-2/3 rounded-full bg-brand-primary/10" />
+                    </div>
+                  ) : items.length === 0 ? (
+                    <div className="p-5">
+                      <EmptyState kind="food" />
+                    </div>
                     ) : (
                       <ul>
                         {items.map((it) => (
