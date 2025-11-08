@@ -578,7 +578,7 @@ export default function FoodPage() {
                   ref={mapSectionRef}
                   className="overflow-hidden rounded-3xl border border-white/60 bg-white shadow-2xl shadow-brand-primary/10"
                   aria-label="Map of SNAP retailers"
-                  style={{ height: "28rem" }}
+                  style={{ height: "31rem" }}
                 >
                   {mapReady ? (
                     <MapView
@@ -601,7 +601,7 @@ export default function FoodPage() {
                   )}
                 </div>
 
-                <div className="flex flex-col rounded-3xl border border-white/70 bg-white shadow-lg shadow-slate-400/20" style={{ height: "28rem" }}>
+                <div className="flex flex-col rounded-3xl border border-white/70 bg-white shadow-lg shadow-slate-400/20" style={{ height: "31rem" }}>
                   <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-5 py-4">
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-[0.3em] text-brand-primary">Nearby retailers</p>
@@ -614,7 +614,7 @@ export default function FoodPage() {
                   <div
                     className="custom-scrollbar flex-1 overflow-y-scroll divide-y divide-slate-100 bg-white"
                     aria-live="polite"
-                    style={{ height: "calc(28rem - 5rem)" }}
+                    style={{ height: "calc(31rem - 5rem)" }}
                   >
                     {!mapReady ? (
                       <div className="p-5 text-sm text-slate-500">Choose a location to load nearby retailers.</div>
