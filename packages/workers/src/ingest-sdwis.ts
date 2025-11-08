@@ -43,10 +43,15 @@ async function fetchTotalRows(): Promise<number> {
   return Number.isFinite(total) ? total : 0;
 }
 
-async function fetchBatch(start: number, limit: number): Promise<RawSdwisRecord[]> {
+async function fetchBatch(start: number, limit: number): Promise<RawSdwisRecord[] | null> {
   const end = Math.min(start + limit - 1, MAX_ROWS);
   const url = `${BASE_URL}/rows/${start}:${end}/JSON`;
-  return fetchJson<RawSdwisRecord[]>(url);
+  try {
+    return await fetchJson<RawSdwisRecord[]>(url);
+  } catch (error) {
+    log.warn("batch fetch failed, skipping", { start, end, error: error instanceof Error ? error.message : String(error) });
+    return null;
+  }
 }
 
 async function ensureIndexes(collection: Collection<PublicWaterSystem>) {
@@ -108,6 +113,35 @@ async function loadReferenceData() {
   return { states, counties };
 }
 
+async function shouldSkipBatch(
+  records: RawSdwisRecord[],
+  context: ReturnType<typeof buildTransformContext>,
+  collection: Collection<PublicWaterSystem>,
+): Promise<boolean> {
+  // Build potential document IDs from the batch
+  const docIds: string[] = [];
+  for (const record of records) {
+    const outcome = mapSdwisRecord(record, context);
+    if (outcome.document) {
+      docIds.push(outcome.document._id);
+    }
+  }
+
+  if (docIds.length === 0) {
+    return false; // No valid documents, process to handle skips
+  }
+
+  // Check if all documents already exist with recent ingestRunId (within last 2 hours)
+  const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
+  const existingCount = await collection.countDocuments({
+    _id: { $in: docIds },
+    updatedAt: { $gte: twoHoursAgo },
+  });
+
+  // If all documents exist and were recently updated, skip this batch
+  return existingCount === docIds.length;
+}
+
 async function main() {
   const startMs = Date.now();
   const ingestRunId = randomUUID();
@@ -121,37 +155,82 @@ async function main() {
 
   let processed = 0;
   let touchedDocs = 0;
+  let failedBatches = 0;
   const skippedTotals: SkipCounters = {
     "missing-pwsid": 0,
     "state-unmapped": 0,
     "county-unmapped": 0,
   };
 
-  for (let offset = 0; offset < totalRows && offset < MAX_ROWS; offset += PAGE_SIZE) {
-    const rows = await fetchBatch(offset, PAGE_SIZE);
-    if (!rows || rows.length === 0) {
-      log.info("no additional rows returned", { offset });
-      break;
-    }
-    const timestamp = new Date().toISOString();
-    const { operations, skipped } = buildBulkOperations(rows, timestamp, ingestRunId, context);
-    skippedTotals["missing-pwsid"] += skipped["missing-pwsid"];
-    skippedTotals["state-unmapped"] += skipped["state-unmapped"];
-    skippedTotals["county-unmapped"] += skipped["county-unmapped"];
-    if (operations.length > 0) {
-      const result = await collection.bulkWrite(operations, { ordered: false });
-      const updated = (result.upsertedCount ?? 0) + (result.modifiedCount ?? 0);
-      touchedDocs += updated;
-    }
-    processed += rows.length;
-    log.info("batch processed", {
-      offset,
-      batch: rows.length,
+  // Progress monitor: log every 30 seconds
+  const progressInterval = setInterval(() => {
+    const percent = totalRows ? Number((processed / totalRows) * 100).toFixed(2) : "0.00";
+    const elapsed = ((Date.now() - startMs) / 1000).toFixed(0);
+    log.info("progress update", {
       processed,
+      totalRows,
+      percent: `${percent}%`,
       touchedDocs,
-      skipped: skippedTotals,
-      progress: totalRows ? Number((processed / totalRows) * 100).toFixed(2) : undefined,
+      failedBatches,
+      skippedBatches,
+      elapsedSeconds: elapsed,
     });
+  }, 30000);
+
+  let skippedBatches = 0;
+  try {
+    for (let offset = 0; offset < totalRows && offset < MAX_ROWS; offset += PAGE_SIZE) {
+      const rows = await fetchBatch(offset, PAGE_SIZE);
+      if (rows === null) {
+        failedBatches++;
+        // Continue to next batch instead of breaking
+        continue;
+      }
+      if (rows.length === 0) {
+        log.info("no additional rows returned", { offset });
+        break;
+      }
+
+      // Check if this batch is already in the database (skip upserts if so)
+      const shouldSkip = await shouldSkipBatch(rows, context, collection);
+      if (shouldSkip) {
+        skippedBatches++;
+        processed += rows.length;
+        log.debug("batch skipped (already in db)", { offset, batch: rows.length });
+        continue;
+      }
+
+      const timestamp = new Date().toISOString();
+      const { operations, skipped } = buildBulkOperations(rows, timestamp, ingestRunId, context);
+      skippedTotals["missing-pwsid"] += skipped["missing-pwsid"];
+      skippedTotals["state-unmapped"] += skipped["state-unmapped"];
+      skippedTotals["county-unmapped"] += skipped["county-unmapped"];
+      if (operations.length > 0) {
+        try {
+          const result = await collection.bulkWrite(operations, { ordered: false });
+          const updated = (result.upsertedCount ?? 0) + (result.modifiedCount ?? 0);
+          touchedDocs += updated;
+        } catch (error) {
+          log.warn("bulk write failed, continuing", {
+            offset,
+            error: error instanceof Error ? error.message : String(error),
+          });
+          failedBatches++;
+          continue;
+        }
+      }
+      processed += rows.length;
+      log.info("batch processed", {
+        offset,
+        batch: rows.length,
+        processed,
+        touchedDocs,
+        skipped: skippedTotals,
+        progress: totalRows ? Number((processed / totalRows) * 100).toFixed(2) : undefined,
+      });
+    }
+  } finally {
+    clearInterval(progressInterval);
   }
 
   if (touchedDocs > 0) {
@@ -161,10 +240,24 @@ async function main() {
     log.warn("no documents ingested; skipping cleanup to preserve prior data");
   }
 
-  log.info("sdwis ingestion complete", { processed, touchedDocs, skipped: skippedTotals, ms: Date.now() - startMs });
+  log.info("sdwis ingestion complete", {
+    processed,
+    totalRows,
+    touchedDocs,
+    failedBatches,
+    skippedBatches,
+    skipped: skippedTotals,
+    ms: Date.now() - startMs,
+    percentComplete: totalRows ? Number((processed / totalRows) * 100).toFixed(2) : "0.00",
+  });
 }
 
-main().catch((error) => {
-  log.error("sdwis ingestion failed", { error: error instanceof Error ? error.message : String(error) });
-  process.exit(1);
-});
+main()
+  .then(() => {
+    log.info("sdwis ingestion finished successfully");
+    process.exit(0);
+  })
+  .catch((error) => {
+    log.error("sdwis ingestion failed", { error: error instanceof Error ? error.message : String(error) });
+    process.exit(1);
+  });

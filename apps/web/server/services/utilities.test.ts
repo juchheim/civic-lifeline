@@ -1,9 +1,19 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { County, State } from "@cl/types";
 
-const { mockStates, mockCounties } = vi.hoisted(() => ({
+const { mockStates, mockCounties, mockWaterSystems } = vi.hoisted(() => ({
   mockStates: [] as Array<State & { _id: string }>,
   mockCounties: [] as Array<County & { _id: string }>,
+  mockWaterSystems: [] as Array<{
+    _id: string;
+    pwsId: string;
+    systemName: string;
+    countyFips: string;
+    countyName: string;
+    stateCode: string;
+    stateFips: string;
+    populationServed?: number;
+  }>,
 }));
 
 vi.mock("@cl/db", () => {
@@ -14,6 +24,42 @@ vi.mock("@cl/db", () => {
       if (projection[key]) projected[key] = doc[key];
     });
     return projected;
+  };
+  const matches = (doc: Record<string, unknown>, query: Record<string, unknown> = {}) =>
+    Object.entries(query).every(([key, value]) => {
+      if (value === undefined) return true;
+      return doc[key] === value;
+    });
+  const buildCursor = (docs: Array<Record<string, unknown>>) => {
+    let working = [...docs];
+    return {
+      sort(sortSpec: Record<string, 1 | -1>) {
+        const entries = Object.entries(sortSpec);
+        working = working.sort((a, b) => {
+          for (const [field, direction] of entries) {
+            const av = (a[field] as number | string | undefined);
+            const bv = (b[field] as number | string | undefined);
+            if (av === bv) continue;
+            if (typeof av === "number" && typeof bv === "number") {
+              return direction === -1 ? bv - av : av - bv;
+            }
+            const aStr = av === undefined ? "" : String(av);
+            const bStr = bv === undefined ? "" : String(bv);
+            const cmp = aStr.localeCompare(bStr);
+            if (cmp !== 0) return direction === -1 ? -cmp : cmp;
+          }
+          return 0;
+        });
+        return this;
+      },
+      limit(limit: number) {
+        working = working.slice(0, limit);
+        return this;
+      },
+      async toArray() {
+        return working;
+      },
+    };
   };
   return {
     getStatesCollection: async () => ({
@@ -28,6 +74,16 @@ vi.mock("@cl/db", () => {
           return rows.map((doc) => project(doc, options?.projection));
         },
       }),
+    }),
+    getPublicWaterSystemsCollection: async () => ({
+      find: (query?: Record<string, unknown>, options?: { projection?: Record<string, number> }) => {
+        const rows = mockWaterSystems.filter((doc) => matches(doc, query));
+        const docs = rows.map((doc) => project(doc, options?.projection));
+        return buildCursor(docs);
+      },
+      countDocuments: async (query?: Record<string, unknown>) =>
+        mockWaterSystems.filter((doc) => matches(doc, query)).length,
+      createIndex: async () => {},
     }),
   };
 });
@@ -50,6 +106,29 @@ function seedMockData() {
   mockStates.push({ _id: "MS", code: "MS", name: "Mississippi", fips: "28" });
   mockCounties.length = 0;
   mockCounties.push({ _id: "28163", name: "Yazoo County", fips: "28163", stateCode: "MS", stateFips: "28" });
+  mockWaterSystems.length = 0;
+  mockWaterSystems.push(
+    {
+      _id: "MS12345:28163",
+      pwsId: "MS12345",
+      systemName: "Yazoo Water",
+      countyFips: "28163",
+      countyName: "Yazoo County",
+      stateCode: "MS",
+      stateFips: "28",
+      populationServed: 1200,
+    },
+    {
+      _id: "MS00000:28001",
+      pwsId: "MS00000",
+      systemName: "Adams System",
+      countyFips: "28001",
+      countyName: "Adams County",
+      stateCode: "MS",
+      stateFips: "28",
+      populationServed: 500,
+    },
+  );
 }
 
 describe("utilities data layer", () => {
@@ -122,42 +201,18 @@ describe("utilities data layer", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
-  it("requests water systems using 5-digit FIPS and falls back to 6-digit when empty", async () => {
-    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
-      mockJsonResponse({
-        Results: {
-          Facilities: [
-            {
-              FacName: "Yazoo Water",
-              ProgramSystems: [{ ProgramSystemAcronym: "SDWIS", ProgramSystemID: "MS12345", ProgramSystemName: "Yazoo Water" }],
-            },
-          ],
-        },
-      }),
-    );
-    const results = await getPublicWaterSystemsByCounty("MS", "Yazoo County");
-    expect(results).toHaveLength(1);
-    expect(fetchMock).toHaveBeenCalledWith(
-      expect.stringContaining("state_abbr=MS"),
-      expect.objectContaining({ cache: "no-store" }),
-    );
+  it("loads water systems from Mongo by county fips", async () => {
+    const results = await getPublicWaterSystemsByCounty({ countyFips: "28163", stateCode: "MS" });
+    expect(results.scope).toBe("county");
+    expect(results.total).toBe(1);
+    expect(results.items[0]).toMatchObject({ systemName: "Yazoo Water", pwsId: "MS12345" });
   });
 
-  it("maps lowercase sdwis fields to response shape", async () => {
-    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
-      mockJsonResponse({
-        Results: {
-          Facilities: [
-            {
-              facname: "Lowercase Facility",
-              programs: [{ pgm_sys_acrnm: "SDWIS", pgm_sys_id: "abc123", pgm_sys_name: "Lowercase System" }],
-            },
-          ],
-        },
-      }),
-    );
-    const results = await getPublicWaterSystemsByCounty("MS", "Yazoo County");
-    expect(results).toEqual([{ systemName: "Lowercase System", populationServed: undefined, pwsId: "abc123" }]);
+  it("falls back to state scope when county has no entries", async () => {
+    const results = await getPublicWaterSystemsByCounty({ countyFips: "99999", stateCode: "MS", limit: 5 });
+    expect(results.scope).toBe("state");
+    expect(results.total).toBe(2);
+    expect(results.items[0].systemName).toBe("Yazoo Water");
   });
 
   it("queries gas utilities with both 5- and 6-digit county FIPS", async () => {

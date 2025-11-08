@@ -1,5 +1,5 @@
 import { MongoClient, Db, Collection, ObjectId } from "mongodb";
-import { FccBroadband, State, County } from "@cl/types";
+import { FccBroadband, State, County, PublicWaterSystem } from "@cl/types";
 
 let _client: MongoClient | null = null;
 let _db: Db | null = null;
@@ -33,6 +33,11 @@ export async function getStatesCollection(): Promise<Collection<State & { _id: s
 export async function getCountiesCollection(): Promise<Collection<County & { _id: string }>> {
   const db = await getDb();
   return db.collection<County & { _id: string }>("counties");
+}
+
+export async function getPublicWaterSystemsCollection(): Promise<Collection<PublicWaterSystem>> {
+  const db = await getDb();
+  return db.collection<PublicWaterSystem>("publicWaterSystems");
 }
 
 export { ObjectId };

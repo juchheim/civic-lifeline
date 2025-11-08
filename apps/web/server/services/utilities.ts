@@ -1,6 +1,6 @@
-import { getCountiesCollection, getStatesCollection } from "@cl/db";
+import { getCountiesCollection, getPublicWaterSystemsCollection, getStatesCollection } from "@cl/db";
 import { createLogger } from "@/lib/logger";
-import type { State } from "@cl/types";
+import type { PublicWaterSystem, State } from "@cl/types";
 
 export type Area = { state: string; county?: string; city?: string };
 
@@ -437,105 +437,56 @@ export async function getWaterSewerAnnualCosts(area: Area, resolved?: ResolvedAr
   return buildDistribution(row, "B25134_001E", WATER_BUCKETS, 12);
 }
 
-interface FrsFacility {
-  [key: string]: unknown;
-}
+type WaterSystemProjection = Pick<PublicWaterSystem, "systemName" | "populationServed" | "pwsId">;
 
-function normalizeCountyNameForFrs(countyName: string | undefined | null): string {
-  if (!countyName) return "";
-  return countyName
-    .replace(/\b(county|parish|borough|municipality|city|township|census area)\b/gi, "")
-    .replace(/[^a-zA-Z]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim()
-    .toUpperCase();
-}
+type WaterSystemScope = "county" | "state";
 
-function extractFrsFacilities(payload: unknown): FrsFacility[] {
-  if (!payload) return [];
-  if (Array.isArray(payload)) return payload as FrsFacility[];
-  const obj = payload as Record<string, unknown>;
-  const results = (obj.Results ?? obj.results ?? obj) as Record<string, unknown> | undefined;
-  if (!results) return [];
-  const candidates = [results.Facilities, results.Facility, (results as any).ROW, (results as any).ROWS, results];
-  for (const candidate of candidates) {
-    if (Array.isArray(candidate)) return candidate as FrsFacility[];
-    if (candidate && Array.isArray((candidate as any).ROW)) return (candidate as any).ROW;
+export async function getPublicWaterSystemsByCounty({
+  countyFips,
+  stateCode,
+  limit = 1000,
+}: {
+  countyFips: string;
+  stateCode?: string | null;
+  limit?: number;
+}): Promise<{ items: Array<{ systemName: string; populationServed?: number; pwsId?: string }>; total: number; scope: WaterSystemScope }> {
+  if (!/^\d{5}$/.test(countyFips)) throw new UtilitiesDataError("INVALID_INPUT", "County FIPS must include 5 digits.");
+  const collection = await getPublicWaterSystemsCollection();
+  const projection = { projection: { systemName: 1, populationServed: 1, pwsId: 1 } };
+  const countyQuery = { countyFips };
+
+  const [countyItems, countyTotal] = await Promise.all([
+    collection.find<WaterSystemProjection>(countyQuery, projection).sort({ populationServed: -1, systemName: 1 }).limit(limit).toArray(),
+    collection.countDocuments(countyQuery),
+  ]);
+  if (countyItems.length > 0) {
+    serviceLog.info("water systems loaded from mongo", { countyFips, count: countyItems.length });
+    return { scope: "county", total: countyTotal, items: countyItems.map(mapWaterSystemDocument) };
   }
-  return [];
-}
 
-function extractProgramsFromFacility(facility: FrsFacility): FrsFacility[] {
-  const candidates = [
-    facility.ProgramSystems,
-    facility.ProgramSystem,
-    facility.Programs,
-    facility.Program,
-    (facility as any).program_systems,
-    (facility as any).programs,
-  ];
-  const programs: FrsFacility[] = [];
-  candidates.forEach((candidate) => {
-    if (Array.isArray(candidate)) programs.push(...(candidate as FrsFacility[]));
-    else if (candidate && typeof candidate === "object") programs.push(candidate as FrsFacility);
-  });
-  return programs;
-}
-
-function mapFrsFacility(facility: FrsFacility) {
-  const programs = extractProgramsFromFacility(facility);
-  const sdwisProgram =
-    programs.find((program) => {
-      const acr =
-        (program.ProgramSystemAcronym ??
-          program.pgm_sys_acrnm ??
-          program.programSystemAcronym ??
-          program.PROGRAMSYSTEMACRONYM ??
-          "").toString() || "";
-      return acr.toUpperCase() === "SDWIS";
-    }) ?? programs[0];
-
-  const rawName =
-    sdwisProgram?.ProgramSystemName ??
-    sdwisProgram?.pgm_sys_name ??
-    facility.FacName ??
-    facility.facname ??
-    facility.FacilityName ??
-    facility.facility_name ??
-    "";
-  const systemName = typeof rawName === "string" && rawName.trim() ? rawName.trim() : "Unnamed system";
-  const rawPwsId =
-    sdwisProgram?.ProgramSystemID ??
-    sdwisProgram?.pgm_sys_id ??
-    sdwisProgram?.PROGRAMSYSTEMID ??
-    sdwisProgram?.program_system_id ??
-    "";
-  const pwsId = typeof rawPwsId === "string" && rawPwsId.trim().length > 0 ? rawPwsId.trim() : undefined;
-  return { systemName, populationServed: undefined, pwsId };
-}
-
-export async function getPublicWaterSystemsByCounty(
-  stateCode: string,
-  countyName?: string | null,
-): Promise<Array<{ systemName: string; populationServed?: number; pwsId?: string }>> {
-  if (!stateCode) throw new UtilitiesDataError("INVALID_INPUT", "State is required for SDWIS lookup.");
-  const formattedCounty = normalizeCountyNameForFrs(countyName);
-  const params = new URLSearchParams({
-    pgm_sys_acrnm: "SDWIS",
-    state_abbr: stateCode.toUpperCase(),
-    program_output: "yes",
-    output: "JSON",
-  });
-  if (formattedCounty) params.set("county_name", formattedCounty);
-  const url = `https://ofmpub.epa.gov/frs_public2/frs_rest_services.get_facilities?${params.toString()}`;
-  serviceLog.info("frs sdwis lookup", { stateCode, countyName: formattedCounty || null, url });
-  const payload = await fetchJson<unknown>(url, { timeoutMs: 25000 });
-  const facilities = extractFrsFacilities(payload);
-  const mapped = facilities.map(mapFrsFacility).filter((item) => item.systemName);
-  if (mapped.length === 0) {
-    serviceLog.warn("frs sdwis returned no facilities", { stateCode, countyName: formattedCounty || null });
+  if (stateCode) {
+    const normalizedState = stateCode.toUpperCase();
+    const stateQuery = { stateCode: normalizedState };
+    const [stateItems, stateTotal] = await Promise.all([
+      collection.find<WaterSystemProjection>(stateQuery, projection).sort({ populationServed: -1, systemName: 1 }).limit(limit).toArray(),
+      collection.countDocuments(stateQuery),
+    ]);
+    if (stateItems.length > 0) {
+      serviceLog.info("water systems fallback to state scope", { stateCode: normalizedState, count: stateItems.length });
+      return { scope: "state", total: stateTotal, items: stateItems.map(mapWaterSystemDocument) };
+    }
   }
-  return mapped.slice(0, 1000);
+
+  serviceLog.warn("water systems not found in mongo", { countyFips, stateCode: stateCode || null });
+  return { scope: "county", total: 0, items: [] };
+}
+
+function mapWaterSystemDocument(doc: WaterSystemProjection): { systemName: string; populationServed?: number; pwsId?: string } {
+  return {
+    systemName: doc.systemName ?? "Unnamed system",
+    populationServed: doc.populationServed ?? undefined,
+    pwsId: doc.pwsId ?? undefined,
+  };
 }
 
 interface ArcgisResponse {

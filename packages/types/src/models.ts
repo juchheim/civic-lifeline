@@ -171,3 +171,28 @@ export const zCounty = z.object({
   stateFips: z.string().length(2), // State FIPS, e.g., "28"
 });
 export type County = z.infer<typeof zCounty>;
+
+// publicWaterSystems
+export const zPublicWaterSystemContact = z.object({
+  name: z.string().optional(),
+  phone: z.string().optional(),
+});
+
+export const zPublicWaterSystem = z.object({
+  _id: z.string(),
+  pwsId: z.string(),
+  systemName: z.string(),
+  countyFips: zFips,
+  countyName: z.string(),
+  stateCode: z.string().length(2),
+  stateFips: z.string().length(2),
+  populationServed: z.number().int().nonnegative().nullable().optional(),
+  contact: zPublicWaterSystemContact.optional(),
+  source: z.string(),
+  sourceUrl: z.string().optional(),
+  fetchedAt: zISODate,
+  createdAt: zISODate,
+  updatedAt: zISODate,
+  ingestRunId: z.string().optional(),
+});
+export type PublicWaterSystem = z.infer<typeof zPublicWaterSystem>;

@@ -2,3 +2,6 @@ node_modules
 .dist
 .next
 coverage
+packages/workers/src/monitor-*.js
+packages/workers/src/monitor-*.py
+packages/workers/src/monitor-*.sh

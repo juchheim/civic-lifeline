@@ -9,9 +9,19 @@ import { GET as getGasProviders } from "./providers/gas/route";
 
 vi.mock("../housing/_shared/redis", () => ({ getRedis: () => null }));
 
-const { mockStates, mockCounties } = vi.hoisted(() => ({
+const { mockStates, mockCounties, mockWaterSystems } = vi.hoisted(() => ({
   mockStates: [] as Array<State & { _id: string }>,
   mockCounties: [] as Array<County & { _id: string }>,
+  mockWaterSystems: [] as Array<{
+    _id: string;
+    pwsId: string;
+    systemName: string;
+    countyFips: string;
+    countyName: string;
+    stateCode: string;
+    stateFips: string;
+    populationServed?: number;
+  }>,
 }));
 
 vi.mock("@cl/db", () => {
@@ -22,6 +32,45 @@ vi.mock("@cl/db", () => {
       if (projection[key]) projected[key] = doc[key];
     });
     return projected;
+  };
+  const matches = (doc: Record<string, unknown>, query: Record<string, unknown> = {}) => {
+    return Object.entries(query).every(([key, value]) => {
+      if (value === undefined) return true;
+      return doc[key] === value;
+    });
+  };
+  const buildCursor = (docs: Array<Record<string, unknown>>) => {
+    let working = [...docs];
+    return {
+      sort(sortSpec: Record<string, 1 | -1>) {
+        const entries = Object.entries(sortSpec);
+        working = working.sort((a, b) => {
+          for (const [field, direction] of entries) {
+            const av = (a[field] as number | string | undefined);
+            const bv = (b[field] as number | string | undefined);
+            if (av === bv) continue;
+            if (typeof av === "number" && typeof bv === "number") {
+              return direction === -1 ? bv - av : av - bv;
+            }
+            const aStr = av === undefined ? "" : String(av);
+            const bStr = bv === undefined ? "" : String(bv);
+            const cmp = aStr.localeCompare(bStr);
+            if (cmp !== 0) {
+              return direction === -1 ? -cmp : cmp;
+            }
+          }
+          return 0;
+        });
+        return this;
+      },
+      limit(limit: number) {
+        working = working.slice(0, limit);
+        return this;
+      },
+      async toArray() {
+        return working;
+      },
+    };
   };
   return {
     getStatesCollection: async () => ({
@@ -37,6 +86,16 @@ vi.mock("@cl/db", () => {
         },
       }),
     }),
+    getPublicWaterSystemsCollection: async () => ({
+      find: (query?: Record<string, unknown>, options?: { projection?: Record<string, number> }) => {
+        const rows = mockWaterSystems.filter((doc) => matches(doc, query));
+        const docs = rows.map((doc) => project(doc, options?.projection));
+        return buildCursor(docs);
+      },
+      countDocuments: async (query?: Record<string, unknown>) =>
+        mockWaterSystems.filter((doc) => matches(doc, query)).length,
+      createIndex: async () => {},
+    }),
   };
 });
 
@@ -49,6 +108,29 @@ function seedMockData() {
   mockStates.push({ _id: "MS", code: "MS", name: "Mississippi", fips: "28" });
   mockCounties.length = 0;
   mockCounties.push({ _id: "28163", name: "Yazoo County", fips: "28163", stateCode: "MS", stateFips: "28" });
+  mockWaterSystems.length = 0;
+  mockWaterSystems.push(
+    {
+      _id: "MS12345:28163",
+      pwsId: "MS12345",
+      systemName: "Yazoo Water",
+      countyFips: "28163",
+      countyName: "Yazoo County",
+      stateCode: "MS",
+      stateFips: "28",
+      populationServed: 1200,
+    },
+    {
+      _id: "MS67890:28163",
+      pwsId: "MS67890",
+      systemName: "Second System",
+      countyFips: "28163",
+      countyName: "Yazoo County",
+      stateCode: "MS",
+      stateFips: "28",
+      populationServed: 800,
+    },
+  );
 }
 
 describe("utilities api routes", () => {
@@ -88,22 +170,6 @@ describe("utilities api routes", () => {
   });
 
   it("returns water providers for a county", async () => {
-    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
-      mockJsonResponse({
-        Results: {
-          Facilities: [
-            {
-              FacName: "Yazoo Water",
-              ProgramSystems: [{ ProgramSystemAcronym: "SDWIS", ProgramSystemID: "MS12345", ProgramSystemName: "Yazoo Water" }],
-            },
-            {
-              FacName: "Second System",
-              ProgramSystems: [{ ProgramSystemAcronym: "SDWIS", ProgramSystemID: "MS67890", ProgramSystemName: "Second System" }],
-            },
-          ],
-        },
-      }),
-    );
     const request = new NextRequest("http://localhost/api/utilities/providers/water?state=MS&county=28163");
     const response = await getWaterProviders(request);
     expect(response.status).toBe(200);
@@ -111,7 +177,7 @@ describe("utilities api routes", () => {
     expect(body.items).toHaveLength(2);
     expect(body.summary.total).toBe(2);
     expect(body.coverage?.countyFips).toBe("28163");
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(body.notes).toContain("SDWIS");
   });
 
   it("returns electric providers for a county", async () => {
