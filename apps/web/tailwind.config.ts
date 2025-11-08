@@ -11,6 +11,7 @@ export default {
     extend: {
       colors: {
         'civic-green': BRAND_COLORS.green,
+        'civic-green-dark': '#7a9a45', // darker variant of civic-green
         'civic-blue': BRAND_COLORS.blue,
         'brand-primary': '#003d5c', // dark navy
         'brand-accent': '#fba92e', // amber/orange

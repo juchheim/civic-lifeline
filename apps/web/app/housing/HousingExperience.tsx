@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { zCounselorsResponse, zFmrResponse } from "@cl/types";
 import SourceChip from "@/components/SourceChip";
+import SuccessAlert from "@/components/SuccessAlert";
 
 type Suggestion = { id: string; name: string; lat: number; lon: number; kind: string };
 
@@ -450,9 +451,9 @@ export default function HousingExperience({ showIntro = true, wrapperClassName, 
         </header>
       )}
 
-      <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
         <form
-          className="mt-4 space-y-4"
+          className="space-y-4"
           onSubmit={(event) => {
             event.preventDefault();
             void runSearch();
@@ -460,7 +461,7 @@ export default function HousingExperience({ showIntro = true, wrapperClassName, 
         >
           <div className="space-y-2">
             <label htmlFor="housing-location" className="text-sm font-medium text-slate-700">
-              Search by address or ZIP
+              Address or ZIP code
             </label>
             <div
               ref={comboboxRef}
@@ -481,7 +482,7 @@ export default function HousingExperience({ showIntro = true, wrapperClassName, 
                 }}
                 onFocus={handleInputFocus}
                 onKeyDown={handleInputKeyDown}
-                className="w-full rounded border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/30"
                 placeholder="E.g. 39194 or 123 Main St, Greenville, MS"
                 aria-autocomplete="list"
                 aria-controls="housing-suggestion-list"
@@ -499,7 +500,7 @@ export default function HousingExperience({ showIntro = true, wrapperClassName, 
                         role="option"
                         aria-selected={index === activeSuggestionIndex}
                         className={`flex w-full items-start gap-2 px-3 py-2 text-left ${
-                          index === activeSuggestionIndex ? "bg-blue-50 text-blue-700" : "hover:bg-slate-100"
+                          index === activeSuggestionIndex ? "bg-brand-primary/10 text-brand-primary" : "hover:bg-slate-100"
                         }`}
                         onMouseDown={(event) => {
                           event.preventDefault();
@@ -521,14 +522,14 @@ export default function HousingExperience({ showIntro = true, wrapperClassName, 
               {counselorSearch?.radius ? ` • Radius ${counselorSearch.radius} mi` : null}
             </div>
             {locationError && (
-              <div className="rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">{locationError}</div>
+              <div className="rounded-xl border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">{locationError}</div>
             )}
           </div>
 
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-wrap items-center gap-3">
             <button
               type="submit"
-              className="inline-flex items-center justify-center rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
+              className="inline-flex items-center justify-center rounded-full bg-brand-primary px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-brand-primary/50"
               disabled={isSearching}
             >
               {isSearching ? "Searching…" : "Search housing data"}
@@ -536,7 +537,7 @@ export default function HousingExperience({ showIntro = true, wrapperClassName, 
             <button
               type="button"
               onClick={handleUseCurrentLocation}
-              className="inline-flex items-center justify-center rounded border border-blue-200 px-4 py-2 text-sm font-semibold text-blue-600 shadow-sm transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:border-blue-100 disabled:text-blue-300"
+              className="inline-flex items-center justify-center rounded-full border border-brand-primary/30 px-5 py-2 text-sm font-semibold text-brand-primary shadow-sm transition hover:bg-brand-primary/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:border-brand-primary/20 disabled:text-brand-primary/50"
               disabled={isSearching}
             >
               {isGeolocating ? "Locating…" : "Use my location"}
@@ -544,7 +545,7 @@ export default function HousingExperience({ showIntro = true, wrapperClassName, 
             <button
               type="button"
               onClick={() => setAdvancedOpen((prev) => !prev)}
-              className="self-start text-sm font-medium text-blue-600 hover:text-blue-700"
+              className="text-sm font-medium text-brand-primary hover:text-brand-primary/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2"
             >
               {advancedOpen ? "Hide advanced options" : "Show advanced options"}
             </button>
@@ -623,9 +624,14 @@ export default function HousingExperience({ showIntro = true, wrapperClassName, 
             </div>
           )}
         </form>
+        {(counselorsQuery.data || fmrQuery.data) && (
+          <div className="mt-4">
+            <SuccessAlert message="Location found – data loaded successfully" />
+          </div>
+        )}
       </section>
 
-      <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
         <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
           <h2 className="text-xl font-semibold text-slate-900">HUD Fair Market Rents (FMR)</h2>
           {fmrQuery.data && <SourceChip source={fmrQuery.data.source} lastUpdated={fmrQuery.data.lastUpdated} />}
@@ -651,7 +657,7 @@ export default function HousingExperience({ showIntro = true, wrapperClassName, 
 
         <div className="mt-5">
           {fmrQuery.isError && (
-            <div className="rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">
+            <div className="rounded-xl border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">
               {(fmrQuery.error as Error)?.message || "Unable to fetch HUD FMR data."}
             </div>
           )}
@@ -692,7 +698,7 @@ export default function HousingExperience({ showIntro = true, wrapperClassName, 
         </div>
       </section>
 
-      <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
         <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
           <h2 className="text-xl font-semibold text-slate-900">HUD Housing Counselors</h2>
           {counselorsQuery.data && (
@@ -706,7 +712,7 @@ export default function HousingExperience({ showIntro = true, wrapperClassName, 
 
         <div className="mt-5">
           {counselorsQuery.isError && (
-            <div className="rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">
+            <div className="rounded-xl border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">
               {(counselorsQuery.error as Error)?.message || "Unable to fetch counselors."}
             </div>
           )}

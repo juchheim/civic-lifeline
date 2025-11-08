@@ -5,6 +5,7 @@ import type { FocusEvent, FormEvent, KeyboardEvent } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { zBroadbandSummaryResponse } from "@cl/types";
 import SourceChip from "@/components/SourceChip";
+import SuccessAlert from "@/components/SuccessAlert";
 
 type Suggestion = { id: string; name: string; lat: number; lon: number; kind: string };
 
@@ -282,10 +283,10 @@ export default function BroadbandExperience({ showIntro = true, wrapperClassName
         </header>
       )}
 
-      <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-        <form className="flex flex-col gap-4 md:flex-row md:items-end" onSubmit={handleSubmit}>
-          <div className="flex-1">
-            <label className="mb-1 block text-sm font-medium text-slate-700" htmlFor="broadband-location">
+      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+        <form className="space-y-4" onSubmit={handleSubmit}>
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-slate-700" htmlFor="broadband-location">
               Address or ZIP code
             </label>
             <div
@@ -307,7 +308,7 @@ export default function BroadbandExperience({ showIntro = true, wrapperClassName
                 }}
                 onFocus={handleInputFocus}
                 onKeyDown={handleInputKeyDown}
-                className="w-full rounded border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/30"
                 placeholder="Yazoo County, MS or 39194"
                 aria-autocomplete="list"
                 aria-controls="broadband-suggestion-list"
@@ -325,7 +326,7 @@ export default function BroadbandExperience({ showIntro = true, wrapperClassName
                         role="option"
                         aria-selected={index === activeSuggestionIndex}
                         className={`flex w-full items-start gap-2 px-3 py-2 text-left ${
-                          index === activeSuggestionIndex ? "bg-blue-50 text-blue-700" : "hover:bg-slate-100"
+                          index === activeSuggestionIndex ? "bg-brand-primary/10 text-brand-primary" : "hover:bg-slate-100"
                         }`}
                         onMouseDown={(event) => {
                           event.preventDefault();
@@ -342,30 +343,37 @@ export default function BroadbandExperience({ showIntro = true, wrapperClassName
                 </ul>
               )}
             </div>
-            {locationError && <p className="mt-1 text-xs text-red-600">{locationError}</p>}
+            {locationError && (
+              <div className="rounded-xl border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">{locationError}</div>
+            )}
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <button
               type="submit"
-              className="rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
+              className="inline-flex items-center justify-center rounded-full bg-brand-primary px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-brand-primary/50"
               disabled={isFetching}
             >
-              {isLoading || isFetching ? "Loading…" : "Run query"}
+              {isLoading || isFetching ? "Searching…" : "Search broadband data"}
             </button>
             <span className="text-xs text-slate-500">Using `/api/broadband/summary?{queryLabel}`</span>
           </div>
         </form>
+        {data && (
+          <div className="mt-4">
+            <SuccessAlert message="Location found – data loaded successfully" />
+          </div>
+        )}
 
         <div className="mt-5">
           {isError && (
-            <div className="rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">
+            <div className="rounded-xl border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">
               {(error as Error)?.message || "Something went wrong."}
             </div>
           )}
           {!isError && !data && !isLoading && (
-            <div className="rounded border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
-              Enter an address, city, or ZIP code to see broadband coverage details.
+            <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
+              Enter an address or ZIP code to see broadband coverage details.
             </div>
           )}
           {data && (

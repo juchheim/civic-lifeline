@@ -9,6 +9,7 @@ import {
   zUtilitiesWaterProvidersResponse,
   type UtilitiesCostDistribution,
 } from "@cl/types";
+import SuccessAlert from "@/components/SuccessAlert";
 
 interface UtilitiesSearchParams {
   state: string;
@@ -187,7 +188,7 @@ export default function UtilitiesExperience() {
     }
   };
 
-  const isAnyLoading = costsQuery.isPending || activeProviderQuery.isPending;
+  const isAnyLoading = Boolean(searchParams && (costsQuery.isFetching || activeProviderQuery.isFetching));
 
   return (
     <div className="space-y-6">
@@ -196,7 +197,7 @@ export default function UtilitiesExperience() {
           <label className="text-sm font-medium text-slate-700">
             State
             <select
-              className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-civic-blue focus:outline-none focus:ring-2 focus:ring-civic-blue/30"
+              className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/30"
               value={stateCode}
               onChange={(event) => {
                 setStateCode(event.target.value);
@@ -216,7 +217,7 @@ export default function UtilitiesExperience() {
             County name
             <input
               list="utilities-county-options"
-              className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 shadow-sm placeholder-slate-400 focus:border-civic-blue focus:outline-none focus:ring-2 focus:ring-civic-blue/30"
+              className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 shadow-sm placeholder-slate-400 focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/30"
               placeholder="Start typing a county (e.g., Yazoo County)"
               value={locationInput}
               onChange={(event) => setLocationInput(event.target.value)}
@@ -227,7 +228,9 @@ export default function UtilitiesExperience() {
               ))}
             </datalist>
           </label>
-          {formError && <p className="text-sm text-red-600">{formError}</p>}
+          {formError && (
+            <div className="rounded-xl border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">{formError}</div>
+          )}
           {countyError && (
             <p className="text-xs text-amber-600">
               {countyError?.message || "Unable to load county suggestions."}
@@ -236,14 +239,20 @@ export default function UtilitiesExperience() {
           <div className="flex flex-wrap items-center gap-3">
             <button
               type="submit"
-              className="inline-flex items-center rounded-full bg-civic-blue px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-civic-blue/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-civic-blue focus-visible:ring-offset-2"
+              className="inline-flex items-center justify-center rounded-full bg-brand-primary px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-brand-primary/50"
+              disabled={isAnyLoading}
             >
-              Check utilities
+              {isAnyLoading ? "Searching…" : "Search utilities data"}
             </button>
             {(isStatesLoading || isCountyLoading) && <span className="text-xs text-slate-500">Loading choices…</span>}
             {statesError && <span className="text-xs text-red-600">{statesError.message}</span>}
           </div>
         </form>
+        {(costsQuery.data || activeProviderQuery.data) && (
+          <div className="mt-4">
+            <SuccessAlert message="Location found – data loaded successfully" />
+          </div>
+        )}
       </section>
 
       <section className="grid gap-5 lg:grid-cols-2">
@@ -346,7 +355,7 @@ export default function UtilitiesExperience() {
                   key={tab.id}
                   type="button"
                   onClick={() => setActiveProviderTab(tab.id)}
-                  className={`rounded-full px-3 py-1 transition ${activeProviderTab === tab.id ? "bg-civic-blue text-white shadow-sm" : "hover:bg-slate-100"}`}
+                  className={`rounded-full px-3 py-1 transition ${activeProviderTab === tab.id ? "bg-brand-primary text-white shadow-sm" : "hover:bg-slate-100"}`}
                 >
                   {tab.label}
                 </button>
@@ -388,15 +397,19 @@ export default function UtilitiesExperience() {
                     ) : (
                       <>
                         <p className="text-sm font-semibold text-slate-900">{item.name}</p>
-                        <p className="text-xs text-slate-500">{item.state || "—"}</p>
-                        <div className="mt-1 text-xs text-slate-600">
-                          {item.phone && <p>{item.phone}</p>}
-                          {item.website && (
-                            <a href={item.website} target="_blank" rel="noreferrer" className="text-civic-blue underline">
-                              Website
-                            </a>
-                          )}
-                        </div>
+                        {item.state && item.state !== "NOT AVAILABLE" && (
+                          <p className="text-xs text-slate-500">{item.state}</p>
+                        )}
+                        {(item.phone || item.website) && (
+                          <div className="mt-1 text-xs text-slate-600">
+                            {item.phone && item.phone !== "NOT AVAILABLE" && <p>{item.phone}</p>}
+                            {item.website && item.website !== "NOT AVAILABLE" && (
+                              <a href={item.website} target="_blank" rel="noreferrer" className="text-civic-blue underline">
+                                Website
+                              </a>
+                            )}
+                          </div>
+                        )}
                       </>
                     )}
                   </div>
