@@ -10,12 +10,9 @@ import {
   type UtilitiesCostDistribution,
 } from "@cl/types";
 
-type LocationMode = "county" | "city";
-
 interface UtilitiesSearchParams {
   state: string;
   county?: string;
-  city?: string;
 }
 
 interface ChoiceOption {
@@ -23,7 +20,6 @@ interface ChoiceOption {
   value: string;
 }
 
-const ACS_DATASET = "https://api.census.gov/data/2023/acs/acs5";
 const currencyFormatter = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 const numberFormatter = new Intl.NumberFormat("en-US");
 
@@ -31,7 +27,6 @@ async function fetchUtilitiesCosts(params: UtilitiesSearchParams) {
   const search = new URLSearchParams();
   search.set("state", params.state);
   if (params.county) search.set("county", params.county);
-  if (params.city) search.set("city", params.city);
   const res = await fetch(`/api/utilities/costs?${search.toString()}`, { headers: { accept: "application/json" } });
   const json = await res.json().catch(() => ({}));
   if (!res.ok) {
@@ -45,7 +40,6 @@ async function fetchProviders(path: string, params: UtilitiesSearchParams) {
   const search = new URLSearchParams();
   search.set("state", params.state);
   if (params.county) search.set("county", params.county);
-  if (params.city) search.set("city", params.city);
   const res = await fetch(`${path}?${search.toString()}`, { headers: { accept: "application/json" } });
   const json = await res.json().catch(() => ({}));
   if (!res.ok) {
@@ -76,31 +70,10 @@ async function fetchCountyOptions(stateCode: string): Promise<ChoiceOption[]> {
   return (json as Array<{ name: string }>).map((county) => ({ label: county.name, value: county.name }));
 }
 
-async function fetchCityChoices(stateFips: string): Promise<ChoiceOption[]> {
-  if (!stateFips) return [];
-  const params = new URLSearchParams();
-  params.set("get", "NAME");
-  params.set("in", `state:${stateFips}`);
-  params.set("for", "place:*");
-  const res = await fetch(`${ACS_DATASET}?${params.toString()}`, { headers: { accept: "application/json" } });
-  const json = (await res.json().catch(() => [])) as string[][];
-  if (!Array.isArray(json) || json.length < 2) {
-    throw new Error("We could not load cities for that state.");
-  }
-  return json.slice(1).map((row) => {
-    const nameWithState = row[0] ?? "";
-    const commaIndex = nameWithState.indexOf(",");
-    const label = commaIndex >= 0 ? nameWithState.slice(0, commaIndex).trim() : nameWithState.trim();
-    return { label, value: label };
-  });
-}
-
-function buildSearchParams(state: string, mode: LocationMode, value: string): UtilitiesSearchParams {
+function buildSearchParams(state: string, value: string): UtilitiesSearchParams {
   const trimmed = value.trim();
-  if (!trimmed) throw new Error(`Enter a ${mode === "county" ? "county" : "city"} name.`);
-  return mode === "county"
-    ? { state, county: trimmed }
-    : { state, city: trimmed };
+  if (!trimmed) throw new Error("Enter a county name.");
+  return { state, county: trimmed };
 }
 
 function formatMonthly(value: number | null) {
@@ -125,7 +98,6 @@ const ASSUMPTIONS = {
 
 export default function UtilitiesExperience() {
   const [stateCode, setStateCode] = useState("MS");
-  const [mode, setMode] = useState<LocationMode>("county");
   const [locationInput, setLocationInput] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
   const [searchParams, setSearchParams] = useState<UtilitiesSearchParams | null>(null);
@@ -138,8 +110,6 @@ export default function UtilitiesExperience() {
     staleTime: 86_400_000,
   });
 
-  const stateMeta = useMemo(() => states.find((state) => state.code === stateCode) ?? null, [states, stateCode]);
-
   const { data: countyChoices = [], isPending: isCountyLoading, error: countyError } = useQuery({
     queryKey: ["utilities-counties", stateCode],
     queryFn: () => fetchCountyOptions(stateCode),
@@ -147,36 +117,29 @@ export default function UtilitiesExperience() {
     enabled: Boolean(stateCode),
   });
 
-  const { data: cityChoices = [], isPending: isCityLoading, error: cityError } = useQuery({
-    queryKey: ["utilities-cities", stateCode, stateMeta?.fips ?? ""],
-    queryFn: () => fetchCityChoices(stateMeta?.fips ?? ""),
-    staleTime: 3600_000,
-    enabled: Boolean(stateMeta?.fips),
-  });
-
   const costsQuery = useQuery({
-    queryKey: ["utilities-costs", searchParams?.state ?? "", searchParams?.county ?? "", searchParams?.city ?? ""],
+    queryKey: ["utilities-costs", searchParams?.state ?? "", searchParams?.county ?? ""],
     queryFn: () => fetchUtilitiesCosts(searchParams as UtilitiesSearchParams),
     enabled: Boolean(searchParams),
     retry: 1,
   });
 
   const waterQuery = useQuery({
-    queryKey: ["utilities-water", searchParams?.state ?? "", searchParams?.county ?? "", searchParams?.city ?? ""],
+    queryKey: ["utilities-water", searchParams?.state ?? "", searchParams?.county ?? ""],
     queryFn: () => fetchProviders("/api/utilities/providers/water", searchParams as UtilitiesSearchParams),
     enabled: Boolean(searchParams),
     retry: false,
   });
 
   const electricQuery = useQuery({
-    queryKey: ["utilities-electric", searchParams?.state ?? "", searchParams?.county ?? "", searchParams?.city ?? ""],
+    queryKey: ["utilities-electric", searchParams?.state ?? "", searchParams?.county ?? ""],
     queryFn: () => fetchProviders("/api/utilities/providers/electric", searchParams as UtilitiesSearchParams),
     enabled: Boolean(searchParams),
     retry: false,
   });
 
   const gasQuery = useQuery({
-    queryKey: ["utilities-gas", searchParams?.state ?? "", searchParams?.county ?? "", searchParams?.city ?? ""],
+    queryKey: ["utilities-gas", searchParams?.state ?? "", searchParams?.county ?? ""],
     queryFn: () => fetchProviders("/api/utilities/providers/gas", searchParams as UtilitiesSearchParams),
     enabled: Boolean(searchParams),
     retry: false,
@@ -217,20 +180,13 @@ export default function UtilitiesExperience() {
     event.preventDefault();
     setFormError(null);
     try {
-      const params = buildSearchParams(stateCode, mode, locationInput);
+      const params = buildSearchParams(stateCode, locationInput);
       setSearchParams(params);
     } catch (error) {
-      setFormError(error instanceof Error ? error.message : "Enter a location.");
+      setFormError(error instanceof Error ? error.message : "Enter a county name.");
     }
   };
 
-  const handleModeChange = (next: LocationMode) => {
-    setMode(next);
-    setLocationInput("");
-    setFormError(null);
-  };
-
-  const locationPlaceholder = mode === "county" ? "Start typing a county (e.g., Yazoo County)" : "Start typing a city (e.g., Yazoo City)";
   const isAnyLoading = costsQuery.isPending || activeProviderQuery.isPending;
 
   return (
@@ -239,78 +195,48 @@ export default function UtilitiesExperience() {
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Search</p>
-            <p className="text-sm text-slate-600">Pick a state, then search by county (best) or city.</p>
+            <p className="text-sm text-slate-600">Pick a state, then search by county name.</p>
           </div>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid gap-3 sm:grid-cols-2">
-            <label className="text-sm font-medium text-slate-700">
-              State
-              <select
-                className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-civic-blue focus:outline-none focus:ring-2 focus:ring-civic-blue/30"
-                value={stateCode}
-                onChange={(event) => {
-                  setStateCode(event.target.value);
-                  setLocationInput("");
-                  setFormError(null);
-                }}
-              >
-                {states.length === 0 && <option value="">Loading states…</option>}
-                {states.map((state) => (
-                  <option key={state.code} value={state.code}>
-                    {state.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <div className="text-sm font-medium text-slate-700">
-              Location type
-              <div className="mt-1 flex rounded-xl border border-slate-300 bg-white p-1 text-sm font-semibold text-slate-600">
-                {(["county", "city"] as const).map((option) => (
-                  <button
-                    key={option}
-                    type="button"
-                    onClick={() => handleModeChange(option)}
-                    className={`flex-1 rounded-lg px-3 py-2 transition ${
-                      mode === option ? "bg-civic-blue text-white shadow-sm" : "hover:bg-slate-100"
-                    }`}
-                  >
-                    {option === "county" ? "County" : "City"}
-                  </button>
-                ))}
-              </div>
-              <p className="mt-1 text-xs text-slate-500">Counties are more reliable. Cities resolve to Census “place” codes.</p>
-            </div>
-          </div>
           <label className="text-sm font-medium text-slate-700">
-            {mode === "county" ? "County name" : "City name"}
+            State
+            <select
+              className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-civic-blue focus:outline-none focus:ring-2 focus:ring-civic-blue/30"
+              value={stateCode}
+              onChange={(event) => {
+                setStateCode(event.target.value);
+                setLocationInput("");
+                setFormError(null);
+              }}
+            >
+              {states.length === 0 && <option value="">Loading states…</option>}
+              {states.map((state) => (
+                <option key={state.code} value={state.code}>
+                  {state.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="text-sm font-medium text-slate-700">
+            County name
             <input
-              list={`utilities-${mode}-options`}
+              list="utilities-county-options"
               className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 shadow-sm placeholder-slate-400 focus:border-civic-blue focus:outline-none focus:ring-2 focus:ring-civic-blue/30"
-              placeholder={locationPlaceholder}
+              placeholder="Start typing a county (e.g., Yazoo County)"
               value={locationInput}
               onChange={(event) => setLocationInput(event.target.value)}
             />
-            {mode === "county" ? (
-              <datalist id="utilities-county-options">
-                {countyChoices.map((option) => (
-                  <option key={option.value} value={option.label} />
-                ))}
-              </datalist>
-            ) : (
-              <datalist id="utilities-city-options">
-                {cityChoices.map((option) => (
-                  <option key={option.value} value={option.label} />
-                ))}
-              </datalist>
-            )}
+            <datalist id="utilities-county-options">
+              {countyChoices.map((option) => (
+                <option key={option.value} value={option.label} />
+              ))}
+            </datalist>
           </label>
           {formError && <p className="text-sm text-red-600">{formError}</p>}
-          {(countyError || cityError) && (
+          {countyError && (
             <p className="text-xs text-amber-600">
-              {mode === "county"
-                ? countyError?.message || "Unable to load county suggestions."
-                : cityError?.message || "Unable to load city suggestions."}
+              {countyError?.message || "Unable to load county suggestions."}
             </p>
           )}
           <div className="flex flex-wrap items-center gap-3">
@@ -320,7 +246,7 @@ export default function UtilitiesExperience() {
             >
               Check utilities
             </button>
-            {(isStatesLoading || isCountyLoading || isCityLoading) && <span className="text-xs text-slate-500">Loading choices…</span>}
+            {(isStatesLoading || isCountyLoading) && <span className="text-xs text-slate-500">Loading choices…</span>}
             {statesError && <span className="text-xs text-red-600">{statesError.message}</span>}
           </div>
         </form>
@@ -335,7 +261,7 @@ export default function UtilitiesExperience() {
             </div>
             {costsQuery.isFetching && <span className="text-xs text-slate-500">Refreshing…</span>}
           </div>
-          {!searchParams && <p className="mt-4 text-sm text-slate-500">Enter a county or city to see typical utility bills.</p>}
+          {!searchParams && <p className="mt-4 text-sm text-slate-500">Enter a county to see typical utility bills.</p>}
           {costsQuery.error && (
             <p className="mt-4 rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-sm text-red-700">
               {costsQuery.error instanceof Error ? costsQuery.error.message : "Unable to load cost data."}
