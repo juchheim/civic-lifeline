@@ -52,6 +52,7 @@ export default function FoodPage() {
   const debouncedManualQuery = useDebouncedValue(manualQuery, 350);
   const comboboxRef = useRef<HTMLDivElement | null>(null);
   const listboxId = "manual-location-listbox";
+  const mapSectionRef = useRef<HTMLDivElement | null>(null);
   const shouldShowDropdown = isSuggestionOpen && (isSuggestLoading || suggestions.length > 0 || !!suggestError);
 
   const typesParam = useMemo(() => (selectedTypes.size ? Array.from(selectedTypes).sort().join(",") : undefined), [selectedTypes]);
@@ -106,9 +107,15 @@ export default function FoodPage() {
     });
   }, []);
 
-  const handleStoreFocus = useCallback((store: SnapItem) => {
-    setFocusedItem({ ...store });
-  }, []);
+  const handleStoreFocus = useCallback(
+    (store: SnapItem) => {
+      setFocusedItem({ ...store });
+      if (mapSectionRef.current) {
+        mapSectionRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    },
+    [],
+  );
 
   useEffect(() => {
     setFocusedItem(null);
@@ -530,6 +537,7 @@ export default function FoodPage() {
                 <p className="text-sm text-slate-600">Zoom and pan after you choose a location.</p>
               </div>
               <div
+                ref={mapSectionRef}
                 className="overflow-hidden rounded-3xl border border-white/60 bg-white shadow-2xl shadow-brand-primary/10 h-[25.2rem] sm:h-[27.2rem] lg:h-[29.2rem]"
                 aria-label="Map of SNAP retailers"
               >
