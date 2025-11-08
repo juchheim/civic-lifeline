@@ -28,7 +28,7 @@ const SERVICE_CONFIGS: ServiceConfig[] = [
   {
     id: "housing",
     label: "Housing Support",
-    pillText: "Find counselors and rent limits",
+    pillText: "Find rent limits and counselors",
     icon: Home,
     render: () => <HousingExperience showIntro={false} />,
   },
@@ -199,14 +199,14 @@ export default function HousingUtilitiesClient() {
     <div className="space-y-12 pb-16">
       <section className="mt-4 overflow-hidden rounded-[2.5rem] border border-slate-200 bg-gradient-to-br from-white via-white to-slate-50 shadow-lg shadow-slate-400/10">
         <div className="grid gap-8 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1fr)] lg:items-stretch">
-          <div className="flex flex-col justify-between px-6 py-8 sm:px-10 sm:py-12">
-            <div className="space-y-5">
-              <span className="inline-flex w-fit items-center gap-2 rounded-full border border-civic-blue/20 bg-civic-blue/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-civic-blue">
-                <Sparkles className="h-3.5 w-3.5" />
+          <div className="flex flex-col justify-between px-6 py-8 sm:px-10 sm:pt-8 sm:pb-12">
+            <div className="space-y-4">
+              <span className="inline-flex w-fit items-center gap-2 rounded-full border border-civic-blue/20 bg-civic-blue/10 px-4 py-1.5 text-sm font-semibold uppercase tracking-[0.24em] text-civic-blue">
+                <Sparkles className="h-4 w-4" />
                 Housing & Utilities
               </span>
-              <h1 className="text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
-                All your housing and internet help in one place.
+              <h1 className="text-3xl font-semibold leading-tight text-slate-900 sm:text-[2.5rem]">
+                Everything you need to know before renting or buying.
               </h1>
               <p className="max-w-xl text-base leading-relaxed text-slate-600 sm:text-lg">
                 Choose a service, enter your location and see local data.
@@ -281,7 +281,7 @@ export default function HousingUtilitiesClient() {
               <div className="rounded-2xl border border-amber-200 bg-white/70 p-5 text-base leading-relaxed text-slate-800 shadow-inner shadow-amber-100/60 sm:text-lg">
                 <p className="font-semibold text-amber-800">Simple help in one place</p>
                 <p className="mt-2">
-                  Find housing counselors, rent limits, and internet options together. Get local answers and clear next steps.
+                  All your government data in one place. No need to search multiple sites or agencies.
                 </p>
               </div>
             </div>
@@ -340,7 +340,6 @@ export default function HousingUtilitiesClient() {
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Jump to a service</p>
-                  <p className="mt-2 text-sm text-slate-600">Shortcuts stay visible while you scroll.</p>
                 </div>
                 <div className="flex gap-2 text-xs font-semibold text-civic-blue">
                   <button
@@ -383,7 +382,11 @@ export default function HousingUtilitiesClient() {
                         {service.label}
                       </span>
                       <ChevronDown
-                        className={`h-4 w-4 transition-transform ${openSections.includes(service.id) ? "rotate-180" : ""}`}
+                        style={{
+                          transform: isActive ? "rotate(270deg)" : "rotate(180deg)",
+                          transition: "transform 300ms ease-in-out",
+                        }}
+                        className="h-4 w-4"
                         aria-hidden
                       />
                     </button>
