@@ -391,7 +391,7 @@ export default function FoodPage() {
   return (
     <main className="space-y-12 bg-neutral-bg pb-16">
       <section className="mt-4 overflow-hidden rounded-[2.5rem] border border-slate-200 bg-white shadow-lg shadow-slate-400/10">
-        <div className="grid gap-8 lg:grid-cols-[minmax(0,0.75fr)_minmax(0,1.25fr)] lg:items-stretch">
+        <div className="grid gap-8 lg:grid-cols-[minmax(0,0.6fr)_minmax(0,1.4fr)] lg:items-stretch">
           <div className="flex flex-col justify-between px-6 py-8 sm:px-10 sm:pt-8 sm:pb-12">
             <div className="space-y-5">
               <span className="inline-flex w-fit items-center gap-2 rounded-full border border-brand-primary/20 bg-brand-primary/10 px-4 py-1.5 text-sm font-semibold uppercase tracking-[0.24em] text-brand-primary">
@@ -531,116 +531,119 @@ export default function FoodPage() {
           </div>
           <div className="relative">
             <div className="absolute inset-0 bg-info-tint" aria-hidden />
-            <div className="relative flex h-full flex-col gap-5 rounded-t-3xl bg-info-tint px-6 py-8 text-slate-900 sm:px-10 lg:rounded-none">
+            <div className="relative flex h-full flex-col gap-6 rounded-t-3xl bg-info-tint px-6 py-8 text-slate-900 sm:px-10 lg:rounded-none">
               <div className="space-y-1">
-                <p className="text-sm font-semibold uppercase tracking-[0.3em] text-slate-600">Live map & results</p>
-                <p className="text-sm text-slate-600">Choose a location, then refine the list without leaving the map.</p>
-              </div>
-              <div
-                ref={mapSectionRef}
-                className="overflow-hidden rounded-3xl border border-white/60 bg-white shadow-2xl shadow-brand-primary/10 h-[25.2rem] sm:h-[27.2rem] lg:h-[29.2rem]"
-                aria-label="Map of SNAP retailers"
-              >
-                {mapReady ? (
-                  <MapView
-                    items={items}
-                    onBboxChange={onBboxChange}
-                    focus={focusedItem}
-                    initialCenter={initialCenter ?? undefined}
-                    height="100%"
-                  />
-                ) : (
-                  <div className="flex h-full flex-col items-center justify-center gap-5 bg-gradient-to-b from-brand-accent/5 to-brand-primary/5 p-8 text-center text-slate-700">
-                    <span className="flex h-14 w-14 items-center justify-center rounded-full bg-white/70 text-brand-primary shadow-inner shadow-brand-primary/20">
-                      <Navigation2 className="h-6 w-6" aria-hidden />
-                    </span>
-                    <div className="space-y-2">
-                      <p className="text-lg font-semibold text-slate-900">Add a location to unlock the map</p>
-                      <p className="text-sm text-slate-600">Use the buttons on the left to auto-detect or type where you want to search.</p>
-                    </div>
-                  </div>
-                )}
+                <p className="text-sm font-semibold uppercase tracking-[0.3em] text-slate-600">Live map, filters, and results</p>
+                <p className="text-sm text-slate-600">Stay on one view: locate, filter, and pick a store without scrolling away.</p>
               </div>
 
-              <div className="rounded-3xl border border-white/70 bg-white/90 p-5 shadow-lg shadow-slate-400/20">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Store types</p>
-                    <p className="text-base font-semibold text-slate-900">Filter the map</p>
-                    <p className="text-xs text-slate-500">Tap to highlight just the stores you need.</p>
+              <div className="rounded-3xl border border-white/70 bg-white/90 p-4 shadow-lg shadow-slate-400/20">
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex flex-col">
+                    <span className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Store types</span>
+                    <span className="text-xs text-slate-500">Tap a chip to filter the pins and the list.</span>
+                  </div>
+                  <div className="flex flex-1 flex-wrap items-center gap-2">
+                    {!mapReady ? (
+                      <p className="text-sm text-slate-500">Pick a location to see available store types.</p>
+                    ) : availableTypes.length > 0 ? (
+                      availableTypes.map((t) => {
+                        const isChecked = selectedTypes.has(t);
+                        return (
+                          <button
+                            key={t}
+                            type="button"
+                            onClick={() => onToggleType(t)}
+                            aria-pressed={isChecked}
+                            className={`inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-xs font-semibold shadow-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40 ${
+                              isChecked
+                                ? "border-brand-primary bg-brand-primary text-white"
+                                : "border-slate-200 bg-white text-slate-700 hover:border-brand-primary/40"
+                            }`}
+                          >
+                            <span
+                              className={`flex h-4 w-4 items-center justify-center rounded-full border ${
+                                isChecked ? "border-white/50 bg-white/20" : "border-slate-200 bg-slate-100"
+                              }`}
+                              aria-hidden
+                            >
+                              <Check className={`h-3 w-3 ${isChecked ? "opacity-100" : "opacity-0"}`} />
+                            </span>
+                            <span>{t}</span>
+                          </button>
+                        );
+                      })
+                    ) : (
+                      <p className="text-sm text-slate-500">No filters here.</p>
+                    )}
                   </div>
                   {lastUpdated && <SourceChip source={source} lastUpdated={lastUpdated} href={datasetHref} />}
                 </div>
-                <div className="mt-4 flex flex-wrap gap-3">
-                  {!mapReady ? (
-                    <p className="text-sm text-slate-500">Pick a location to show available store types.</p>
-                  ) : availableTypes.length > 0 ? (
-                    availableTypes.map((t) => {
-                      const isChecked = selectedTypes.has(t);
-                      return (
-                        <button
-                          key={t}
-                          type="button"
-                          onClick={() => onToggleType(t)}
-                          aria-pressed={isChecked}
-                          className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold shadow-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40 ${
-                            isChecked
-                              ? "border-brand-primary bg-brand-primary text-white"
-                              : "border-slate-200 bg-white text-slate-700 hover:border-brand-primary/40"
-                          }`}
-                        >
-                          <span
-                            className={`flex h-5 w-5 items-center justify-center rounded-full border text-[0.65rem] ${
-                              isChecked ? "border-white/50 bg-white/20" : "border-slate-300 bg-slate-100"
-                            }`}
-                            aria-hidden
-                          >
-                            <Check className={`h-3 w-3 ${isChecked ? "opacity-100" : "opacity-0"}`} />
-                          </span>
-                          <span>{t}</span>
-                        </button>
-                      );
-                    })
-                  ) : (
-                    <p className="text-sm text-slate-500">No store type filters available for this area.</p>
-                  )}
-                </div>
               </div>
 
-              <div className="rounded-3xl border border-white/70 bg-white/90 shadow-lg shadow-slate-400/20">
-                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-5 py-4">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Nearby retailers</p>
-                    <p className="text-2xl font-semibold text-slate-900">
-                      {mapReady ? `${items.length} ${items.length === 1 ? "match" : "matches"}` : "Waiting for location"}
-                    </p>
-                  </div>
-                  {mapReady && items.length > 0 && (
-                    <span className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600">Scroll inside to explore</span>
+              <div className="grid gap-4 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
+                <div
+                  ref={mapSectionRef}
+                  className="overflow-hidden rounded-3xl border border-white/60 bg-white shadow-2xl shadow-brand-primary/10 h-[22.5rem] sm:h-[23.5rem] xl:h-[24.5rem]"
+                  aria-label="Map of SNAP retailers"
+                >
+                  {mapReady ? (
+                    <MapView
+                      items={items}
+                      onBboxChange={onBboxChange}
+                      focus={focusedItem}
+                      initialCenter={initialCenter ?? undefined}
+                      height="100%"
+                    />
+                  ) : (
+                    <div className="flex h-full flex-col items-center justify-center gap-4 bg-gradient-to-b from-brand-accent/5 to-brand-primary/5 p-8 text-center text-slate-700">
+                      <span className="flex h-14 w-14 items-center justify-center rounded-full bg-white/70 text-brand-primary shadow-inner shadow-brand-primary/20">
+                        <Navigation2 className="h-6 w-6" aria-hidden />
+                      </span>
+                      <div className="space-y-2">
+                        <p className="text-lg font-semibold text-slate-900">Add a location to unlock the map</p>
+                        <p className="text-sm text-slate-600">Use the buttons on the left to auto-detect or type where you want to search.</p>
+                      </div>
+                    </div>
                   )}
                 </div>
-                <div className="max-h-[20rem] overflow-y-auto divide-y divide-slate-100" aria-live="polite">
-                  {!mapReady ? (
-                    <div className="p-5 text-sm text-slate-500">Choose a location to load nearby retailers.</div>
-                  ) : isLoading ? (
-                    <div className="space-y-4 p-5">
-                      <div className="h-5 rounded-full bg-slate-200" />
-                      <div className="h-4 w-5/6 rounded-full bg-slate-200" />
-                      <div className="h-4 w-2/3 rounded-full bg-slate-200" />
+
+                <div className="flex flex-col rounded-3xl border border-white/70 bg-white shadow-lg shadow-slate-400/20">
+                  <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-5 py-4">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Nearby retailers</p>
+                      <p className="text-2xl font-semibold text-slate-900">
+                        {mapReady ? `${items.length} ${items.length === 1 ? "match" : "matches"}` : "Waiting for location"}
+                      </p>
+                      <p className="text-xs text-slate-500">Tap a store to highlight the pin.</p>
                     </div>
-                  ) : items.length === 0 ? (
-                    <div className="p-5">
-                      <EmptyState kind="food" />
-                    </div>
-                  ) : (
-                    <ul>
-                      {items.map((it) => (
-                        <li key={it.id}>
-                          <StoreCard item={it} onFocus={handleStoreFocus} />
-                        </li>
-                      ))}
-                    </ul>
-                  )}
+                    {mapReady && items.length > 0 && (
+                      <span className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600">Scroll inside this list</span>
+                    )}
+                  </div>
+                  <div className="max-h-[22rem] flex-1 overflow-y-auto divide-y divide-slate-100" aria-live="polite">
+                    {!mapReady ? (
+                      <div className="p-5 text-sm text-slate-500">Choose a location to load nearby retailers.</div>
+                    ) : isLoading ? (
+                      <div className="space-y-4 p-5">
+                        <div className="h-5 rounded-full bg-slate-200" />
+                        <div className="h-4 w-5/6 rounded-full bg-slate-200" />
+                        <div className="h-4 w-2/3 rounded-full bg-slate-200" />
+                      </div>
+                    ) : items.length === 0 ? (
+                      <div className="p-5">
+                        <EmptyState kind="food" />
+                      </div>
+                    ) : (
+                      <ul>
+                        {items.map((it) => (
+                          <li key={it.id}>
+                            <StoreCard item={it} onFocus={handleStoreFocus} />
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
