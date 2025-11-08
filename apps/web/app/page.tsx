@@ -13,24 +13,19 @@ const sections = [
     description: "Make a resume quickly with easy guidance.",
   },
   {
-    href: "/housing-utilities",
-    title: "Housing & Utilities",
-    description: "Try the combined housing and internet tools in one place.",
-  },
-  {
     href: "/housing",
-    title: "Housing Support",
-    description: "Check rent prices and find HUD housing counselors near you.",
-  },
-  {
-    href: "/broadband",
-    title: "Broadband Coverage",
-    description: "See internet coverage by county.",
+    title: "Housing/Utilities",
+    description: "Check fair rent, locate counselors, and find info on utilities.",
   },
   {
     href: "/stats",
     title: "Stats — Unemployment",
     description: "See unemployment numbers by county.",
+  },
+  {
+    href: "/coming-soon",
+    title: "Coming Soon",
+    description: "New tools and features are on the way.",
   },
 ];
 
@@ -85,12 +80,8 @@ const highlightPoints = [
     detail: "Enter your details and download a ready-to-use resume.",
   },
   {
-    title: "Housing & Utilities",
-    detail: "Try the combined housing and internet tools, then send feedback before we retire the old pages.",
-  },
-  {
-    title: "Community Data",
-    detail: "See internet and job numbers in your area to understand local needs.",
+    title: "Housing Information",
+    detail: "Price housing, find counselors, and get utility data.",
   },
 ];
 
@@ -111,10 +102,10 @@ export default function HomePage() {
           <ul className="space-y-3">
             {highlightPoints.map((point) => (
               <li key={point.title} className="flex items-start gap-3">
-                <span className="mt-1 h-2.5 w-2.5 rounded-full bg-civic-green" aria-hidden />
+                <span className="mt-1.5 h-3 w-3 shrink-0 rounded-full bg-civic-green" aria-hidden />
                 <div>
-                  <p className="text-sm font-semibold text-white">{point.title}</p>
-                  <p className="text-sm text-white/80">{point.detail}</p>
+                  <p className="text-base font-semibold text-white">{point.title}</p>
+                  <p className="text-base text-white/80">{point.detail}</p>
                 </div>
               </li>
             ))}

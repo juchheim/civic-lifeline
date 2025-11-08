@@ -11,6 +11,7 @@ import {
   type FormEvent,
   type KeyboardEvent,
 } from "react";
+import { Navigation2, Sparkles } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { zSnapResponse, type SnapResponse, type SnapItem } from "@cl/types";
 import { bboxToQueryParam } from "@cl/utils";
@@ -39,7 +40,6 @@ export default function FoodPage() {
   const [initialCenter, setInitialCenter] = useState<[number, number] | null>(null);
   const [isGeolocating, setIsGeolocating] = useState(false);
   const [isGeocoding, setIsGeocoding] = useState(false);
-  const [showManualInput, setShowManualInput] = useState(false);
   const [manualQuery, setManualQuery] = useState("");
   const [locationError, setLocationError] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
@@ -115,18 +115,6 @@ export default function FoodPage() {
   }, [typesParam]);
 
   useEffect(() => {
-    if (!showManualInput) {
-      setSuggestions([]);
-      setSuggestError(null);
-      setIsSuggestionOpen(false);
-      setActiveSuggestionIndex(null);
-      setIsSuggestLoading(false);
-      setLiveMessage("");
-    }
-  }, [showManualInput]);
-
-  useEffect(() => {
-    if (!showManualInput) return;
     const query = debouncedManualQuery.trim();
     if (query.length < 3) {
       setSuggestions([]);
@@ -197,7 +185,7 @@ export default function FoodPage() {
       cancelled = true;
       controller.abort();
     };
-  }, [debouncedManualQuery, showManualInput]);
+  }, [debouncedManualQuery]);
 
   useEffect(() => {
     if (!isSuggestionOpen) {
@@ -240,7 +228,6 @@ export default function FoodPage() {
       setBbox(null);
       setFocusedItem(null);
       setLocationError(null);
-      setShowManualInput(false);
       setManualQuery("");
     },
     [setFocusedItem]
@@ -373,7 +360,6 @@ export default function FoodPage() {
     setLocationError(null);
     if (!navigator.geolocation) {
       setLocationError("Your browser does not support geolocation. Please enter your location instead.");
-      setShowManualInput(true);
       return;
     }
     setIsGeolocating(true);
@@ -391,215 +377,274 @@ export default function FoodPage() {
 
   const mapReady = !!initialCenter;
 
-  const locationPrompt = (
-    <div className="flex h-[50vh] w-full flex-col items-center justify-center gap-4 bg-gray-50 p-6 text-center">
-      <div className="space-y-2">
-        <h2 className="text-lg font-semibold">Choose a location to find nearby SNAP retailers</h2>
-        <p className="text-sm text-gray-600">Use your current location or enter an address, city/state, or ZIP code.</p>
-      </div>
-      <div className="flex flex-col gap-2 w-full max-w-sm">
-        <button
-          type="button"
-          onClick={handleUseCurrentLocation}
-          disabled={isGeolocating || isGeocoding}
-          className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
-        >
-          {isGeolocating ? "Locating…" : "Use my current location"}
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            setShowManualInput(true);
-            setLocationError(null);
-          }}
-          disabled={isGeolocating || isGeocoding}
-          className="rounded border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:border-gray-200 disabled:text-gray-400"
-        >
-          Enter a location manually
-        </button>
-      </div>
-      {showManualInput && (
-        <form className="w-full max-w-sm space-y-3" onSubmit={handleManualSubmit}>
-          <div className="text-left">
-            <label htmlFor="manual-location" className="block text-sm font-medium text-gray-700">
-              Location
-            </label>
-            <div
-              ref={comboboxRef}
-              className="relative mt-1"
-              onBlur={handleComboboxBlur}
-              onFocus={handleInputFocus}
-            >
-              <input
-                id="manual-location"
-                name="location"
-                value={manualQuery}
-                autoComplete="off"
-                onChange={(event) => {
-                  setManualQuery(event.target.value);
-                  setLocationError(null);
-                  setSuggestError(null);
-                }}
-                onKeyDown={handleInputKeyDown}
-                role="combobox"
-                aria-haspopup="listbox"
-                aria-expanded={shouldShowDropdown}
-                aria-controls={listboxId}
-                aria-autocomplete="list"
-                aria-activedescendant={
-                  shouldShowDropdown && activeSuggestionIndex !== null && suggestions[activeSuggestionIndex]
-                    ? `${listboxId}-option-${suggestions[activeSuggestionIndex].id}`
-                    : undefined
-                }
-                placeholder="123 Main St, Jackson MS"
-                className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring"
-              />
-              {shouldShowDropdown && (
-                <div className="absolute left-0 right-0 z-10 mt-1 overflow-hidden rounded border border-gray-200 bg-white shadow-lg">
-                  {isSuggestLoading ? (
-                    <div className="px-3 py-2 text-sm text-gray-500">Searching…</div>
-                  ) : suggestions.length > 0 ? (
-                    <ul id={listboxId} role="listbox" aria-label="Address suggestions" className="max-h-60 overflow-auto py-1">
-                      {suggestions.map((suggestion, index) => {
-                        const isActive = index === activeSuggestionIndex;
-                        const kindLabel = suggestion.kind
-                          ? suggestion.kind.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase())
-                          : "";
-                        return (
-                          <li
-                            key={suggestion.id}
-                            id={`${listboxId}-option-${suggestion.id}`}
-                            role="option"
-                            aria-selected={isActive}
-                            className={`cursor-pointer px-3 py-2 text-sm transition ${
-                              isActive ? "bg-blue-600 text-white" : "text-gray-900 hover:bg-gray-100"
-                            }`}
-                            onMouseDown={(event) => event.preventDefault()}
-                            onMouseEnter={() => setActiveSuggestionIndex(index)}
-                            onClick={() => handleSuggestionPick(suggestion)}
-                          >
-                            <div className="font-medium">{suggestion.name}</div>
-                            {kindLabel && <div className={`text-xs ${isActive ? "text-blue-100" : "text-gray-500"}`}>{kindLabel}</div>}
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  ) : (
-                    <div className="px-3 py-2 text-sm text-gray-500">{suggestError ?? "No matches. Try a full address, city & state, or ZIP."}</div>
-                  )}
-                </div>
-              )}
-              <p aria-live="polite" className="sr-only">
-                {liveMessage}
-              </p>
-            </div>
-            <p className="mt-1 text-xs text-gray-500">Full address, city & state, or ZIP code are all accepted.</p>
-            <p className="mt-1 text-xs text-gray-500">Search by Nominatim, © OpenStreetMap contributors.</p>
-          </div>
-          <div className="flex items-center justify-between gap-2">
-            <button
-              type="submit"
-              disabled={isGeocoding || isGeolocating}
-              className="flex-1 rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
-            >
-              {isGeocoding ? "Searching…" : "Search"}
-            </button>
-            <button
-              type="button"
-              disabled={isGeocoding}
-              onClick={() => {
-                setShowManualInput(false);
-                setLocationError(null);
-              }}
-              className="rounded border border-gray-300 px-3 py-2 text-xs font-medium text-gray-600 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:border-gray-200 disabled:text-gray-400"
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
-      )}
-      {locationError && <p className="max-w-sm text-sm text-red-600">{locationError}</p>}
-    </div>
-  );
+  const datasetHref =
+    (process.env.NEXT_PUBLIC_USDA_SNAP_ARCGIS_FEATURE_URL as string | undefined) ??
+    (process.env.NEXT_PUBLIC_USDA_SNAP_ARCGIS_URL as string | undefined);
 
   return (
-    <main className="flex flex-col gap-4 p-4 md:p-6">
+    <main className="space-y-12 bg-neutral-bg pb-16">
+      <section className="mt-4 overflow-hidden rounded-[2.5rem] border border-slate-200 bg-white shadow-lg shadow-slate-400/10">
+        <div className="grid gap-8 lg:grid-cols-[minmax(0,0.75fr)_minmax(0,1.25fr)] lg:items-stretch">
+          <div className="flex flex-col justify-between px-6 py-8 sm:px-10 sm:pt-8 sm:pb-12">
+            <div className="space-y-5">
+              <span className="inline-flex w-fit items-center gap-2 rounded-full border border-brand-primary/20 bg-brand-primary/10 px-4 py-1.5 text-sm font-semibold uppercase tracking-[0.24em] text-brand-primary">
+                <Sparkles className="h-4 w-4" />
+                Food Help
+              </span>
+              <div className="space-y-3">
+                <h1 className="text-3xl font-semibold leading-tight text-slate-900 sm:text-[2.5rem]">
+                  Find food retailers who accept SNAP.
+                </h1>
+                <p className="max-w-xl text-base leading-relaxed text-slate-600 sm:text-lg">
+                  Use live USDA data, pick your location, and see who takes EBT before you head out.
+                </p>
+              </div>
+            </div>
+            <div className="mt-8 space-y-6">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <button
+                  type="button"
+                  onClick={handleUseCurrentLocation}
+                  disabled={isGeolocating || isGeocoding}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-brand-primary px-6 py-3 text-base font-semibold text-white shadow-lg shadow-brand-primary/30 transition hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+                >
+                  <Navigation2 className="h-4 w-4" />
+                  {isGeolocating ? "Locating…" : "Use my current location"}
+                </button>
+              </div>
+
+              <form
+                id="manual-location-form"
+                className="space-y-4 rounded-2xl border border-slate-200/80 bg-white/70 p-4 shadow-inner shadow-slate-200/70"
+                onSubmit={handleManualSubmit}
+              >
+                <div>
+                  <label htmlFor="manual-location" className="block text-sm font-semibold text-slate-700">
+                    Search another location
+                  </label>
+                  <div ref={comboboxRef} className="relative mt-2" onBlur={handleComboboxBlur} onFocus={handleInputFocus}>
+                    <input
+                      id="manual-location"
+                      name="location"
+                      value={manualQuery}
+                      autoComplete="off"
+                      onChange={(event) => {
+                        setManualQuery(event.target.value);
+                        setLocationError(null);
+                        setSuggestError(null);
+                      }}
+                      onKeyDown={handleInputKeyDown}
+                      role="combobox"
+                      aria-haspopup="listbox"
+                      aria-expanded={shouldShowDropdown}
+                      aria-controls={listboxId}
+                      aria-autocomplete="list"
+                      aria-activedescendant={
+                        shouldShowDropdown && activeSuggestionIndex !== null && suggestions[activeSuggestionIndex]
+                          ? `${listboxId}-option-${suggestions[activeSuggestionIndex].id}`
+                          : undefined
+                      }
+                      placeholder="123 Main St, Jackson MS"
+                      className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-base text-slate-900 placeholder:text-slate-400 focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/40"
+                    />
+                    {shouldShowDropdown && (
+                      <div className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-10 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-500/10">
+                        {isSuggestLoading ? (
+                          <div className="px-4 py-3 text-sm text-slate-500">Searching…</div>
+                        ) : suggestions.length > 0 ? (
+                          <ul id={listboxId} role="listbox" aria-label="Address suggestions" className="max-h-60 overflow-auto py-1">
+                            {suggestions.map((suggestion, index) => {
+                              const isActive = index === activeSuggestionIndex;
+                              const kindLabel = suggestion.kind
+                                ? suggestion.kind.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase())
+                                : "";
+                              return (
+                                <li
+                                  key={suggestion.id}
+                                  id={`${listboxId}-option-${suggestion.id}`}
+                                  role="option"
+                                  aria-selected={isActive}
+                                  className={`cursor-pointer px-4 py-2 text-sm font-medium transition ${
+                                    isActive ? "bg-brand-primary text-white" : "text-slate-800 hover:bg-brand-primary/5"
+                                  }`}
+                                  onMouseDown={(event) => event.preventDefault()}
+                                  onMouseEnter={() => setActiveSuggestionIndex(index)}
+                                  onClick={() => handleSuggestionPick(suggestion)}
+                                >
+                                  <div>{suggestion.name}</div>
+                                  {kindLabel && (
+                                    <div className={`text-xs ${isActive ? "text-brand-primary/20" : "text-slate-500"}`}>{kindLabel}</div>
+                                  )}
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        ) : (
+                          <div className="px-4 py-3 text-sm text-slate-500">
+                            {suggestError ?? "No matches. Try a full address, city & state, or ZIP."}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    <p aria-live="polite" className="sr-only">
+                      {liveMessage}
+                    </p>
+                  </div>
+                  <p className="mt-2 text-xs text-slate-500">Full address, city & state, or ZIP code are all accepted.</p>
+                  <p className="mt-1 text-xs text-slate-500">Search by Nominatim, © OpenStreetMap contributors.</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="submit"
+                    disabled={isGeocoding || isGeolocating}
+                    className="inline-flex flex-1 items-center justify-center rounded-2xl bg-brand-primary px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-brand-primary/30 transition hover:opacity-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {isGeocoding ? "Searching…" : "Search"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setManualQuery("");
+                      setSuggestions([]);
+                      setSuggestError(null);
+                      setLocationError(null);
+                      setIsSuggestionOpen(false);
+                      setActiveSuggestionIndex(null);
+                      setIsSuggestLoading(false);
+                      setLiveMessage("");
+                    }}
+                    className="rounded-2xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2"
+                  >
+                    Clear
+                  </button>
+                </div>
+              </form>
+              {locationError && <p className="text-sm font-medium text-rose-600">{locationError}</p>}
+            </div>
+          </div>
+          <div className="relative">
+            <div className="absolute inset-0 bg-info-tint" aria-hidden />
+            <div className="relative flex h-full flex-col gap-6 rounded-t-3xl bg-info-tint px-6 py-8 text-slate-900 sm:px-10 lg:rounded-none">
+              <div className="space-y-2">
+                <p className="text-sm font-semibold uppercase tracking-[0.3em] text-slate-600">Live map</p>
+                <p className="text-sm text-slate-600">Zoom and pan after you choose a location.</p>
+              </div>
+              <div
+                className="overflow-hidden rounded-3xl border border-white/60 bg-white shadow-2xl shadow-brand-primary/10 h-[25.2rem] sm:h-[27.2rem] lg:h-[29.2rem]"
+                aria-label="Map of SNAP retailers"
+              >
+                {mapReady ? (
+                  <MapView
+                    items={items}
+                    onBboxChange={onBboxChange}
+                    focus={focusedItem}
+                    initialCenter={initialCenter ?? undefined}
+                    height="100%"
+                  />
+                ) : (
+                  <div className="flex h-full flex-col items-center justify-center gap-5 bg-gradient-to-b from-brand-accent/5 to-brand-primary/5 p-8 text-center text-slate-700">
+                    <span className="flex h-14 w-14 items-center justify-center rounded-full bg-white/70 text-brand-primary shadow-inner shadow-brand-primary/20">
+                      <Navigation2 className="h-6 w-6" aria-hidden />
+                    </span>
+                    <div className="space-y-2">
+                      <p className="text-lg font-semibold text-slate-900">Add a location to unlock the map</p>
+                      <p className="text-sm text-slate-600">Use the buttons on the left to auto-detect or type where you want to search.</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {isError && (
         <div
           role="status"
           aria-live="polite"
-          className="rounded border border-yellow-300 bg-yellow-50 text-yellow-800 px-3 py-2 text-sm"
+          className="rounded-3xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900 shadow-md shadow-amber-200/50"
         >
           USDA data is temporarily unavailable; showing last good results if available.
         </div>
       )}
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl md:text-2xl font-semibold">Food Access</h1>
-        <div className="text-sm text-gray-600">
+
+      <section className="rounded-[2.5rem] border border-slate-200 bg-white p-6 shadow-lg shadow-slate-400/10 sm:p-8">
+        <div className="flex flex-col gap-4 border-b border-slate-200 pb-6 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">USDA SNAP retailers</p>
+            <h2 className="text-2xl font-semibold text-slate-900">Live map of stores near you</h2>
+            <p className="text-sm text-slate-600">Select a location to see who accepts EBT in your community.</p>
+          </div>
           {lastUpdated && (
-            <SourceChip
-              source={source}
-              lastUpdated={lastUpdated}
-              href={
-                (process.env.NEXT_PUBLIC_USDA_SNAP_ARCGIS_FEATURE_URL as string | undefined) ??
-                (process.env.NEXT_PUBLIC_USDA_SNAP_ARCGIS_URL as string | undefined)
-              }
-            />
+            <SourceChip source={source} lastUpdated={lastUpdated} href={datasetHref} />
           )}
         </div>
-      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-        <section className="md:col-span-7">
-          <div className="rounded border bg-white overflow-hidden" aria-label="Map of SNAP retailers">
-            {mapReady ? (
-              <MapView items={items} onBboxChange={onBboxChange} focus={focusedItem} initialCenter={initialCenter ?? undefined} />
-            ) : (
-              locationPrompt
-            )}
-          </div>
-        </section>
-
-        <aside className="md:col-span-5 flex flex-col gap-3" aria-label="Retailer list and filters">
-          <div className="rounded border bg-white p-3">
-            <div className="flex items-center justify-between mb-2">
-              <h2 className="font-medium">Filters</h2>
-              {mapReady && (isFetching || isLoading) && <span className="text-xs text-gray-500">Loading…</span>}
-            </div>
-            {!mapReady ? (
-              <p className="text-sm text-gray-500">Choose a location to see available filters.</p>
-            ) : availableTypes.length > 0 ? (
-              <div className="flex flex-wrap gap-3">
-                {availableTypes.map((t) => (
-                  <label key={t} className="inline-flex items-center gap-2 text-sm">
-                    <input
-                      type="checkbox"
-                      className="h-4 w-4"
-                      checked={selectedTypes.has(t)}
-                      onChange={() => onToggleType(t)}
-                    />
-                    <span>{t}</span>
-                  </label>
-                ))}
+        <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,0.55fr)_minmax(0,1fr)]">
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-lg shadow-slate-400/10" aria-label="Retailer filters">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Filters</p>
+                <p className="text-lg font-semibold text-slate-900">Store types</p>
               </div>
-            ) : (
-              <p className="text-sm text-gray-500">No type filters available.</p>
-            )}
+              {mapReady && (isFetching || isLoading) && <span className="text-xs text-slate-500">Refreshing…</span>}
+            </div>
+            <div className="mt-4">
+              {!mapReady ? (
+                <p className="text-sm text-slate-500">Choose a location to see available filters.</p>
+              ) : availableTypes.length > 0 ? (
+                <div className="flex flex-wrap gap-3">
+                  {availableTypes.map((t) => {
+                    const isChecked = selectedTypes.has(t);
+                    return (
+                      <label
+                        key={t}
+                        className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition focus-within:outline-none focus-within:ring-2 focus-within:ring-brand-primary/40 ${
+                          isChecked ? "border-brand-primary bg-brand-primary/10 text-brand-primary" : "border-slate-200 text-slate-600 hover:border-brand-primary/40"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4 rounded border-slate-300 text-brand-primary focus:ring-brand-primary"
+                          checked={isChecked}
+                          onChange={() => onToggleType(t)}
+                        />
+                        <span>{t}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="text-sm text-slate-500">No type filters available.</p>
+              )}
+            </div>
           </div>
 
-          <div className="rounded border bg-white">
-            <div className="p-3 border-b font-medium">Retailers{mapReady ? ` (${items.length})` : ""}</div>
-            <div className="divide-y">
+          <div className="rounded-3xl border border-slate-200 bg-white shadow-lg shadow-slate-400/10" aria-label="Retailer list">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-6 py-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Retailers</p>
+                <p className="text-2xl font-semibold text-slate-900">
+                  {mapReady ? `${items.length} ${items.length === 1 ? "match" : "matches"}` : "Waiting for location"}
+                </p>
+              </div>
+              {mapReady && items.length > 0 && (
+                <span className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-500">Scroll to explore</span>
+              )}
+            </div>
+            <div className="divide-y divide-slate-100">
               {!mapReady ? (
-                <div className="p-3 text-sm text-gray-500">Choose a location to load nearby retailers.</div>
+                <div className="p-6 text-sm text-slate-500">Choose a location to load nearby retailers.</div>
               ) : isLoading ? (
-                <div className="p-3 animate-pulse space-y-3">
-                  <div className="h-5 bg-gray-200 rounded" />
-                  <div className="h-4 bg-gray-200 rounded w-5/6" />
-                  <div className="h-4 bg-gray-200 rounded w-2/3" />
+                <div className="space-y-4 p-6">
+                  <div className="h-5 rounded-full bg-slate-200" />
+                  <div className="h-4 w-5/6 rounded-full bg-slate-200" />
+                  <div className="h-4 w-2/3 rounded-full bg-slate-200" />
                 </div>
               ) : items.length === 0 ? (
-                <EmptyState kind="food" />
+                <div className="p-6">
+                  <EmptyState kind="food" />
+                </div>
               ) : (
                 <ul>
                   {items.map((it) => (
@@ -611,8 +656,8 @@ export default function FoodPage() {
               )}
             </div>
           </div>
-        </aside>
-      </div>
+        </div>
+      </section>
     </main>
   );
 }

@@ -35,11 +35,13 @@ export default function MapView({
   onBboxChange,
   focus,
   initialCenter,
+  height = "50vh",
 }: {
   items: SnapItem[];
   onBboxChange: (b: Bbox) => void;
   focus?: SnapItem | null;
   initialCenter?: [number, number];
+  height?: string | number;
 }) {
   const center = initialCenter ?? DEFAULT_CENTER;
   const zoom = DEFAULT_ZOOM;
@@ -88,9 +90,11 @@ export default function MapView({
     map.setView([lat, lon], map.getZoom(), { animate: false });
   }, [initialCenter]);
 
+  const mapHeight = typeof height === "number" ? `${height}px` : height;
+
   return (
     <MapContainer
-      {...({ center, zoom, minZoom: 12, style: { height: "50vh", width: "100%" }, scrollWheelZoom: true, ref: mapRef } as any)}
+      {...({ center, zoom, minZoom: 12, style: { height: mapHeight, width: "100%" }, scrollWheelZoom: true, ref: mapRef } as any)}
     >
       <TileLayer
         {...({
