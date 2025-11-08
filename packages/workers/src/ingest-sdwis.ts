@@ -81,7 +81,9 @@ function buildBulkOperations(
   for (const record of records) {
     const outcome = mapSdwisRecord(record, context);
     if (!outcome.document) {
-      if (outcome.reason) skipped[outcome.reason]++;
+      if (outcome.reason && outcome.reason in skipped) {
+        skipped[outcome.reason as keyof SkipCounters]++;
+      }
       continue;
     }
     const doc = {

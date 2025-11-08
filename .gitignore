@@ -23,4 +23,3 @@ dist/
 # Next.js
 .next/
 packages/workers/src/monitor-*.{js,py,sh}
-packages/workers/src/sdwis/
