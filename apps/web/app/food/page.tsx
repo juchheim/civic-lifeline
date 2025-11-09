@@ -490,8 +490,7 @@ export default function FoodPage() {
                       {liveMessage}
                     </p>
                   </div>
-                  <p className="mt-2 text-xs text-slate-500">Full address, city & state, or ZIP code are all accepted.</p>
-                  <p className="mt-1 text-xs text-slate-500">Search by Nominatim, © OpenStreetMap contributors.</p>
+                  <p className="mt-2 text-xs text-slate-500">Enter address, city & state, or ZIP code.</p>
                 </div>
                 <div className="flex items-center gap-3">
                   <button
@@ -523,13 +522,7 @@ export default function FoodPage() {
             </div>
           </div>
           <div className="relative">
-            <div className="absolute inset-0 bg-info-tint" aria-hidden />
-            <div className="relative flex h-full flex-col gap-6 rounded-t-3xl bg-info-tint px-6 py-8 text-slate-900 sm:px-10 lg:rounded-none">
-              <div className="space-y-1">
-                <p className="text-sm font-semibold uppercase tracking-[0.3em] text-slate-600">Live map, filters, and results</p>
-                <p className="text-sm text-slate-600">Stay on one view: locate, filter, and pick a store without scrolling away.</p>
-              </div>
-
+            <div className="relative flex h-full flex-col gap-6 rounded-t-3xl px-6 py-8 text-slate-900 sm:px-10 lg:rounded-none">
               <div className="rounded-3xl border border-white/70 bg-white p-4 shadow-lg shadow-slate-400/20">
                 <div className="flex flex-wrap items-center gap-4">
                   <div className="flex flex-col">
@@ -644,6 +637,7 @@ export default function FoodPage() {
           </div>
         </div>
       </section>
+      <p className="mt-4 text-center text-xs text-slate-500">Search by Nominatim, © OpenStreetMap contributors.</p>
       {isError && (
         <div
           role="status"
