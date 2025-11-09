@@ -205,10 +205,10 @@ export default function HousingUtilitiesClient() {
                 <Sparkles className="h-4 w-4" />
                 Housing & Utilities
               </span>
-              <h1 className="text-3xl font-semibold leading-tight text-slate-900 sm:text-[2.5rem]">
+              <h1 className="text-3xl font-semibold leading-[1.1] text-slate-900 sm:text-[2.5rem]">
                 Everything you need to know before renting or buying.
               </h1>
-              <p className="max-w-xl text-base leading-relaxed text-slate-600 sm:text-lg">
+              <p className="max-w-xl text-base leading-normal text-slate-600 sm:text-lg">
                 Choose a service, enter your location and see local data.
               </p>
             </div>

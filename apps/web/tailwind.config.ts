@@ -15,7 +15,7 @@ export default {
         'civic-blue': BRAND_COLORS.blue,
         'brand-primary': '#003d5c', // dark navy
         'brand-accent': '#fba92e', // amber/orange
-        'neutral-bg': '#f7f9fc', // off-white
+        'neutral-bg': 'transparent', // transparent background
         'info-tint': '#fff8e6', // pale tint
       },
     },
