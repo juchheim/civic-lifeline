@@ -1,185 +1,178 @@
-import { useMemo } from 'react';
-
-import { diffWords } from '@/lib/resume/utils/diff';
-
-
-type SummaryStatus = { kind: 'success' | 'error'; message: string } | null;
-
-type SummaryComparison = { original: string; suggestion: string } | null;
+import type { SummaryDisplayContext } from '@/lib/resume/summary-context';
 
 type SummaryStepProps = {
   summary: string;
   onChangeSummary: (value: string) => void;
   summaryHelpId: string;
-  isSummaryRewriting: boolean;
-  canRewriteSummary: boolean;
-  onRewriteSummary: () => void;
-  summaryStatus: SummaryStatus;
-  onClearFeedback: () => void;
-  comparison: SummaryComparison;
-  onAcceptSuggestion: (suggestion: string) => void;
-  onKeepOriginal: (original: string) => void;
+  isSummaryGenerating: boolean;
+  generationError: string | null;
+  onRegenerate: () => void;
+  contextDetails: SummaryDisplayContext;
+  hasContext: boolean;
 };
 
 export function SummaryStep({
   summary,
   onChangeSummary,
   summaryHelpId,
-  isSummaryRewriting,
-  canRewriteSummary,
-  onRewriteSummary,
-  summaryStatus,
-  onClearFeedback,
-  comparison,
-  onAcceptSuggestion,
-  onKeepOriginal,
+  isSummaryGenerating,
+  generationError,
+  onRegenerate,
+  contextDetails,
+  hasContext,
 }: SummaryStepProps) {
   const charCount = summary.length;
   const minChars = 12;
   const maxChars = 800;
-  
+  const trimmedSummary = summary.trim();
+  const showBlockingLoader = isSummaryGenerating && !trimmedSummary && !generationError;
+  const regenerateDisabled = isSummaryGenerating || !hasContext;
+  const contextExplanation = buildContextExplanation(contextDetails, hasContext);
+
+  if (showBlockingLoader) {
+    return (
+      <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm" role="status" aria-live="polite">
+        <p className="text-base font-semibold text-neutral-900">Hang tight—your summary is on the way.</p>
+        <p className="mt-2 text-sm text-neutral-600">
+          We&apos;re sending your latest job details, top skills, and education to our assistant. This typically takes
+          about 15 seconds.
+        </p>
+        <p className="mt-2 text-sm text-neutral-500">
+          You&apos;ll see a draft based on your most recent role, how long you were there, and the skills you highlighted.
+          You can edit or regenerate it once it appears.
+        </p>
+        <div className="mt-4 flex items-center gap-2 text-sm text-neutral-500">
+          <span className="h-3 w-3 animate-spin rounded-full border-2 border-neutral-300 border-t-neutral-900" aria-hidden />
+          <span>Crafting your summary…</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-4 md:flex-row md:flex-wrap md:items-start md:justify-between">
         <div className="flex-1 hidden md:block">
           <p id={summaryHelpId} className="text-sm text-neutral-500">
-            Example: Store clerk with 2 years helping customers. Skilled in cash handling and restocking. Looking for full-time retail work.
+            Example: Store clerk with 2 years helping customers. Skilled in cash handling and restocking. Looking for
+            full-time retail work.
           </p>
         </div>
         <button
           type="button"
           className="rounded-full bg-neutral-900 px-4 py-2 text-sm font-semibold uppercase tracking-wide text-white transition hover:bg-neutral-800 focus:outline-none focus:ring-4 focus:ring-neutral-300 disabled:cursor-not-allowed disabled:bg-neutral-400 md:flex-shrink-0"
-          onClick={onRewriteSummary}
-          disabled={isSummaryRewriting || !canRewriteSummary}
-          title="Let the assistant polish your summary"
+          onClick={onRegenerate}
+          disabled={regenerateDisabled}
+          title={
+            hasContext
+              ? isSummaryGenerating
+                ? 'Generating a new draft...'
+                : 'Create a fresh AI summary'
+              : 'Add a job, skills, or education before generating a summary'
+          }
         >
-          {isSummaryRewriting ? 'Rewriting…' : 'Rewrite with AI'}
+          {isSummaryGenerating ? 'Generating…' : 'Regenerate summary'}
         </button>
       </div>
+
+      {!hasContext && (
+        <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900" role="note">
+          Add at least one job, a few skills, or an education entry so we can create a draft automatically. You can still
+          type your own summary below.
+        </p>
+      )}
+
+      {contextExplanation && (
+        <div className="rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-700">
+          <p>{contextExplanation}</p>
+          <p className="mt-1 text-xs text-neutral-500">
+            Reading level: {contextDetails.readingLevel || '8th grade'}.
+          </p>
+        </div>
+      )}
+
+      {generationError && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900" role="alert">
+          <p>{generationError}</p>
+          <button
+            type="button"
+            className="mt-2 inline-flex items-center gap-1 rounded border border-red-300 px-3 py-1 text-xs font-semibold text-red-900 transition hover:border-red-400"
+            onClick={onRegenerate}
+            disabled={isSummaryGenerating}
+          >
+            Try again
+          </button>
+        </div>
+      )}
+
       <div className="relative">
         <textarea
-          className="min-h-[7.5rem] w-full rounded-lg border-2 border-neutral-300 px-4 py-3 text-base text-neutral-900 shadow-sm transition focus:border-civic-green focus:outline-none focus:ring-4 focus:ring-civic-green/30"
+          className="min-h-[7.5rem] w-full rounded-lg border-2 border-neutral-300 px-4 py-3 text-base text-neutral-900 shadow-sm transition focus:border-civic-green focus:outline-none focus:ring-4 focus:ring-civic-green/30 disabled:bg-neutral-100"
           value={summary}
-          onChange={event => {
-            onClearFeedback();
-            onChangeSummary(event.target.value);
-          }}
+          onChange={event => onChangeSummary(event.target.value)}
           placeholder=""
-          aria-busy={isSummaryRewriting}
+          aria-busy={isSummaryGenerating}
           aria-describedby={summaryHelpId}
           maxLength={maxChars}
           title="Write 2-3 sentences about your experience"
           spellCheck="true"
+          disabled={isSummaryGenerating}
         />
         <div className="mt-1 text-xs text-neutral-500">
           {charCount < minChars ? (
-            <span className="text-amber-600">{charCount} characters (need {minChars - charCount} more)</span>
+            <span className="text-amber-600">
+              {charCount} characters (need {minChars - charCount} more)
+            </span>
           ) : (
-            <span>{charCount} of {maxChars}</span>
+            <span>
+              {charCount} of {maxChars}
+            </span>
           )}
         </div>
       </div>
-      {summaryStatus && (
-        <span
-          className={`text-sm ${summaryStatus.kind === 'error' ? 'text-red-600' : 'text-neutral-700'}`}
-          role="status"
-          aria-live="polite"
-        >
-          {summaryStatus.message}
-        </span>
-      )}
+
       <p className="text-xs text-neutral-500">
-        Write 2-3 sentences. Don&apos;t use &quot;I&quot; or &quot;my&quot;. Start sentences with your job or skill.
+        Write 2-3 sentences. Don&apos;t use &quot;I&quot; or &quot;my&quot;. Start sentences with your job or skill. Feel free to
+        rewrite anything the assistant suggested.
       </p>
-      {comparison && (
-        <SummaryReview
-          original={comparison.original}
-          suggestion={comparison.suggestion}
-          onKeep={() => onKeepOriginal(comparison.original)}
-          onAccept={() => onAcceptSuggestion(comparison.suggestion)}
-        />
-      )}
     </div>
   );
 }
 
-function SummaryReview({
-  original,
-  suggestion,
-  onAccept,
-  onKeep,
-}: {
-  original: string;
-  suggestion: string;
-  onAccept: () => void;
-  onKeep: () => void;
-}) {
-  const diff = useMemo(() => diffWords(original, suggestion), [original, suggestion]);
+function buildContextExplanation(details: SummaryDisplayContext, hasContext: boolean) {
+  if (!hasContext) return null;
+  const parts: string[] = [];
+  if (details.roleTitle || details.roleEmployer) {
+    const roleBits = [
+      details.roleTitle ? `as ${details.roleTitle}` : null,
+      details.roleEmployer ? `at ${details.roleEmployer}` : null,
+    ]
+      .filter(Boolean)
+      .join(' ');
+    const tenure = details.tenureLabel ? ` for about ${details.tenureLabel}` : '';
+    parts.push(`your recent role ${roleBits}${tenure}`.trim());
+  }
+  if (details.skills.length) {
+    parts.push(`your top skills (${details.skills.join(', ')})`);
+  }
+  if (details.educationLabels.length) {
+    parts.push(`your ${details.educationLabels.join(', ')}`);
+  } else {
+    parts.push('an 8th grade reading level so it stays easy to read');
+  }
 
-  const originalNodes = useMemo(
-    () =>
-      diff.map((segment, index) => {
-        if (segment.type === 'added') {
-          return null;
-        }
-        if (segment.type === 'removed') {
-          return (
-            <span key={`orig-${index}`} className="bg-yellow-100 line-through decoration-2 decoration-yellow-500">
-              {segment.value}
-            </span>
-          );
-        }
-        return <span key={`orig-${index}`}>{segment.value}</span>;
-      }),
-    [diff],
-  );
+  if (!parts.length) {
+    return 'We generated this summary using the information from your earlier steps. You can edit or replace anything you like.';
+  }
 
-  const suggestionNodes = useMemo(
-    () =>
-      diff.map((segment, index) => {
-        if (segment.type === 'removed') {
-          return null;
-        }
-        if (segment.type === 'added') {
-          return (
-            <span key={`new-${index}`} className="rounded bg-green-100 px-0.5 text-neutral-900">
-              {segment.value}
-            </span>
-          );
-        }
-        return <span key={`new-${index}`}>{segment.value}</span>;
-      }),
-    [diff],
-  );
+  const listed = formatList(parts);
+  return `We generated this summary using ${listed}. Feel free to edit or regenerate it anytime.`;
+}
 
-  return (
-    <div className="mt-3 rounded border border-neutral-200 bg-white p-3 shadow-sm">
-      <div className="flex flex-col gap-4 md:flex-row">
-        <div className="flex-1">
-          <h4 className="text-sm font-semibold text-neutral-700">Current summary</h4>
-          <p className="mt-1 whitespace-pre-wrap text-sm text-neutral-700">{originalNodes}</p>
-        </div>
-        <div className="flex-1">
-          <h4 className="text-sm font-semibold text-neutral-700">AI suggestion</h4>
-          <p className="mt-1 whitespace-pre-wrap text-sm text-neutral-700">{suggestionNodes}</p>
-        </div>
-      </div>
-      <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:justify-end">
-        <button
-          type="button"
-          className="rounded border border-neutral-300 px-3 py-1.5 text-sm font-medium text-neutral-700 transition hover:border-neutral-500 hover:text-neutral-900"
-          onClick={onKeep}
-        >
-          Keep original
-        </button>
-        <button
-          type="button"
-          className="rounded bg-neutral-900 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-neutral-800"
-          onClick={onAccept}
-        >
-          Use AI suggestion
-        </button>
-      </div>
-    </div>
-  );
+function formatList(items: string[]) {
+  if (items.length === 1) return items[0];
+  if (items.length === 2) return `${items[0]} and ${items[1]}`;
+  const allButLast = items.slice(0, -1).join(', ');
+  const last = items[items.length - 1];
+  return `${allButLast}, and ${last}`;
 }

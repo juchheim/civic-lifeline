@@ -9,15 +9,15 @@ export const MAX_BULLETS = 8;
 export const SUMMARY_MIN_CHARS = 12;
 export const MAX_SKILLS = 20;
 
-export type StepKey = 'template' | 'contact' | 'summary' | 'skills' | 'experience' | 'education' | 'preview';
+export type StepKey = 'template' | 'contact' | 'skills' | 'experience' | 'education' | 'summary' | 'preview';
 
 export const WIZARD_STEPS: Array<{ key: StepKey; title: string; description: string }> = [
-  { key: 'template', title: 'Select a Template', description: 'Pick a style. You can change this later.' },
+  { key: 'template', title: 'Template', description: 'Pick a style. You can change this later.' },
   { key: 'contact', title: 'Contact info', description: 'Share how employers can reach you.' },
-  { key: 'summary', title: 'Summary', description: 'Describe your strengths in a few sentences.' },
   { key: 'skills', title: 'Skills', description: 'List your abilities.' },
   { key: 'experience', title: 'Experience', description: 'Add past jobs and what you did.' },
   { key: 'education', title: 'Education', description: 'Show your schooling or training.' },
+  { key: 'summary', title: 'Summary', description: 'Describe your strengths in a few sentences.' },
   { key: 'preview', title: 'Preview', description: 'Check the final resume before downloading.' },
 ];
 

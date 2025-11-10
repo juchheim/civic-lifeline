@@ -16,7 +16,7 @@ Better Skill Input – the skills box uses comma‑separated text. Converting th
 
 Experience/education order and duplication controls – the builder allows adding multiple experiences or education entries, but the default duplication (e.g., “Experience #1” and “Experience #2” both pre‑filled with the same placeholder) can confuse users. Provide an empty template for the first entry and clear instructions to “Add another role” when needed. Drag‑and‑drop reordering would also help emphasise the most recent job first.
 
-AI Summary Feedback – the AI “Rewrite” button does improve phrasing, but it simply overwrote my summary after some delay and then displayed “Summary polished for resume voice.” below the text area. To build trust, the AI could highlight changes or offer a side‑by‑side comparison so users can choose the original or revised version. A progress indicator (“working…”) would reassure users waiting for the rewrite
+AI Summary Feedback – now that the Summary step auto-generates a draft, the blocking loader should clearly explain what’s happening (“Hang tight… takes ~15 seconds”) and reference the data being used (recent role, tenure, top skills, education). After the draft arrives, the helper card should reiterate those inputs and encourage edits. Keep an eye on the **Regenerate summary** button state so users always know when the assistant is busy.
 civic-lifeline-web.vercel.app
 .
 
@@ -26,7 +26,7 @@ Responsive Design and Accessibility – ensure all buttons (like “Preview Resu
 
 Generating and reviewing the résumé
 
-I filled out the form on the Resume Builder page with the persona of a low‑income, low‑education user (a Walmart cashier with a high‑school diploma). I used the AI rewriting feature to enhance the summary. After completing the form, I clicked Preview Resume, which opened a PDF preview in a new tab; the Download PDF button then became available for saving. Because downloads are disabled in this environment, I’m unable to open the PDF to inspect it directly; you can find it in your device’s downloads folder. Based on the filled‑in data, the résumé should contain:
+I filled out the form on the Resume Builder page with the persona of a low‑income, low‑education user (a Walmart cashier with a high‑school diploma). The Summary step now auto-runs before showing the textarea, so I waited for the loader to finish and then skimmed the generated draft before making any tweaks. After completing the form, I clicked Preview Resume, which opened a PDF preview in a new tab; the Download PDF button then became available for saving. Because downloads are disabled in this environment, I’m unable to open the PDF to inspect it directly; you can find it in your device’s downloads folder. Based on the filled‑in data, the résumé should contain:
 
 Name: James Johnson
 

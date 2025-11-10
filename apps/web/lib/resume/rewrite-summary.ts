@@ -1,8 +1,6 @@
 import type { SummaryRewriteInput } from '@/resume/server/summary-rewriter';
 
-type RewriteSummaryPayload = SummaryRewriteInput;
-
-export async function rewriteSummary(payload: RewriteSummaryPayload) {
+export async function rewriteSummary(payload: SummaryRewriteInput) {
   if (typeof window === 'undefined') {
     throw new Error('rewriteSummary must run in the browser');
   }

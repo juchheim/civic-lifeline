@@ -1,6 +1,6 @@
 import React from 'react';
 import '@testing-library/jest-dom/vitest';
-import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
+import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -104,6 +104,11 @@ describe('ResumeBuilderSection', () => {
   });
 
   it('completes the resume flow, persists the draft, and opens the preview', async () => {
+    const rewriteSummaryMock = vi.mocked(rewriteSummary);
+    rewriteSummaryMock.mockResolvedValue(
+      'Customer-focused associate with 4 years supporting busy retail teams and keeping shoppers happy.',
+    );
+
     render(<ResumeBuilderSection />);
 
     await chooseTemplate();
@@ -115,7 +120,7 @@ describe('ResumeBuilderSection', () => {
     const cityInput = screen.getByLabelText(/^City/i);
     const stateSelect = screen.getByLabelText(/^State/i);
 
-    const contactNextButtons = screen.getAllByRole('button', { name: /Next: Summary/i });
+    const contactNextButtons = screen.getAllByRole('button', { name: /Next: Skills/i });
     contactNextButtons.forEach(button => expect(button).toBeDisabled());
 
     await user.clear(nameInput);
@@ -128,21 +133,18 @@ describe('ResumeBuilderSection', () => {
     await user.type(cityInput, 'Springfield');
     await user.selectOptions(stateSelect, 'IL');
 
-    const enabledSummaryButton = getFirstEnabledButton(/Next: Summary/i);
-    await user.click(enabledSummaryButton);
-
-    expect(screen.getByRole('heading', { name: 'Summary' })).toBeInTheDocument();
-    const summaryArea = screen.getByTitle('Write 2-3 sentences about your experience');
-    await user.clear(summaryArea);
-    await user.type(
-      summaryArea,
-      'Customer-focused associate with 4 years supporting busy retail teams. Skilled in POS, training peers, and handling peak rushes.',
-    );
-
     await user.click(getFirstEnabledButton(/Next: Skills/i));
     await user.click(screen.getByRole('button', { name: /^Customer Service$/i }));
+
     await user.click(getFirstEnabledButton(/Next: Experience/i));
     await user.click(getFirstEnabledButton(/Next: Education/i));
+    await user.click(getFirstEnabledButton(/Next: Summary/i));
+
+    await waitFor(() => expect(rewriteSummaryMock).toHaveBeenCalled());
+
+    const summaryArea = screen.getByTitle('Write 2-3 sentences about your experience') as HTMLTextAreaElement;
+    await waitFor(() => expect(summaryArea.value).toContain('Customer-focused associate'));
+
     await user.click(getFirstEnabledButton(/Next: Preview/i));
 
     const previewButtons = screen.getAllByRole('button', { name: /Preview Resume/i });
@@ -177,53 +179,74 @@ describe('ResumeBuilderSection', () => {
     }
   });
 
-  it('displays the AI summary diff suggestion when rewrite provides new content', async () => {
+  it('shows the loading state and auto-fills the summary before offering regenerate controls', async () => {
     const rewriteSummaryMock = vi.mocked(rewriteSummary);
-    rewriteSummaryMock.mockResolvedValue(
-      'Dedicated team member with 4 years guiding retail associates, driving sales, and ensuring customer satisfaction.',
-    );
+    rewriteSummaryMock
+      .mockImplementationOnce(
+        () =>
+          new Promise(resolve =>
+            setTimeout(
+              () => resolve('Dependable teammate with 3 years keeping checkout lines moving and coaching new cashiers.'),
+              50,
+            ),
+          ),
+      )
+      .mockImplementationOnce(
+        () =>
+          new Promise(resolve =>
+            setTimeout(
+              () => resolve('Reliable associate who coaches cashiers, keeps lines moving, and brings calm energy during rushes.'),
+              50,
+            ),
+          ),
+      );
 
     render(<ResumeBuilderSection />);
 
     await chooseTemplate();
     await user.click(getFirstEnabledButton(/Next: Contact info/i));
 
-    const nameInput = screen.getByLabelText(/Name/i);
-    const emailInput = screen.getByLabelText(/Email/i);
-    const phoneInput = screen.getByLabelText(/Phone/i);
-    const cityInput = screen.getByLabelText(/^City/i);
-    const stateSelect = screen.getByLabelText(/^State/i);
+    await user.type(screen.getByLabelText(/Name/i), 'Jamie Retail');
+    await user.type(screen.getByLabelText(/Email/i), 'jamie@example.com');
+    await user.type(screen.getByLabelText(/Phone/i), '5559876543');
+    await user.type(screen.getByLabelText(/^City/i), 'Denver');
+    await user.selectOptions(screen.getByLabelText(/^State/i), 'CO');
 
-    await user.type(nameInput, 'Jamie Retail');
-    await user.type(emailInput, 'jamie@example.com');
-    await user.type(phoneInput, '5559876543');
-    await user.type(cityInput, 'Denver');
-    await user.selectOptions(stateSelect, 'CO');
+    await user.click(getFirstEnabledButton(/Next: Skills/i));
+    await user.click(screen.getByRole('button', { name: /^Customer Service$/i }));
 
+    await user.click(getFirstEnabledButton(/Next: Experience/i));
+    await user.click(getFirstEnabledButton(/Next: Education/i));
     await user.click(getFirstEnabledButton(/Next: Summary/i));
 
-    const summaryArea = screen.getByTitle('Write 2-3 sentences about your experience');
-    await user.clear(summaryArea);
-    await user.type(
-      summaryArea,
-      'Retail pro with 4 years helping stores stay organized and customers happy. Looking to bring strong service skills to a lead role.',
+    await waitFor(() => {
+      expect(screen.getByText(/Hang tight—your summary is on the way/i)).toBeInTheDocument();
+    });
+
+    await waitFor(() => expect(rewriteSummaryMock).toHaveBeenCalledTimes(1));
+
+    const summaryArea = await waitFor(
+      () => screen.getByTitle('Write 2-3 sentences about your experience') as HTMLTextAreaElement,
+    );
+    await waitFor(() =>
+      expect(summaryArea.value).toBe(
+        'Dependable teammate with 3 years keeping checkout lines moving and coaching new cashiers.',
+      ),
     );
 
-    await user.click(screen.getByRole('button', { name: 'Rewrite with AI' }));
+    expect(screen.getByText(/We generated this summary using/i)).toBeInTheDocument();
+    expect(screen.getByText(/top skills/i)).toBeInTheDocument();
 
-    await waitFor(() => expect(rewriteSummaryMock).toHaveBeenCalled());
+    const regenerateButton = screen.getByRole('button', { name: /Regenerate summary/i });
+    await user.click(regenerateButton);
+    expect(regenerateButton).toBeDisabled();
 
-    const suggestionHeading = await screen.findByRole('heading', { name: 'AI suggestion' });
-    const currentHeading = screen.getByRole('heading', { name: 'Current summary' });
-    expect(currentHeading).toBeInTheDocument();
-
-    const diffCard = suggestionHeading.parentElement?.parentElement?.parentElement as HTMLDivElement | undefined;
-    expect(diffCard).toBeTruthy();
-    if (diffCard) {
-      expect(within(diffCard).getByText('Use AI suggestion')).toBeInTheDocument();
-      expect(within(diffCard).getByText('Keep original')).toBeInTheDocument();
-      expect(diffCard.innerHTML).toMatchInlineSnapshot(`"<div class="flex flex-col gap-4 md:flex-row"><div class="flex-1"><h4 class="text-sm font-semibold text-neutral-700">Current summary</h4><p class="mt-1 whitespace-pre-wrap text-sm text-neutral-700"><span class="bg-yellow-100 line-through decoration-2 decoration-yellow-500">Retail</span><span> </span><span class="bg-yellow-100 line-through decoration-2 decoration-yellow-500">pro</span><span> </span><span>with 4 years </span><span class="bg-yellow-100 line-through decoration-2 decoration-yellow-500">helping stores stay organized and customers happy. Looking to</span><span> </span><span class="bg-yellow-100 line-through decoration-2 decoration-yellow-500">bring</span><span> </span><span class="bg-yellow-100 line-through decoration-2 decoration-yellow-500">strong</span><span> </span><span class="bg-yellow-100 line-through decoration-2 decoration-yellow-500">service</span><span> </span><span class="bg-yellow-100 line-through decoration-2 decoration-yellow-500">skills</span><span> </span><span class="bg-yellow-100 line-through decoration-2 decoration-yellow-500">to</span><span> </span><span class="bg-yellow-100 line-through decoration-2 decoration-yellow-500">a</span><span> </span><span class="bg-yellow-100 line-through decoration-2 decoration-yellow-500">lead</span><span> </span><span class="bg-yellow-100 line-through decoration-2 decoration-yellow-500">role.</span></p></div><div class="flex-1"><h4 class="text-sm font-semibold text-neutral-700">AI suggestion</h4><p class="mt-1 whitespace-pre-wrap text-sm text-neutral-700"><span class="rounded bg-green-100 px-0.5 text-neutral-900">Dedicated</span><span> </span><span class="rounded bg-green-100 px-0.5 text-neutral-900">team</span><span> </span><span class="rounded bg-green-100 px-0.5 text-neutral-900">member </span><span>with 4 years </span><span class="rounded bg-green-100 px-0.5 text-neutral-900">guiding</span><span> </span><span class="rounded bg-green-100 px-0.5 text-neutral-900">retail</span><span> </span><span class="rounded bg-green-100 px-0.5 text-neutral-900">associates,</span><span> </span><span class="rounded bg-green-100 px-0.5 text-neutral-900">driving</span><span> </span><span class="rounded bg-green-100 px-0.5 text-neutral-900">sales,</span><span> </span><span class="rounded bg-green-100 px-0.5 text-neutral-900">and</span><span> </span><span class="rounded bg-green-100 px-0.5 text-neutral-900">ensuring</span><span> </span><span class="rounded bg-green-100 px-0.5 text-neutral-900">customer</span><span> </span><span class="rounded bg-green-100 px-0.5 text-neutral-900">satisfaction.</span></p></div></div><div class="mt-3 flex flex-col gap-2 sm:flex-row sm:justify-end"><button type="button" class="rounded border border-neutral-300 px-3 py-1.5 text-sm font-medium text-neutral-700 transition hover:border-neutral-500 hover:text-neutral-900">Keep original</button><button type="button" class="rounded bg-neutral-900 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-neutral-800">Use AI suggestion</button></div>"`);
-    }
+    await waitFor(() => expect(rewriteSummaryMock).toHaveBeenCalledTimes(2));
+    await waitFor(() =>
+      expect(summaryArea.value).toBe(
+        'Reliable associate who coaches cashiers, keeps lines moving, and brings calm energy during rushes.',
+      ),
+    );
   });
 
   it('requires a template selection before continuing from Step 1', async () => {

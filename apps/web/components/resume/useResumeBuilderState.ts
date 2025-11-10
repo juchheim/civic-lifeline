@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { rewriteSummary } from '@/lib/resume/rewrite-summary';
+import { buildSummaryContext, hashSummaryContext } from '@/lib/resume/summary-context';
 import type { ResumePayload } from '@/lib/resume/types';
 import { formatPhoneNumber, normalizeSkillLabel } from '@/lib/resume/utils/format';
 import { buildTimelineValue, normalizeTimeline, splitTimeline } from '@/lib/resume/utils/timeline';
@@ -20,8 +21,6 @@ import {
   WIZARD_STEPS,
   type StepKey,
 } from './constants';
-
-type SummaryStatus = { kind: 'success' | 'error'; message: string } | null;
 
 type ExperienceEntry = NonNullable<ResumePayload['experience']>[number];
 type EducationEntry = NonNullable<ResumePayload['education']>[number];
@@ -60,9 +59,10 @@ export function useResumeBuilderState() {
   const [skillDraft, setSkillDraft] = useState<string>('');
   const [bulletsInputs, setBulletsInputs] = useState<string[]>([]);
   const [timelineInputs, setTimelineInputs] = useState<TimelineDraft[]>([]);
-  const [isSummaryRewriting, setIsSummaryRewriting] = useState(false);
-  const [summaryStatus, setSummaryStatus] = useState<SummaryStatus>(null);
-  const [summaryComparison, setSummaryComparison] = useState<{ original: string; suggestion: string } | null>(null);
+  const [isSummaryGenerating, setIsSummaryGenerating] = useState(false);
+  const [summaryGenerationError, setSummaryGenerationError] = useState<string | null>(null);
+  const [lastAttemptedSummaryHash, setLastAttemptedSummaryHash] = useState<string | null>(null);
+  const [hasUserEditedSummary, setHasUserEditedSummary] = useState(false);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const previewWindowRef = useRef<Window | null>(null);
@@ -146,6 +146,7 @@ export function useResumeBuilderState() {
 
       setPayload(normalized);
       setSkillDraft('');
+      setHasUserEditedSummary(Boolean((normalized.summary ?? '').trim()));
 
       const bulletsState: string[] = [];
       (normalized.experience ?? []).forEach((exp, idx) => {
@@ -255,11 +256,6 @@ export function useResumeBuilderState() {
   const experience = payload.experience ?? [];
   const education = payload.education ?? [];
 
-  const canRewriteSummary = useMemo(
-    () => (payload.summary ?? '').trim().length >= SUMMARY_MIN_CHARS,
-    [payload.summary],
-  );
-
   const downloadFilename = useMemo(
     () => buildResumeFilename(payload.name, template ?? DEFAULT_TEMPLATE),
     [payload.name, template],
@@ -338,83 +334,88 @@ export function useResumeBuilderState() {
     [currentStepIndex, maxStepReached, payload, persistDraft, template],
   );
 
-  const handleRewriteSummary = useCallback(async () => {
-    const draft = (payload.summary ?? '').trim();
-    if (!draft) {
-      setSummaryStatus({ kind: 'error', message: 'Add a few notes so the assistant has something to rewrite.' });
-      return;
-    }
-    if (draft.length < SUMMARY_MIN_CHARS) {
-      setSummaryStatus({
-        kind: 'error',
-        message: `Add a bit more detail (at least ${SUMMARY_MIN_CHARS} characters) so we have something to polish.`,
-      });
-      return;
-    }
+  const summaryContext = useMemo(() => buildSummaryContext(payload), [payload]);
+  const summaryContextHash = useMemo(() => hashSummaryContext(summaryContext.request), [summaryContext]);
+  const summaryDetails = summaryContext.display;
+  const hasSummaryContextSignal = useMemo(
+    () =>
+      Boolean(
+        summaryContext.request.recentRole?.title ||
+          summaryContext.request.recentRole?.employer ||
+          summaryContext.request.recentRole?.tenureLabel ||
+          summaryContext.request.topSkills.length ||
+          summaryContext.request.highestEducation,
+      ),
+    [summaryContext.request],
+  );
 
-    setSummaryComparison(null);
-    setSummaryStatus({ kind: 'success', message: 'Polishing your summary...' });
-    setIsSummaryRewriting(true);
+  const clearSummaryGenerationError = useCallback(() => {
+    setSummaryGenerationError(null);
+  }, []);
 
-    const skills = (payload.skills ?? []).map(skill => skill.trim()).filter(Boolean).slice(0, 12);
-    const experienceForAi = (payload.experience ?? [])
-      .map(entry => {
-        const title = entry.title?.trim();
-        const company = entry.company?.trim();
-        const bullets = (entry.bullets ?? []).map(bullet => bullet.trim()).filter(Boolean).slice(0, 2);
-        if (!title && !company && bullets.length === 0) return null;
-        return {
-          ...(title ? { title } : {}),
-          ...(company ? { company } : {}),
-          ...(bullets.length ? { bullets } : {}),
-        };
-      })
-      .filter((entry): entry is { title?: string; company?: string; bullets?: string[] } => entry !== null)
-      .slice(0, 3);
+  const handleUpdateSummary = useCallback(
+    (value: string) => {
+      setHasUserEditedSummary(true);
+      clearSummaryGenerationError();
+      setPayload(prev => ({ ...prev, summary: value }));
+    },
+    [clearSummaryGenerationError, setPayload],
+  );
 
-    try {
-      const rewritten = await rewriteSummary({
-        summary: draft,
-        name: payload.name.trim() || undefined,
-        skills,
-        experience: experienceForAi.length ? experienceForAi : undefined,
-      });
-      const cleanedRewrite = rewritten.trim();
-      if (!cleanedRewrite || cleanedRewrite === draft) {
-        setSummaryComparison(null);
-        setSummaryStatus({ kind: 'success', message: 'The assistant kept your summary as-is.' });
-        setPayload(prev => ({ ...prev, summary: draft }));
-      } else {
-        setSummaryComparison({ original: draft, suggestion: cleanedRewrite });
-        setSummaryStatus({ kind: 'success', message: 'Review the AI suggestion below.' });
-        setPayload(prev => ({ ...prev, summary: draft }));
+  const generateSummaryFromProfile = useCallback(async () => {
+      if (isSummaryGenerating) return false;
+      setLastAttemptedSummaryHash(summaryContextHash);
+      if (!hasSummaryContextSignal) {
+        setSummaryGenerationError('Add a recent role, skills, or education before generating a summary.');
+        return false;
       }
-    } catch (error) {
-      setSummaryStatus({
-        kind: 'error',
-        message: error instanceof Error ? error.message : 'Something went wrong while rewriting.',
-      });
-    } finally {
-      setIsSummaryRewriting(false);
-    }
-  }, [payload]);
+      setIsSummaryGenerating(true);
+      setSummaryGenerationError(null);
+      try {
+        const aiSummary = await rewriteSummary(summaryContext.request);
+        setPayload(prev => ({ ...prev, summary: aiSummary }));
+        setHasUserEditedSummary(false);
+        return true;
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : 'We could not generate your summary. Please try again.';
+        setSummaryGenerationError(message);
+        return false;
+      } finally {
+        setIsSummaryGenerating(false);
+      }
+    },
+    [
+      hasSummaryContextSignal,
+      isSummaryGenerating,
+      rewriteSummary,
+      setPayload,
+      summaryContext.request,
+      summaryContextHash,
+    ]);
 
-  const handleAcceptSummarySuggestion = useCallback((suggestion: string) => {
-    setPayload(prev => ({ ...prev, summary: suggestion }));
-    setSummaryComparison(null);
-    setSummaryStatus({ kind: 'success', message: 'Summary updated with the AI suggestion.' });
-  }, []);
+  const shouldAutoGenerateSummary =
+    activeStep.key === 'summary' &&
+    summaryContextHash !== lastAttemptedSummaryHash &&
+    !isSummaryGenerating &&
+    !hasUserEditedSummary;
 
-  const handleKeepOriginalSummary = useCallback((original: string) => {
-    setPayload(prev => ({ ...prev, summary: original }));
-    setSummaryComparison(null);
-    setSummaryStatus({ kind: 'success', message: 'Kept your original summary.' });
-  }, []);
-
-  const clearSummaryFeedback = useCallback(() => {
-    setSummaryStatus(null);
-    setSummaryComparison(null);
-  }, []);
+  useEffect(() => {
+    if (!shouldAutoGenerateSummary) return;
+    let cancelled = false;
+    const run = async () => {
+      try {
+        await generateSummaryFromProfile();
+      } catch {
+        // errors handled inside generateSummaryFromProfile
+      }
+      if (cancelled) return;
+    };
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, [generateSummaryFromProfile, shouldAutoGenerateSummary]);
 
   const addExperience = useCallback(() => {
     setPayload(prev => {
@@ -862,9 +863,10 @@ export function useResumeBuilderState() {
     setBulletsInputs([]);
     setTimelineInputs([]);
     setStatus('Cleared the draft.');
-    setSummaryStatus(null);
-    setIsSummaryRewriting(false);
-    setSummaryComparison(null);
+    setSummaryGenerationError(null);
+    setIsSummaryGenerating(false);
+    setLastAttemptedSummaryHash(null);
+    setHasUserEditedSummary(false);
     setPreviewUrl(null);
     setIsPreviewLoading(false);
     if (previewWindowRef.current && !previewWindowRef.current.closed) {
@@ -886,9 +888,10 @@ export function useResumeBuilderState() {
     setSkillDraft,
     bulletsInputs,
     timelineInputs,
-    isSummaryRewriting,
-    summaryStatus,
-    summaryComparison,
+    isSummaryGenerating,
+    summaryGenerationError,
+    summaryDetails,
+    hasSummaryContextSignal,
     isPreviewLoading,
     previewUrl,
     previewWindowRef,
@@ -906,7 +909,6 @@ export function useResumeBuilderState() {
     skillValues,
     experience,
     education,
-    canRewriteSummary,
     downloadFilename,
     // actions
     addSkill,
@@ -915,10 +917,8 @@ export function useResumeBuilderState() {
     handleNextStep,
     handlePreviousStep,
     handleGoToStep,
-    handleRewriteSummary,
-    handleAcceptSummarySuggestion,
-    handleKeepOriginalSummary,
-    clearSummaryFeedback,
+    handleUpdateSummary,
+    generateSummaryFromProfile,
     addExperience,
     removeExperience,
     moveExperience,

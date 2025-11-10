@@ -23,6 +23,25 @@ Deliver an accessible resume builder section within `/resume` that posts to `POS
 - `apps/web/resume/shared/templates.ts` — authoritative template list for both client & server.
 - Future: extract sub-forms (experience, education, links) once full data entry is added.
 
+## Wizard Flow
+
+1. Template
+2. Contact info
+3. Skills
+4. Experience
+5. Education
+6. Summary (auto-generated)
+7. Preview
+
+Summary sits after Education so the AI sees every prior field before generating a draft. Reloading the wizard resumes on the stored step key.
+
+## Summary Step
+
+- Entering the Summary step triggers an automatic call to `POST /api/resume/summary` with the latest context (most recent role + tenure, top 5 skills, highest education, location). A blocking loader explains that this takes ~15 seconds.
+- Once the AI responds, the textarea is pre-filled and the UI highlights which inputs informed the draft (role, tenure, skills, education, reading level). Users can edit immediately or click **Regenerate summary** for another pass.
+- The AI is instructed to match the user’s education level; if no education is provided we default to an 8th grade reading level.
+- Error handling: inline alert with “Try again” + manual entry fallback. If the user edits the summary, we do not auto-overwrite it on future visits (they must click Regenerate).
+
 ## State Management
 
 - Local React state holds `ResumePayload` + selected template.

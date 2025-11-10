@@ -1,46 +1,63 @@
-# Resume Summary Rewriter
+# Resume Summary Generator
 
-This document describes the end-to-end flow for the AI-backed resume summary rewrite feature on the Resume Builder page. It is tailored for low-literacy job seekers who may enter jumbled phrases or incomplete thoughts.
+This document captures the end-to-end flow for the automatic summary step inside the Resume Builder. The new experience generates a draft the moment users reach the Summary step so they can edit instead of starting from a blank field.
 
 ## API Route: `POST /api/resume/summary`
 - **Runtime:** Node.js (Next.js App Router)
-- **Authentication:** Bearer token for the upstream OpenAI request (`OPENAI_API_KEY`)
-- **Headers returned:** `Cache-Control: no-store`, `X-Request-Id`
+- **Authentication:** Bearer token via `OPENAI_API_KEY`
+- **Response headers:** `Cache-Control: no-store`, `X-Request-Id`
 - **Request payload (JSON):**
   ```ts
   {
-    summary: string;          // Required, 12-1000 chars (trimmed)
-    name?: string;
-    skills?: string[];        // Optional, <= 12 items
-    experience?: Array<{
+    recentRole?: {
       title?: string;
-      company?: string;
-      bullets?: string[];     // Optional, <= 2 entries considered
-    }>;
+      employer?: string;
+      tenureLabel?: string;  // e.g. "2 years", "Less than 1 year"
+      tenureYears?: number;  // rounded whole years when available
+    };
+    topSkills: string[];      // <= 5 items, already normalized
+    highestEducation?: {
+      labels: string[];       // all highest-level credentials (e.g. ["Bachelor of Arts", "Bachelor of Science"])
+      readingLevel: string;   // "12th grade", "College level", "Graduate level"
+    };
+    readingLevel: string;     // Always provided (fallback: "8th grade")
+    contactContext?: {
+      city?: string;
+      state?: string;         // Two-letter abbreviation
+    };
   }
   ```
 - **Response payload:**
   ```ts
   {
-    summary: string;          // Polished summary, <= 800 chars
+    summary: string; // AI-generated summary, <= 800 chars
   }
   ```
-- **Error codes:** `400` (validation), `401` (missing API key), `429` (upstream throttle), `500` (other upstream failures).
+- **Error codes:** `400` (validation), `401` (missing API key), `429` (provider throttle), `500` (other upstream failures)
 
 ## Flow
-1. Validate the payload with `zod` (`SummaryRewriteSchema`).
-2. Normalize the context (trim whitespace, collapse repeats, cap array lengths, strip contact info).
-3. Construct the system/user pair described in `docs/resume-builder/ai/prompt.md`, emphasizing plain, encouraging language for low-literacy writers.
-4. Call the OpenAI Chat Completions API (`process.env.OPENAI_API_URL` or default `https://api.openai.com/v1/chat/completions`) with model `process.env.RESUME_SUMMARY_MODEL || 'gpt-5-mini-2025-08-07'`, `max_completion_tokens: 2500` (GPT-5 models, includes reasoning tokens) or `max_tokens: 1200, temperature: 0.3` (older models), a 20s timeout, and `X-Request-Id` for correlation. Note: GPT-5 models don't support custom temperature values and use internal reasoning tokens that count against the completion limit.
-5. Parse the primary text output from `choices[0].message.content`. The model is instructed to respond with a single line beginning `SUMMARY:`. The server strips that prefix, trims to 800 characters, and returns the final text to the client.
+1. Validate the incoming payload with `SummaryRewriteSchema`. All text fields are sanitized to remove links, phone numbers, and email addresses before being sent upstream.
+2. Build the system/user prompts (`SYSTEM_PROMPT` + `buildPrompt(input)`):
+   - Remind the model that only the structured facts may be used—no hallucinated employers, skills, or degrees.
+   - Instruct it to write 45–70 words in implied first person and to match the requested reading level (8th grade, 12th grade, College level, Graduate level) without naming that level in the copy.
+   - Provide serialized bullets for recent role + tenure, top 3–5 skills, highest education labels, and city/state context when available.
+3. Call the OpenAI Chat Completions API (`OPENAI_API_URL` override supported, default `https://api.openai.com/v1/chat/completions`) with:
+   - `model = process.env.RESUME_SUMMARY_MODEL || 'gpt-5-mini-2025-08-07'`
+   - `max_completion_tokens = 2500` for GPT-5 models, else `max_tokens = 1200`, `temperature = 0.3`
+   - 20s timeout enforced via `AbortController`, `X-Request-Id` headers for tracing
+4. Parse `choices[0].message.content`, strip the required `SUMMARY:` prefix, trim to 800 characters, and return it to the browser.
 
 ## Front-End Contract
-- Client helper `rewriteSummary()` is located at `apps/web/lib/resume/rewrite-summary.ts`.
-- UI integration lives in `apps/web/components/resume/ResumeBuilderSection.tsx`. The button is disabled while a rewrite is pending or when the summary field has fewer than 12 characters.
-- Success path replaces the local summary and sets a confirmation status. Failures surface an inline message but leave the user's draft untouched.
+- Client helper `rewriteSummary()` lives at `apps/web/lib/resume/rewrite-summary.ts` and now expects the structured context payload instead of raw user notes.
+- `useResumeBuilderState` (in `apps/web/components/resume/useResumeBuilderState.ts`) assembles the payload via `buildSummaryContext(payload)` and triggers generation automatically the first time the Summary step mounts. It exposes:
+  - `isSummaryGenerating`, `summaryGenerationError` for UI state
+  - `summaryContextDetails` for instructional copy (“Based on your role as … for about 2 years…”)
+  - `regenerateSummary()` so the user can request another draft after edits
+- The `SummaryStep` component displays a blocking loader (“This typically takes about 15 seconds...”) until the first response arrives, then pre-fills the textarea, shows which data informed the draft, and reminds users they can rewrite anything. No diff UI remains.
+- If the AI call fails, the component surfaces the error inline, keeps the textarea editable, and offers a “Try again” action.
 
 ## Operational Notes
-- Logging: capture request id, upstream latency, and high-level error reason via the shared resume logger.
-- Rate limiting / abuse: the API should be behind whatever global throttling exists for resume routes; no additional logic is added here.
-- Local development: set `OPENAI_API_KEY` in `.env.local`. Optionally use `OPENAI_API_URL` for custom endpoints and `RESUME_SUMMARY_MODEL` to try alternate OpenAI models (default: `gpt-5-mini-2025-08-07`). Without a key the route returns `401`.
-- Legacy environment variables `GPT5_NANO_API_KEY` and `GPT5_NANO_API_URL` are still supported for backward compatibility.
+- Logging: `resume-summary-ai-*` log lines now capture request id, duration, upstream status, and whether structured context fields were present.
+- Rate limiting / abuse: still relies on global resume-route throttles; no additional per-user logic was introduced in this iteration.
+- Local development: set `OPENAI_API_KEY` in `.env.local`. Optional overrides: `OPENAI_API_URL`, `RESUME_SUMMARY_MODEL`. Without a key the API returns `401`.
+- The automatic generation flow assumes the wizard order `Template → Contact info → Skills → Experience → Education → Summary → Preview`, ensuring the AI sees all relevant data before running.

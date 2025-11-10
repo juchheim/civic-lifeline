@@ -167,9 +167,8 @@ After adding the environment variable:
 2. **Test the feature**:
    - Navigate to `/resume` on your deployed site
    - Confirm the "Resume Builder" wizard loads
-   - Enter a summary (at least 12 characters)
-   - Click "Rewrite with AI"
-   - If configured correctly, you should see a rewritten summary
+   - Complete steps through Education, then watch the Summary loader populate the textarea automatically
+   - Click "Regenerate summary" to ensure manual reruns succeed
 
 3. **Check logs** if it fails:
    - **Vercel**: Go to **Deployments** → Click deployment → **Functions** → Check logs

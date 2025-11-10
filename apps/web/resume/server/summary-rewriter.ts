@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { logger } from '@/resume/server/logger';
 
-const SYSTEM_PROMPT = `You help adults who struggle with formal writing turn disorganized resume notes into a polished summary for entry-level or service jobs. Think through improvements silently. When you respond, output exactly one line that begins with "SUMMARY:" followed by 45-70 words in plain US English. Keep the voice confident, respectful, and job-ready. Highlight reliability, people skills, and real impact without exaggerating, avoid first-person pronouns or repeating the candidate's name, and never invent achievements or credentials. Do not add any other text or explanations.`;
+const SYSTEM_PROMPT = `You help adults who struggle with formal writing turn structured resume data into a polished summary for entry-level or service jobs. Think through improvements silently. When you respond, output exactly one line that begins with "SUMMARY:" followed by 45-70 words in plain US English. Keep the voice confident, respectful, and job-ready, match the requested reading level without naming it, highlight reliability, people skills, and real impact without exaggerating, avoid first-person pronouns or repeating the candidate's name, and never invent achievements, employers, or credentials. Do not add any other text or explanations.`;
 
 const DEFAULT_API_URL = 'https://api.openai.com/v1/chat/completions';
 const MODEL = process.env.RESUME_SUMMARY_MODEL?.trim() || 'gpt-5-mini-2025-08-07';
@@ -10,29 +10,71 @@ const MAX_GPT5_COMPLETION_TOKENS = 2500; // Higher limit for GPT-5 to account fo
 const MAX_RETURNED_SUMMARY_CHARS = 800;
 
 export const SummaryRewriteSchema = z.object({
-  summary: z
-    .string()
-    .transform(value => value.trim())
-    .refine(value => value.length >= 12 && value.length <= 1000, 'Summary must be 12-1000 characters'),
-  name: z
-    .string()
-    .max(120)
-    .trim()
-    .optional()
-    .transform(value => (value ? sanitizeField(value) : undefined)),
-  skills: z
-    .array(z.string().max(80).transform(skill => sanitizeField(skill)))
-    .max(50)
+  recentRole: z
+    .object({
+      title: z
+        .string()
+        .max(160)
+        .optional()
+        .transform(value => (value ? sanitizeField(value) : undefined)),
+      employer: z
+        .string()
+        .max(160)
+        .optional()
+        .transform(value => (value ? sanitizeField(value) : undefined)),
+      tenureLabel: z
+        .string()
+        .max(60)
+        .optional()
+        .transform(value => (value ? sanitizeField(value) : undefined)),
+      tenureYears: z.number().min(0).max(60).optional(),
+    })
     .optional(),
-  experience: z
+  topSkills: z
     .array(
-      z.object({
-        title: z.string().max(160).optional(),
-        company: z.string().max(160).optional(),
-        bullets: z.array(z.string().max(220)).max(8).optional(),
-      }),
+      z
+        .string()
+        .max(80)
+        .transform(skill => sanitizeField(skill)),
     )
-    .max(20)
+    .max(5)
+    .default([])
+    .transform(skills => skills.filter(Boolean)),
+  highestEducation: z
+    .object({
+      labels: z
+        .array(
+          z
+            .string()
+            .max(160)
+            .transform(label => sanitizeField(label)),
+        )
+        .min(1)
+        .max(5)
+        .transform(labels => labels.filter(Boolean)),
+      readingLevel: z
+        .string()
+        .max(40)
+        .transform(value => value.trim()),
+    })
+    .optional(),
+  readingLevel: z
+    .string()
+    .max(40)
+    .transform(value => value.trim()),
+  contactContext: z
+    .object({
+      city: z
+        .string()
+        .max(80)
+        .optional()
+        .transform(value => (value ? sanitizeField(value) : undefined)),
+      state: z
+        .string()
+        .max(2)
+        .optional()
+        .transform(value => (value ? value.toUpperCase() : undefined)),
+    })
     .optional(),
 });
 
@@ -117,41 +159,48 @@ export async function rewriteSummaryWithAi(
 }
 
 function buildPrompt(input: SummaryRewriteInput) {
-  const summary = clampLength(normalizeWhitespace(input.summary), 900);
-  const skills = (input.skills ?? []).map(skill => normalizeWhitespace(skill)).filter(Boolean).slice(0, 12);
-  const experienceHighlights = (input.experience ?? [])
-    .slice(0, 3)
-    .map(entry => summarizeExperience(entry))
-    .filter(Boolean);
-
   const lines: string[] = [];
-  if (input.name) lines.push(`- Name (context only, do not repeat): ${normalizeWhitespace(input.name)}`);
-  if (skills.length) lines.push(`- Skills: ${skills.join(', ')}`);
-  if (experienceHighlights.length) {
-    lines.push('- Experience highlights:');
-    experienceHighlights.forEach(item => lines.push(`  - ${item}`));
+  if (input.recentRole?.title || input.recentRole?.employer) {
+    const roleParts = [input.recentRole.title, input.recentRole.employer ? `at ${input.recentRole.employer}` : undefined]
+      .filter(Boolean)
+      .join(' ');
+    const tenureSuffix = input.recentRole.tenureLabel ? ` (${input.recentRole.tenureLabel})` : '';
+    lines.push(`- Recent role: ${roleParts}${tenureSuffix}`);
+  } else {
+    lines.push('- Recent role: Not provided.');
   }
-  if (!lines.length) {
-    lines.push('- No additional details provided.');
+
+  if (input.topSkills.length) {
+    lines.push(`- Top skills: ${input.topSkills.join(', ')}`);
+  } else {
+    lines.push('- Top skills: Not provided.');
   }
+
+  if (input.highestEducation) {
+    lines.push(`- Highest education: ${input.highestEducation.labels.join(', ')}`);
+    lines.push(`- Reading level guidance: ${input.highestEducation.readingLevel}`);
+  } else {
+    lines.push('- Highest education: Not provided.');
+    lines.push(`- Reading level guidance: ${input.readingLevel}`);
+  }
+
+  if (input.contactContext?.city || input.contactContext?.state) {
+    lines.push(
+      `- Location context: ${[input.contactContext.city, input.contactContext.state].filter(Boolean).join(', ')}`,
+    );
+  }
+
+  lines.push(`- Match the ${input.readingLevel} reading level without mentioning it explicitly.`);
 
   const userMessage = [
-    'Rewrite the candidate\'s messy notes into a resume summary for entry-level or service jobs.',
-    'The writer may have limited education, so keep the tone respectful, hopeful, and straightforward.',
+    'Using the structured facts below, craft a resume summary for entry-level or service jobs.',
+    'Use only the provided details. Do not invent employers, credentials, or additional achievements.',
+    'Write 45-70 words in implied first person (no "I" or "my") with a confident, respectful, job-ready tone.',
+    'Highlight reliability, people skills, and real impact. Mention tenure, skills, and education when available.',
+    'Respond with exactly one line that starts with "SUMMARY:" followed by the finished summary. Include nothing else.',
     '',
-    'Candidate details:',
+    'Structured candidate data:',
     lines.join('\n'),
-    '',
-    'Raw notes (preserve every fact, explain clearly):',
-    '"""',
-    summary,
-    '"""',
-    '',
-    'Guidelines (follow precisely):',
-    '1. Turn fragments, slang, or first-person phrases into complete sentences without changing the meaning.',
-    '2. Emphasize reliability, people skills, and real impact the candidate mentions. Do not add new achievements or credentials.',
-    '3. Write 45-70 words in plain, confident US English using implied first person (no "I", "my", or the candidate\'s name).',
-    '4. Respond with exactly one line that starts with "SUMMARY:" followed by the finished summary. Include nothing else.',
   ].join('\n');
 
   return { userMessage };
@@ -186,25 +235,6 @@ function resolveApiUrl() {
   const envUrl = process.env.OPENAI_API_URL || process.env.GPT5_NANO_API_URL;
   const trimmed = envUrl?.trim();
   return trimmed && trimmed.length > 0 ? trimmed : DEFAULT_API_URL;
-}
-
-function summarizeExperience(entry: { title?: string; company?: string; bullets?: string[] }) {
-  const { title, company } = entry;
-  const bullets = (entry.bullets ?? []).map(bullet => normalizeWhitespace(bullet)).filter(Boolean).slice(0, 2);
-  const headline = normalizeWhitespace([title, company ? `at ${company}` : undefined].filter(Boolean).join(' '));
-  const details = bullets.join('; ');
-  const combined = [headline, details].filter(Boolean).join(' - ');
-  return combined ? clampLength(combined, 220) : undefined;
-}
-
-function normalizeWhitespace(value: string) {
-  return value.replace(/\s+/g, ' ').trim();
-}
-
-function clampLength(value: string, max: number) {
-  if (value.length <= max) return value;
-  const safeSlice = Math.max(0, max - 3);
-  return `${value.slice(0, safeSlice)}...`;
 }
 
 function truncate(value: string, max: number) {

@@ -56,9 +56,10 @@ export function ResumeBuilderSection() {
     setSkillDraft,
     bulletsInputs,
     timelineInputs,
-    isSummaryRewriting,
-    summaryStatus,
-    summaryComparison,
+    isSummaryGenerating,
+    summaryGenerationError,
+    summaryDetails,
+    hasSummaryContextSignal,
     isPreviewLoading,
     previewUrl,
     activeStep,
@@ -72,7 +73,8 @@ export function ResumeBuilderSection() {
     skillValues,
     experience,
     education,
-    canRewriteSummary,
+    handleUpdateSummary,
+    generateSummaryFromProfile,
     downloadFilename,
     maxStepReached,
     addSkill,
@@ -81,10 +83,6 @@ export function ResumeBuilderSection() {
     handleNextStep,
     handlePreviousStep,
     handleGoToStep,
-    handleRewriteSummary,
-    handleAcceptSummarySuggestion,
-    handleKeepOriginalSummary,
-    clearSummaryFeedback,
     addExperience,
     removeExperience,
     moveExperience,
@@ -108,14 +106,6 @@ export function ResumeBuilderSection() {
   const buttonsHelpId = useId();
   const templateErrorId = useId();
   const mobileHelpPanelId = useId();
-
-  useEffect(() => {
-    if (!summaryComparison) return;
-    if (typeof window === 'undefined' || typeof document === 'undefined') return;
-    // Ensure the AI rewrite diff is not hidden behind the bottom overlay.
-    const scrollHeight = document.documentElement.scrollHeight || document.body.scrollHeight || 0;
-    window.scrollTo({ top: scrollHeight, behavior: 'smooth' });
-  }, [summaryComparison]);
 
   // Scroll to top of form when step changes on mobile
   useEffect(() => {
@@ -185,32 +175,63 @@ useEffect(() => {
           style={{ width: `${progressPercent}%` }}
         />
       </div>
-      <ol
-        className="flex flex-nowrap items-center gap-1 overflow-x-auto pb-1 text-xs font-semibold text-slate-600 sm:flex-wrap sm:gap-2"
-        aria-label="Resume builder steps"
-      >
+      <ol className="grid grid-cols-2 gap-2 text-[11px] font-medium text-slate-600 sm:grid-cols-4 lg:grid-cols-7" aria-label="Resume builder steps">
         {WIZARD_STEPS.map((step, index) => {
           const isActive = index === currentStepIndex;
           const isDone = index < maxStepReached;
           const canNavigate = index <= maxStepReached;
-          const accent = isActive
-            ? 'border-slate-900 bg-slate-900 text-white shadow-sm'
-            : isDone
-              ? 'border-slate-300 bg-white text-slate-700'
-              : 'border-slate-200 bg-slate-50 text-slate-400';
+          const isFutureStep = index > currentStepIndex;
+          const isTemplateContext = isTemplateStep;
+          const chipPadding = 'px-3 py-1.5';
+          const baseFocusRing = isTemplateContext ? 'focus-visible:ring-0' : 'focus-visible:ring-1 focus-visible:ring-slate-400';
+          const accent = isTemplateContext
+            ? isActive
+              ? 'border-slate-400 text-slate-700 bg-white'
+              : 'border-slate-200 bg-white text-slate-500'
+            : isActive
+              ? 'border-brand-primary bg-brand-primary/85 text-white shadow-sm'
+              : isDone
+                ? 'border-slate-300 bg-white text-slate-700'
+                : 'border-slate-200 bg-slate-50 text-slate-400';
+          const tabIndexValue = isTemplateContext ? -1 : undefined;
           return (
             <li key={step.key}>
               <button
                 type="button"
                 onClick={() => handleGoToStep(index)}
-                disabled={!canNavigate}
-                className={`flex items-center justify-center gap-2 rounded-full border px-3 py-1.5 transition focus:outline-none focus-visible:ring-1 focus-visible:ring-slate-400 disabled:cursor-not-allowed ${accent}`}
+                disabled={!canNavigate || (isTemplateContext && isFutureStep)}
+                tabIndex={isTemplateContext ? tabIndexValue : undefined}
+                aria-disabled={isTemplateContext && isFutureStep ? true : undefined}
+                className={`flex w-full items-center justify-center gap-2 rounded-full border ${chipPadding} text-[11px] ${
+                  isTemplateContext ? 'font-normal' : 'font-medium'
+                } ${baseFocusRing} transition focus:outline-none disabled:cursor-not-allowed ${
+                  isTemplateContext && !isActive ? 'cursor-default' : ''
+                } ${accent}`}
                 title={canNavigate ? `Go to ${step.title}` : 'Complete previous steps first'}
                 aria-current={isActive ? 'step' : undefined}
                 aria-label={`Step ${index + 1}: ${step.title}`}
               >
-                <span className="hidden md:inline">{step.title}</span>
-                <span className="inline-flex md:hidden">{index + 1}</span>
+                <span className="hidden whitespace-nowrap md:inline font-normal">
+                  {isDone && !isTemplateContext && (
+                    <svg
+                      className={`mr-1 inline h-3 w-3 ${isActive ? 'text-white' : 'text-brand-primary'}`}
+                      viewBox="0 0 16 16"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                      aria-hidden="true"
+                    >
+                      <path
+                        d="M12.6667 4L6.00004 10.6667L3.33337 8"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  )}
+                  {isTemplateContext && index === 0 ? 'Template' : step.title}
+                </span>
+                <span className="inline-flex items-center md:hidden">{index + 1}</span>
               </button>
             </li>
           );
@@ -290,16 +311,13 @@ useEffect(() => {
         return (
           <SummaryStep
             summary={payload.summary ?? ''}
-            onChangeSummary={value => setPayload(prev => ({ ...prev, summary: value }))}
+            onChangeSummary={handleUpdateSummary}
             summaryHelpId={summaryHelpId}
-            isSummaryRewriting={isSummaryRewriting}
-            canRewriteSummary={canRewriteSummary}
-            onRewriteSummary={handleRewriteSummary}
-            summaryStatus={summaryStatus}
-            onClearFeedback={clearSummaryFeedback}
-            comparison={summaryComparison}
-            onAcceptSuggestion={handleAcceptSummarySuggestion}
-            onKeepOriginal={handleKeepOriginalSummary}
+            isSummaryGenerating={isSummaryGenerating}
+            generationError={summaryGenerationError}
+            onRegenerate={generateSummaryFromProfile}
+            contextDetails={summaryDetails}
+            hasContext={hasSummaryContextSignal}
           />
         );
       case 'skills':
@@ -367,6 +385,7 @@ useEffect(() => {
                 Build your resume with confidence.
               </h1>
               <p className="mt-3 text-sm font-semibold text-slate-600">{stepEyebrow}</p>
+              <div className="mt-2">{progressSection}</div>
             </div>
             {canPreview && (
               <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:gap-3">
@@ -393,10 +412,7 @@ useEffect(() => {
             )}
           </header>
 
-          <div className="flex flex-col gap-5">
-            {stepSection}
-            {progressSection}
-          </div>
+          <div className="mt-3 flex flex-col gap-5">{stepSection}</div>
 
           <nav className="sticky bottom-0 z-20 mt-6 border-t border-slate-200 bg-white/95 px-0 py-4 shadow-[0_-18px_35px_rgba(15,23,42,0.08)] backdrop-blur">
             <div className="flex flex-col gap-4">
@@ -408,20 +424,18 @@ useEffect(() => {
                       onClick={handleAdvanceAttempt}
                       disabled={shouldUseNativeDisabled}
                       aria-disabled={isNextDisabled}
-                      className={`w-full min-w-[220px] max-w-[320px] rounded-full px-6 py-3 text-base font-semibold text-white shadow-lg shadow-brand-primary/30 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2 ${
-                        isNextDisabled
-                          ? 'cursor-not-allowed bg-brand-primary/35 text-white/80'
-                          : 'bg-brand-primary hover:bg-brand-primary/90'
-                      }`}
-                      title={
-                        isNextDisabled
-                          ? isTemplateStep
-                            ? 'Select a template to continue'
-                            : 'Complete the required fields to continue'
-                          : `Continue to ${WIZARD_STEPS[currentStepIndex + 1]?.title ?? 'the next step'}`
-                      }
-                      aria-label={nextStepLabel}
-                    >
+                className={`w-full min-w-[220px] max-w-[320px] rounded-full px-6 py-3 text-base font-semibold text-white shadow-lg shadow-brand-primary/30 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2 ${
+                  isNextDisabled
+                    ? 'cursor-not-allowed bg-brand-primary/35 text-white/80'
+                    : 'bg-brand-primary hover:bg-brand-primary/90'
+                }`}
+                title={
+                  isNextDisabled
+                    ? 'Complete the required fields to continue'
+                    : `Continue to ${WIZARD_STEPS[currentStepIndex + 1]?.title ?? 'the next step'}`
+                }
+                aria-label={nextStepLabel}
+              >
                       <span className="flex items-center justify-center gap-3">
                         <span>{isAdvancingStep ? 'Moving…' : nextStepLabel}</span>
                         {!isNextDisabled && shouldAnimateNext && (
@@ -469,6 +483,11 @@ useEffect(() => {
                   </button>
                 </div>
               )}
+              {isTemplateStep && !template && (
+                <p className="pl-5 text-xs font-medium text-slate-500" role="status" aria-live="polite">
+                  Tip: click a template card above to enable Next.
+                </p>
+              )}
               {!isLastStep && (
                 <p className="pl-5 text-xs font-medium text-slate-500">
                   Next up: {WIZARD_STEPS[currentStepIndex + 1]?.title ?? 'next step'}
@@ -505,7 +524,7 @@ useEffect(() => {
                     </p>
                   )}
                   {status && (
-                    <p className="mt-1 text-sm text-slate-700" role="status" aria-live="polite">
+                    <p className="pl-5 text-xs font-medium text-slate-500" role="status" aria-live="polite">
                       {status}
                     </p>
                   )}

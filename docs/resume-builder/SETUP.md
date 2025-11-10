@@ -63,9 +63,9 @@ Recommended models:
 2. Start the development server: `cd apps/web && npm run dev`
 3. Navigate to `/resume` in your browser
 4. Confirm the "Resume Builder" wizard renders
-5. Enter a summary (at least 12 characters)
-6. Click "Rewrite with AI"
-7. If configured correctly, you should see the rewritten summary appear in the text area
+5. Complete the wizard through the Education step
+6. When the Summary step loads, confirm the loader messaging and wait for the AI-generated draft to appear
+7. Click "Regenerate summary" to verify that manual reruns also succeed
 
 ## Troubleshooting
 
