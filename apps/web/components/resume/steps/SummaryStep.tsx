@@ -60,7 +60,7 @@ export function SummaryStep({
         </div>
         <button
           type="button"
-          className="rounded-full bg-neutral-900 px-4 py-2 text-sm font-semibold uppercase tracking-wide text-white transition hover:bg-neutral-800 focus:outline-none focus:ring-4 focus:ring-neutral-300 disabled:cursor-not-allowed disabled:bg-neutral-400 md:flex-shrink-0"
+          className="inline-flex items-center justify-center rounded-full bg-brand-primary px-5 py-2 text-xs font-semibold uppercase tracking-wide text-white shadow-sm transition hover:bg-brand-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-brand-primary/40 md:flex-shrink-0"
           onClick={onRegenerate}
           disabled={regenerateDisabled}
           title={

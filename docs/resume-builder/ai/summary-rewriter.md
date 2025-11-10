@@ -39,7 +39,7 @@ This document captures the end-to-end flow for the automatic summary step inside
 1. Validate the incoming payload with `SummaryRewriteSchema`. All text fields are sanitized to remove links, phone numbers, and email addresses before being sent upstream.
 2. Build the system/user prompts (`SYSTEM_PROMPT` + `buildPrompt(input)`):
    - Remind the model that only the structured facts may be used—no hallucinated employers, skills, or degrees.
-   - Instruct it to write 45–70 words in implied first person and to match the requested reading level (8th grade, 12th grade, College level, Graduate level) without naming that level in the copy.
+   - Instruct it to write 45–70 words in implied first person and to match the requested reading level (8th grade, 12th grade, College level, Graduate level) without naming that level in the copy, using resume-style action sentences conjugated for a single candidate (e.g., “Delivers”, “Supports” rather than command-form “Deliver”).
    - Provide serialized bullets for recent role + tenure, top 3–5 skills, highest education labels, and city/state context when available.
 3. Call the OpenAI Chat Completions API (`OPENAI_API_URL` override supported, default `https://api.openai.com/v1/chat/completions`) with:
    - `model = process.env.RESUME_SUMMARY_MODEL || 'gpt-5-mini-2025-08-07'`

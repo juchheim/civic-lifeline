@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { logger } from '@/resume/server/logger';
 
-const SYSTEM_PROMPT = `You help adults who struggle with formal writing turn structured resume data into a polished summary for entry-level or service jobs. Think through improvements silently. When you respond, output exactly one line that begins with "SUMMARY:" followed by 45-70 words in plain US English. Keep the voice confident, respectful, and job-ready, match the requested reading level without naming it, highlight reliability, people skills, and real impact without exaggerating, avoid first-person pronouns or repeating the candidate's name, and never invent achievements, employers, or credentials. Do not add any other text or explanations.`;
+const SYSTEM_PROMPT = `You help adults who struggle with formal writing turn structured resume data into a polished summary for entry-level or service jobs. Think through improvements silently. When you respond, output exactly one line that begins with "SUMMARY:" followed by 45-70 words in plain US English. Keep the voice confident, respectful, and job-ready, match the requested reading level without naming it, highlight reliability, people skills, and real impact without exaggerating, avoid first-person pronouns or repeating the candidate's name, and never invent achievements, employers, or credentials. Use resume-style action sentences that describe what the candidate *does* (e.g., "Delivers", "Supports") rather than commands. Do not add any other text or explanations.`;
 
 const DEFAULT_API_URL = 'https://api.openai.com/v1/chat/completions';
 const MODEL = process.env.RESUME_SUMMARY_MODEL?.trim() || 'gpt-5-mini-2025-08-07';
@@ -197,6 +197,7 @@ function buildPrompt(input: SummaryRewriteInput) {
     'Use only the provided details. Do not invent employers, credentials, or additional achievements.',
     'Write 45-70 words in implied first person (no "I" or "my") with a confident, respectful, job-ready tone.',
     'Highlight reliability, people skills, and real impact. Mention tenure, skills, and education when available.',
+    'Use present-tense action verbs conjugated for a single candidate (e.g., "Delivers", "Supports"). Avoid imperative phrasing like "Deliver..."',
     'Respond with exactly one line that starts with "SUMMARY:" followed by the finished summary. Include nothing else.',
     '',
     'Structured candidate data:',

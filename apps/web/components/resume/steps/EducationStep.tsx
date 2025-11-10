@@ -27,7 +27,7 @@ export function EducationStep({
       <div className="flex flex-wrap items-center gap-3">
         <button
           type="button"
-          className="rounded bg-neutral-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-neutral-800 focus:outline-none focus:ring-4 focus:ring-neutral-300 disabled:cursor-not-allowed"
+          className="inline-flex items-center gap-2 rounded-full bg-brand-primary px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-brand-primary/40"
           onClick={onAddEducation}
           disabled={education.length >= educationLimit}
         >
@@ -84,16 +84,8 @@ export function EducationStep({
                   className="rounded border border-neutral-300 px-3 py-2 text-base focus:border-civic-green focus:outline-none focus:ring-4 focus:ring-civic-green/30"
                   value={entry.degree ?? ''}
                   onChange={event => onUpdateEducationField(index, 'degree', event.target.value)}
-                  onBlur={event => {
-                    const capitalized = event.target.value
-                      .trim()
-                      .split(' ')
-                      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-                      .join(' ');
-                    onUpdateEducationField(index, 'degree', capitalized);
-                  }}
                   placeholder="High School Diploma"
-                  autoCapitalize="words"
+                  autoCapitalize="none"
                 />
                 <span className="text-xs text-neutral-500">Example: GED, CPR Certificate, Food Handler Permit</span>
               </label>
