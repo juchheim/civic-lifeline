@@ -42,10 +42,7 @@ export function SummaryStep({
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-4 md:flex-row md:flex-wrap md:items-start md:justify-between">
         <div className="flex-1 hidden md:block">
-          <p id={summaryHelpId} className="text-lg text-neutral-600">
-            Use this space to tell employers what you bring to the job.
-          </p>
-          <p className="mt-2 text-sm text-neutral-500">
+          <p id={summaryHelpId} className="text-sm text-neutral-500">
             Example: Store clerk with 2 years helping customers. Skilled in cash handling and restocking. Looking for full-time retail work.
           </p>
         </div>
@@ -61,7 +58,7 @@ export function SummaryStep({
       </div>
       <div className="relative">
         <textarea
-          className="h-48 w-full rounded-lg border-2 border-neutral-300 px-4 py-3 text-base text-neutral-900 shadow-sm transition focus:border-civic-green focus:outline-none focus:ring-4 focus:ring-civic-green/30"
+          className="min-h-[7.5rem] w-full rounded-lg border-2 border-neutral-300 px-4 py-3 text-base text-neutral-900 shadow-sm transition focus:border-civic-green focus:outline-none focus:ring-4 focus:ring-civic-green/30"
           value={summary}
           onChange={event => {
             onClearFeedback();

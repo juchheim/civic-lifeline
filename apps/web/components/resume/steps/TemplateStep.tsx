@@ -23,7 +23,7 @@ type TemplateStepProps = {
 export function TemplateStep({ selectedTemplate, onSelectTemplate }: TemplateStepProps) {
   return (
     <div className="flex flex-col gap-6">
-      <p className="text-lg text-neutral-600">
+      <p className="text-base text-neutral-600">
         Choose the look that fits the job you want.
       </p>
       <div role="radiogroup" aria-label="Resume template" className="grid gap-4 md:grid-cols-3">

@@ -142,8 +142,8 @@ export function ContactStep({ payload, setPayload, contactHelpId }: ContactStepP
 
   return (
     <div className="flex flex-col gap-6">
-      <p id={contactHelpId} className="text-lg text-neutral-600">
-        We only use this information to build the PDF. It stays on this device.
+      <p id={contactHelpId} className="sr-only">
+        Contact information is required for the resume header.
       </p>
       <div className="grid gap-5 grid-cols-1 md:grid-cols-2">
         <label className="flex flex-col gap-2" title="Required field">
