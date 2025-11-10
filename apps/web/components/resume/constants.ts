@@ -12,7 +12,7 @@ export const MAX_SKILLS = 20;
 export type StepKey = 'template' | 'contact' | 'summary' | 'skills' | 'experience' | 'education' | 'preview';
 
 export const WIZARD_STEPS: Array<{ key: StepKey; title: string; description: string }> = [
-  { key: 'template', title: 'Select a Template', description: '' },
+  { key: 'template', title: 'Select a Template', description: 'Pick a style. You can change this later.' },
   { key: 'contact', title: 'Contact info', description: 'Share how employers can reach you.' },
   { key: 'summary', title: 'Summary', description: 'Describe your strengths in a few sentences.' },
   { key: 'skills', title: 'Skills', description: 'List your abilities.' },

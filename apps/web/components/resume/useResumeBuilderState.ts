@@ -53,7 +53,7 @@ const createTimelineDraft = (): TimelineDraft => ({
 
 export function useResumeBuilderState() {
   const [payload, setPayload] = useState<ResumePayload>(() => createDefaultPayload());
-  const [template, setTemplate] = useState<TemplateName>(DEFAULT_TEMPLATE);
+  const [template, setTemplate] = useState<TemplateName | null>(null);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [maxStepReached, setMaxStepReached] = useState(0);
   const [status, setStatus] = useState<string | null>(null);
@@ -70,13 +70,13 @@ export function useResumeBuilderState() {
   const activeStep = WIZARD_STEPS[currentStepIndex];
 
   const persistDraft = useCallback(
-    (draft: ResumePayload, draftTemplate: TemplateName, stepIndex: number) => {
+    (draft: ResumePayload, draftTemplate: TemplateName | null, stepIndex: number) => {
       if (typeof window === 'undefined') return;
       const safeIndex = Math.min(Math.max(stepIndex, 0), WIZARD_STEPS.length - 1);
       const record = {
         version: STORAGE_VERSION,
         payload: draft,
-        template: draftTemplate,
+        template: draftTemplate ?? null,
         step: WIZARD_STEPS[safeIndex]?.key ?? 'template',
       };
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(record));
@@ -227,11 +227,11 @@ export function useResumeBuilderState() {
     return skills.length >= 1;
   }, [payload.skills]);
 
-  const canPreview = hasRequiredContact && summaryComplete && skillsComplete;
+  const canPreview = Boolean(template) && hasRequiredContact && summaryComplete && skillsComplete;
 
   const stepCompletion = useMemo<Record<StepKey, boolean>>(
     () => ({
-      template: true,
+      template: Boolean(template),
       contact: hasRequiredContact,
       summary: summaryComplete,
       skills: skillsComplete,
@@ -239,7 +239,7 @@ export function useResumeBuilderState() {
       education: true,
       preview: canPreview,
     }),
-    [canPreview, hasRequiredContact, summaryComplete, skillsComplete],
+    [canPreview, hasRequiredContact, summaryComplete, skillsComplete, template],
   );
 
   const progressPercent = useMemo(() => {
@@ -261,7 +261,7 @@ export function useResumeBuilderState() {
   );
 
   const downloadFilename = useMemo(
-    () => buildResumeFilename(payload.name, template),
+    () => buildResumeFilename(payload.name, template ?? DEFAULT_TEMPLATE),
     [payload.name, template],
   );
 
@@ -706,102 +706,145 @@ export function useResumeBuilderState() {
     [],
   );
 
-  const handleGenerate = useCallback(async () => {
-    if (!canPreview) {
-      if (!hasRequiredContact) {
-        setStatus('Please complete your contact details before previewing.');
-      } else if (!summaryComplete) {
-        setStatus('Please complete your summary before previewing.');
-      } else if (!skillsComplete) {
-        setStatus('Please add at least one skill before previewing.');
+  const handleGenerate = useCallback(
+    async (mode: 'preview' | 'download' = 'preview') => {
+      if (!canPreview) {
+        if (!hasRequiredContact) {
+          setStatus('Please complete your contact details before previewing.');
+        } else if (!summaryComplete) {
+          setStatus('Please complete your summary before previewing.');
+        } else if (!skillsComplete) {
+          setStatus('Please add at least one skill before previewing.');
+        }
+        return null;
       }
-      return;
-    }
+      if (!template) {
+        setStatus('Select a template before previewing.');
+        return null;
+      }
 
-    let draftForSubmit = payload;
-    const draftSkill = normalizeSkillLabel(skillDraft);
-    if (draftSkill) {
-      const existing = payload.skills ?? [];
-      if (!existing.some(skill => skill.toLowerCase() === draftSkill.toLowerCase()) && existing.length < MAX_SKILLS) {
+      const triggerDownload = (url: string) => {
+        if (typeof window === 'undefined') return;
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = downloadFilename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      };
+
+      if (mode === 'download' && previewUrl) {
+        triggerDownload(previewUrl);
+        return previewUrl;
+      }
+
+      let draftForSubmit = payload;
+      const draftSkill = normalizeSkillLabel(skillDraft);
+      if (draftSkill) {
+        const existing = payload.skills ?? [];
+        if (!existing.some(skill => skill.toLowerCase() === draftSkill.toLowerCase()) && existing.length < MAX_SKILLS) {
+          const updated = {
+            ...payload,
+            skills: [...existing, draftSkill],
+          };
+          setPayload(updated);
+          draftForSubmit = updated;
+        }
+        setSkillDraft('');
+      }
+
+      const formattedPhone = formatPhoneNumber(draftForSubmit.phone ?? '');
+      if (formattedPhone !== (draftForSubmit.phone ?? '')) {
         const updated = {
-          ...payload,
-          skills: [...existing, draftSkill],
+          ...draftForSubmit,
+          phone: formattedPhone,
         };
         setPayload(updated);
         draftForSubmit = updated;
       }
-      setSkillDraft('');
-    }
 
-    const formattedPhone = formatPhoneNumber(draftForSubmit.phone ?? '');
-    if (formattedPhone !== (draftForSubmit.phone ?? '')) {
-      const updated = {
-        ...draftForSubmit,
-        phone: formattedPhone,
-      };
-      setPayload(updated);
-      draftForSubmit = updated;
-    }
-
-    const submissionPayload = buildSubmissionPayload(draftForSubmit);
-    persistDraft(submissionPayload, template, currentStepIndex);
-    setStatus('Generating PDF preview...');
-    setIsPreviewLoading(true);
-    setPreviewUrl(null);
-
-    let openedWindow: Window | null = null;
-    if (typeof window !== 'undefined') {
-      openedWindow = window.open('', '_blank');
-      if (openedWindow) {
-        openedWindow.document.write('<p style="font-family:system-ui; padding:16px;">Generating your resume preview...</p>');
-        openedWindow.document.title = 'Generating resume...';
-      }
-      previewWindowRef.current = openedWindow;
-    }
-
-    try {
-      const response = await fetch(`/api/pdf?template=${template}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(submissionPayload),
-      });
-
-      if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
-        const message =
-          typeof data.details === 'string'
-            ? data.details
-            : typeof data.error === 'string'
-              ? data.error
-              : `Failed to generate PDF (${response.status})`;
-        throw new Error(message);
+      const submissionPayload = buildSubmissionPayload(draftForSubmit);
+      persistDraft(submissionPayload, template, currentStepIndex);
+      setStatus(mode === 'preview' ? 'Generating PDF preview...' : 'Preparing download...');
+      setIsPreviewLoading(true);
+      if (mode === 'preview') {
+        setPreviewUrl(null);
       }
 
-      const data = (await response.json()) as { previewUrl: string };
-      const absoluteUrl =
-        typeof window !== 'undefined'
-          ? new URL(data.previewUrl, window.location.origin).toString()
-          : data.previewUrl;
-      setPreviewUrl(absoluteUrl);
-
-      if (previewWindowRef.current && !previewWindowRef.current.closed) {
-        previewWindowRef.current.location.href = absoluteUrl;
-      } else if (typeof window !== 'undefined') {
-        window.open(absoluteUrl, '_blank');
+      let openedWindow: Window | null = null;
+      if (mode === 'preview' && typeof window !== 'undefined') {
+        openedWindow = window.open('', '_blank');
+        if (openedWindow) {
+          openedWindow.document.write('<p style="font-family:system-ui; padding:16px;">Generating your resume preview...</p>');
+          openedWindow.document.title = 'Generating resume...';
+        }
+        previewWindowRef.current = openedWindow;
       }
 
-      setStatus(null);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to generate PDF.';
-      setStatus(message);
-      if (previewWindowRef.current && !previewWindowRef.current.closed) {
-        previewWindowRef.current.close();
+      try {
+        const response = await fetch(`/api/pdf?template=${template}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(submissionPayload),
+        });
+
+        if (!response.ok) {
+          const data = await response.json().catch(() => ({}));
+          const message =
+            typeof data.details === 'string'
+              ? data.details
+              : typeof data.error === 'string'
+                ? data.error
+                : `Failed to generate PDF (${response.status})`;
+          throw new Error(message);
+        }
+
+        const data = (await response.json()) as { previewUrl: string };
+        const absoluteUrl =
+          typeof window !== 'undefined'
+            ? new URL(data.previewUrl, window.location.origin).toString()
+            : data.previewUrl;
+        setPreviewUrl(absoluteUrl);
+
+        if (mode === 'preview') {
+          if (previewWindowRef.current && !previewWindowRef.current.closed) {
+            previewWindowRef.current.location.href = absoluteUrl;
+          } else if (typeof window !== 'undefined') {
+            window.open(absoluteUrl, '_blank');
+          }
+        } else {
+          triggerDownload(absoluteUrl);
+        }
+
+        setStatus(null);
+        return absoluteUrl;
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Failed to generate PDF.';
+        setStatus(message);
+        if (previewWindowRef.current && !previewWindowRef.current.closed) {
+          previewWindowRef.current.close();
+        }
+        previewWindowRef.current = null;
+        return null;
+      } finally {
+        setIsPreviewLoading(false);
       }
-      previewWindowRef.current = null;
-    } finally {
-      setIsPreviewLoading(false);
-    }
-  }, [buildSubmissionPayload, canPreview, currentStepIndex, payload, persistDraft, skillDraft, template, hasRequiredContact, summaryComplete, skillsComplete]);
+    },
+    [
+      buildSubmissionPayload,
+      canPreview,
+      currentStepIndex,
+      downloadFilename,
+      hasRequiredContact,
+      payload,
+      persistDraft,
+      previewUrl,
+      skillDraft,
+      skillsComplete,
+      summaryComplete,
+      template,
+    ],
+  );
 
   const handleReset = useCallback(() => {
     if (typeof window === 'undefined') return;
@@ -813,7 +856,7 @@ export function useResumeBuilderState() {
     if (!confirmed) return;
     
     setPayload(createDefaultPayload());
-    setTemplate(DEFAULT_TEMPLATE);
+    setTemplate(null);
     setCurrentStepIndex(0);
     setSkillDraft('');
     setBulletsInputs([]);

@@ -52,11 +52,19 @@ describe('ResumeBuilderSection', () => {
 
   const getFirstEnabledButton = (label: RegExp | string) => {
     const matches = screen.getAllByRole('button', { name: label });
-    const enabled = matches.find(button => !button.hasAttribute('disabled'));
+    const enabled = matches.find(button => {
+      const ariaDisabled = button.getAttribute('aria-disabled');
+      return !button.hasAttribute('disabled') && ariaDisabled !== 'true';
+    });
     if (!enabled) {
       throw new Error(`No enabled button found for label ${label.toString()}`);
     }
     return enabled as HTMLButtonElement;
+  };
+
+  const chooseTemplate = async (label: RegExp | string = /Classic/i) => {
+    const matcher = typeof label === 'string' ? new RegExp(label, 'i') : label;
+    await user.click(screen.getByLabelText(matcher));
   };
 
   beforeEach(() => {
@@ -98,12 +106,14 @@ describe('ResumeBuilderSection', () => {
   it('completes the resume flow, persists the draft, and opens the preview', async () => {
     render(<ResumeBuilderSection />);
 
+    await chooseTemplate();
     await user.click(getFirstEnabledButton(/Next: Contact info/i));
 
-    const nameInput = screen.getByPlaceholderText('Full name');
-    const emailInput = screen.getByPlaceholderText('email@example.com');
-    const phoneInput = screen.getByPlaceholderText('(555) 123-4567');
-    const locationInput = screen.getByPlaceholderText('City, ST');
+    const nameInput = screen.getByLabelText(/Name/i);
+    const emailInput = screen.getByLabelText(/Email/i);
+    const phoneInput = screen.getByLabelText(/Phone/i);
+    const cityInput = screen.getByLabelText(/^City/i);
+    const stateSelect = screen.getByLabelText(/^State/i);
 
     const contactNextButtons = screen.getAllByRole('button', { name: /Next: Summary/i });
     contactNextButtons.forEach(button => expect(button).toBeDisabled());
@@ -114,8 +124,9 @@ describe('ResumeBuilderSection', () => {
     await user.type(emailInput, 'alex@example.com');
     await user.clear(phoneInput);
     await user.type(phoneInput, '5551234567');
-    await user.clear(locationInput);
-    await user.type(locationInput, 'Springfield, IL');
+    await user.clear(cityInput);
+    await user.type(cityInput, 'Springfield');
+    await user.selectOptions(stateSelect, 'IL');
 
     const enabledSummaryButton = getFirstEnabledButton(/Next: Summary/i);
     await user.click(enabledSummaryButton);
@@ -129,6 +140,7 @@ describe('ResumeBuilderSection', () => {
     );
 
     await user.click(getFirstEnabledButton(/Next: Skills/i));
+    await user.click(screen.getByRole('button', { name: /^Customer Service$/i }));
     await user.click(getFirstEnabledButton(/Next: Experience/i));
     await user.click(getFirstEnabledButton(/Next: Education/i));
     await user.click(getFirstEnabledButton(/Next: Preview/i));
@@ -173,17 +185,20 @@ describe('ResumeBuilderSection', () => {
 
     render(<ResumeBuilderSection />);
 
+    await chooseTemplate();
     await user.click(getFirstEnabledButton(/Next: Contact info/i));
 
-    const nameInput = screen.getByPlaceholderText('Full name');
-    const emailInput = screen.getByPlaceholderText('email@example.com');
-    const phoneInput = screen.getByPlaceholderText('(555) 123-4567');
-    const locationInput = screen.getByPlaceholderText('City, ST');
+    const nameInput = screen.getByLabelText(/Name/i);
+    const emailInput = screen.getByLabelText(/Email/i);
+    const phoneInput = screen.getByLabelText(/Phone/i);
+    const cityInput = screen.getByLabelText(/^City/i);
+    const stateSelect = screen.getByLabelText(/^State/i);
 
     await user.type(nameInput, 'Jamie Retail');
     await user.type(emailInput, 'jamie@example.com');
     await user.type(phoneInput, '5559876543');
-    await user.type(locationInput, 'Denver, CO');
+    await user.type(cityInput, 'Denver');
+    await user.selectOptions(stateSelect, 'CO');
 
     await user.click(getFirstEnabledButton(/Next: Summary/i));
 
@@ -209,6 +224,26 @@ describe('ResumeBuilderSection', () => {
       expect(within(diffCard).getByText('Keep original')).toBeInTheDocument();
       expect(diffCard.innerHTML).toMatchInlineSnapshot(`"<div class="flex flex-col gap-4 md:flex-row"><div class="flex-1"><h4 class="text-sm font-semibold text-neutral-700">Current summary</h4><p class="mt-1 whitespace-pre-wrap text-sm text-neutral-700"><span class="bg-yellow-100 line-through decoration-2 decoration-yellow-500">Retail</span><span> </span><span class="bg-yellow-100 line-through decoration-2 decoration-yellow-500">pro</span><span> </span><span>with 4 years </span><span class="bg-yellow-100 line-through decoration-2 decoration-yellow-500">helping stores stay organized and customers happy. Looking to</span><span> </span><span class="bg-yellow-100 line-through decoration-2 decoration-yellow-500">bring</span><span> </span><span class="bg-yellow-100 line-through decoration-2 decoration-yellow-500">strong</span><span> </span><span class="bg-yellow-100 line-through decoration-2 decoration-yellow-500">service</span><span> </span><span class="bg-yellow-100 line-through decoration-2 decoration-yellow-500">skills</span><span> </span><span class="bg-yellow-100 line-through decoration-2 decoration-yellow-500">to</span><span> </span><span class="bg-yellow-100 line-through decoration-2 decoration-yellow-500">a</span><span> </span><span class="bg-yellow-100 line-through decoration-2 decoration-yellow-500">lead</span><span> </span><span class="bg-yellow-100 line-through decoration-2 decoration-yellow-500">role.</span></p></div><div class="flex-1"><h4 class="text-sm font-semibold text-neutral-700">AI suggestion</h4><p class="mt-1 whitespace-pre-wrap text-sm text-neutral-700"><span class="rounded bg-green-100 px-0.5 text-neutral-900">Dedicated</span><span> </span><span class="rounded bg-green-100 px-0.5 text-neutral-900">team</span><span> </span><span class="rounded bg-green-100 px-0.5 text-neutral-900">member </span><span>with 4 years </span><span class="rounded bg-green-100 px-0.5 text-neutral-900">guiding</span><span> </span><span class="rounded bg-green-100 px-0.5 text-neutral-900">retail</span><span> </span><span class="rounded bg-green-100 px-0.5 text-neutral-900">associates,</span><span> </span><span class="rounded bg-green-100 px-0.5 text-neutral-900">driving</span><span> </span><span class="rounded bg-green-100 px-0.5 text-neutral-900">sales,</span><span> </span><span class="rounded bg-green-100 px-0.5 text-neutral-900">and</span><span> </span><span class="rounded bg-green-100 px-0.5 text-neutral-900">ensuring</span><span> </span><span class="rounded bg-green-100 px-0.5 text-neutral-900">customer</span><span> </span><span class="rounded bg-green-100 px-0.5 text-neutral-900">satisfaction.</span></p></div></div><div class="mt-3 flex flex-col gap-2 sm:flex-row sm:justify-end"><button type="button" class="rounded border border-neutral-300 px-3 py-1.5 text-sm font-medium text-neutral-700 transition hover:border-neutral-500 hover:text-neutral-900">Keep original</button><button type="button" class="rounded bg-neutral-900 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-neutral-800">Use AI suggestion</button></div>"`);
     }
+  });
+
+  it('requires a template selection before continuing from Step 1', async () => {
+    render(<ResumeBuilderSection />);
+
+    const nextButton = screen.getByRole('button', { name: /Next: Contact info/i });
+    expect(nextButton).toHaveAttribute('aria-disabled', 'true');
+
+    await user.click(nextButton);
+
+    const errorMessage = await screen.findByText('Select a template to continue.');
+    expect(errorMessage).toBeInTheDocument();
+
+    await chooseTemplate(/Minimal/i);
+
+    await waitFor(() => expect(screen.queryByText('Select a template to continue.')).not.toBeInTheDocument());
+    expect(nextButton).not.toHaveAttribute('aria-disabled', 'true');
+
+    await user.click(nextButton);
+    expect(screen.getByRole('heading', { name: 'Contact info' })).toBeInTheDocument();
   });
 
   it('hydrates from saved draft data on initial render', async () => {
