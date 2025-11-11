@@ -4,13 +4,13 @@ This log captures every problem spotted in the current resume builder stack. Eac
 
 ## Frontend State & Data Flow
 
-1. **Cached previews/downloads stay stale after any edit**  
+COMPLETE: 1. **Cached previews/downloads stay stale after any edit**  
    - Files: `apps/web/components/resume/useResumeBuilderState.ts:712-819`, `apps/web/components/resume/ResumeBuilderSection.tsx:247-330`.  
    - `handleGenerate('download')` immediately reuses `previewUrl` if it exists, and we never reset that URL when the user edits contact info, skills, summary, template, etc. After a single preview, every later “Download PDF” call can return an outdated file even though the UI suggests it reflects the latest inputs.
 
-2. **Highest completed step is not persisted, so progress + preview unlocks reset**  
-   - Files: `apps/web/components/resume/useResumeBuilderState.ts:90-194`.  
-   - We only store the *current* step key. When a user revisits the template step (or any earlier step) and closes the tab, `maxStepReached` is restored to that earlier index, removing their ability to jump forward or open previews until they redo each step in order.
+COMPLETE: 2. **Highest completed step is not persisted, so progress + preview unlocks reset**  
+   - Files: `apps/web/components/resume/useResumeBuilderState.ts:83-365, 796-829`.  
+   - Local storage records now include both the current step key and the highest step reached, and hydration restores the max of the two. Preview unlock/step navigation therefore survives reloads even if the user backed up before closing the tab.
 
 3. **Local storage versioning is defined but never enforced**  
    - Files: `apps/web/components/resume/constants.ts:4-10`, `apps/web/components/resume/useResumeBuilderState.ts:90-186`.  
@@ -69,4 +69,3 @@ This log captures every problem spotted in the current resume builder stack. Eac
 15. **Templates require live Google Fonts during PDF generation**  
     - Files: `apps/web/resume/templates/classic.hbs:5-7`, `modern.hbs:5-13`, `minimal.hbs:5-7`.  
     - Every PDF render depends on fetching `fonts.googleapis.com`. Serverless environments without outbound network (or during transient DNS/firewall failures) will hang or throw timeouts, making PDF generation unreliable.
-

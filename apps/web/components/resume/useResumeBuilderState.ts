@@ -81,14 +81,19 @@ export function useResumeBuilderState() {
   const hasUnlockedPreviewStep = PREVIEW_UNLOCK_STEP_INDEX >= 0 && maxStepReached >= PREVIEW_UNLOCK_STEP_INDEX;
 
   const persistDraft = useCallback(
-    (draft: ResumePayload, draftTemplate: TemplateName | null, stepIndex: number) => {
+    (draft: ResumePayload, draftTemplate: TemplateName | null, stepIndex: number, maxStepIndex?: number) => {
       if (typeof window === 'undefined') return;
-      const safeIndex = Math.min(Math.max(stepIndex, 0), WIZARD_STEPS.length - 1);
+      const clampIndex = (index: number) => Math.min(Math.max(index, 0), WIZARD_STEPS.length - 1);
+      const safeIndex = clampIndex(stepIndex);
+      const safeMaxIndex = clampIndex(
+        typeof maxStepIndex === 'number' ? maxStepIndex : stepIndex,
+      );
       const record = {
         version: STORAGE_VERSION,
         payload: draft,
         template: draftTemplate ?? null,
         step: WIZARD_STEPS[safeIndex]?.key ?? 'template',
+        maxStep: WIZARD_STEPS[safeMaxIndex]?.key ?? WIZARD_STEPS[safeIndex]?.key ?? 'template',
       };
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(record));
     },
@@ -105,12 +110,14 @@ export function useResumeBuilderState() {
       let storedPayload: ResumePayload | null = null;
       let storedTemplate: TemplateName | null = null;
       let storedStep: StepKey | null = null;
+      let storedMaxStep: StepKey | null = null;
 
       if (parsed && typeof parsed === 'object' && parsed !== null && 'payload' in parsed) {
         const record = parsed as {
           payload?: ResumePayload;
           template?: TemplateName;
           step?: StepKey;
+          maxStep?: StepKey;
         };
         if (record.payload && typeof record.payload === 'object') {
           storedPayload = {
@@ -123,6 +130,9 @@ export function useResumeBuilderState() {
         }
         if (record.step && WIZARD_STEPS.some(step => step.key === record.step)) {
           storedStep = record.step;
+        }
+        if (record.maxStep && WIZARD_STEPS.some(step => step.key === record.maxStep)) {
+          storedMaxStep = record.maxStep;
         }
       } else if (parsed && typeof parsed === 'object' && parsed !== null) {
         storedPayload = {
@@ -182,13 +192,26 @@ export function useResumeBuilderState() {
       if (storedTemplate) {
         setTemplate(storedTemplate);
       }
+
+      let storedStepIndex: number | null = null;
       if (storedStep) {
         const index = WIZARD_STEPS.findIndex(step => step.key === storedStep);
         if (index >= 0) {
           setCurrentStepIndex(index);
-          setMaxStepReached(index); // Initialize max step reached to the stored step
+          storedStepIndex = index;
         }
       }
+
+      let storedMaxStepIndex: number | null = null;
+      if (storedMaxStep) {
+        const index = WIZARD_STEPS.findIndex(step => step.key === storedMaxStep);
+        if (index >= 0) {
+          storedMaxStepIndex = index;
+        }
+      }
+
+      const derivedMaxIndex = Math.max(storedMaxStepIndex ?? -1, storedStepIndex ?? -1, 0);
+      setMaxStepReached(derivedMaxIndex);
     } catch {
       // ignore corrupted storage
     }
@@ -197,10 +220,10 @@ export function useResumeBuilderState() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const timer = window.setTimeout(() => {
-      persistDraft(payload, template, currentStepIndex);
+      persistDraft(payload, template, currentStepIndex, maxStepReached);
     }, 600);
     return () => window.clearTimeout(timer);
-  }, [payload, template, currentStepIndex, persistDraft]);
+  }, [payload, template, currentStepIndex, maxStepReached, persistDraft]);
 
   const hasRequiredContact = useMemo(() => {
     const name = payload.name.trim();
@@ -310,32 +333,32 @@ export function useResumeBuilderState() {
     const nextIndex = Math.min(currentStepIndex + 1, WIZARD_STEPS.length - 1);
     const currentKey = WIZARD_STEPS[currentStepIndex]?.key;
     if (currentKey && !stepCompletion[currentKey]) return;
-    persistDraft(payload, template, nextIndex);
+    persistDraft(payload, template, nextIndex, Math.max(maxStepReached, nextIndex));
     setStatus(null); // Clear status messages when navigating
     setCurrentStepIndex(nextIndex);
     setMaxStepReached(prev => Math.max(prev, nextIndex));
     if (typeof window !== 'undefined') {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-  }, [currentStepIndex, payload, persistDraft, stepCompletion, template]);
+  }, [currentStepIndex, maxStepReached, payload, persistDraft, stepCompletion, template]);
 
   const handlePreviousStep = useCallback(() => {
     const prevIndex = Math.max(currentStepIndex - 1, 0);
     if (prevIndex === currentStepIndex) return;
-    persistDraft(payload, template, prevIndex);
+    persistDraft(payload, template, prevIndex, maxStepReached);
     setStatus(null); // Clear status messages when navigating
     setCurrentStepIndex(prevIndex);
     if (typeof window !== 'undefined') {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-  }, [currentStepIndex, payload, persistDraft, template]);
+  }, [currentStepIndex, maxStepReached, payload, persistDraft, template]);
 
   const handleGoToStep = useCallback(
     (index: number) => {
       if (index < 0 || index >= WIZARD_STEPS.length) return;
       if (index === currentStepIndex) return;
       if (index > maxStepReached) return;
-      persistDraft(payload, template, index);
+      persistDraft(payload, template, index, maxStepReached);
       setStatus(null); // Clear status messages when navigating
       setCurrentStepIndex(index);
       if (typeof window !== 'undefined') {
@@ -793,7 +816,7 @@ export function useResumeBuilderState() {
         return previewUrl;
       }
 
-      persistDraft(submissionPayload, template, currentStepIndex);
+      persistDraft(submissionPayload, template, currentStepIndex, maxStepReached);
       setStatus(mode === 'preview' ? 'Generating PDF preview...' : 'Preparing download...');
       setIsPreviewLoading(true);
       if (mode === 'preview') {
@@ -875,6 +898,7 @@ export function useResumeBuilderState() {
       previewUrl,
       skillDraft,
       template,
+      maxStepReached,
     ],
   );
 
