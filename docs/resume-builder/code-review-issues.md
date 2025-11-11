@@ -24,9 +24,9 @@ COMPLETE: 5. **Experience bullets are silently truncated**
    - Files: `apps/web/components/resume/steps/ExperienceStep.tsx:1-237`, `apps/web/components/resume/steps/__tests__/ExperienceStep.test.tsx`.  
    - The textarea now enforces the eight-line limit, surfaces a warning when the cap is reached, and a unit test covers the behavior so users cannot unknowingly add tasks that would be dropped from the PDF.
 
-6. **Skill count copy does not match the actual limit**  
-   - Files: `apps/web/components/resume/ResumeBuilderSection.tsx:41-45`, `apps/web/components/resume/constants.ts:4-10`.  
-   - Copy promises “Skills — up to 10”, yet `MAX_SKILLS` is 20. This inconsistency confuses users and testers about when they should stop adding skills.
+COMPLETE: 6. **Skill count copy does not match the actual limit**  
+   - Files: `apps/web/components/resume/constants.ts:1-12`, `apps/web/components/resume/ResumeBuilderSection.tsx:41-45`, `apps/web/components/resume/useResumeBuilderState.ts:319-848`.  
+   - `MAX_SKILLS` has been reduced to 10, so both the UI copy and the enforcement layer now agree on the cap users see.
 
 7. **Year pickers allow impossible future dates**  
    - File: `apps/web/components/resume/ResumeBuilderSection.tsx:31-34`.  

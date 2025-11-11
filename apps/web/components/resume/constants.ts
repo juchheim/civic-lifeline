@@ -7,7 +7,7 @@ export const EXPERIENCE_LIMIT = 20;
 export const EDUCATION_LIMIT = 10;
 export const MAX_BULLETS = 8;
 export const SUMMARY_MIN_CHARS = 12;
-export const MAX_SKILLS = 20;
+export const MAX_SKILLS = 10;
 
 export type StepKey = 'template' | 'contact' | 'skills' | 'experience' | 'education' | 'summary' | 'preview';
 
