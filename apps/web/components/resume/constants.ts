@@ -21,6 +21,9 @@ export const WIZARD_STEPS: Array<{ key: StepKey; title: string; description: str
   { key: 'preview', title: 'Preview', description: 'Check the final resume before downloading.' },
 ];
 
+export const PREVIEW_UNLOCK_STEP_KEY: StepKey = 'skills';
+export const PREVIEW_UNLOCK_STEP_INDEX = WIZARD_STEPS.findIndex(step => step.key === PREVIEW_UNLOCK_STEP_KEY);
+
 export const DEFAULT_PAYLOAD: ResumePayload = {
   name: '',
   email: '',

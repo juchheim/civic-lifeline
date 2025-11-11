@@ -15,6 +15,7 @@ import {
   EXPERIENCE_LIMIT,
   MAX_BULLETS,
   MAX_SKILLS,
+  PREVIEW_UNLOCK_STEP_INDEX,
   SUMMARY_MIN_CHARS,
   STORAGE_KEY,
   STORAGE_VERSION,
@@ -68,6 +69,7 @@ export function useResumeBuilderState() {
   const previewWindowRef = useRef<Window | null>(null);
 
   const activeStep = WIZARD_STEPS[currentStepIndex];
+  const hasUnlockedPreviewStep = PREVIEW_UNLOCK_STEP_INDEX >= 0 && maxStepReached >= PREVIEW_UNLOCK_STEP_INDEX;
 
   const persistDraft = useCallback(
     (draft: ResumePayload, draftTemplate: TemplateName | null, stepIndex: number) => {
@@ -228,7 +230,7 @@ export function useResumeBuilderState() {
     return skills.length >= 1;
   }, [payload.skills]);
 
-  const canPreview = Boolean(template) && hasRequiredContact && summaryComplete && skillsComplete;
+  const canPreview = Boolean(template) && hasRequiredContact && hasUnlockedPreviewStep;
 
   const stepCompletion = useMemo<Record<StepKey, boolean>>(
     () => ({
@@ -710,17 +712,13 @@ export function useResumeBuilderState() {
   const handleGenerate = useCallback(
     async (mode: 'preview' | 'download' = 'preview') => {
       if (!canPreview) {
-        if (!hasRequiredContact) {
+        if (!template) {
+          setStatus('Select a template before previewing.');
+        } else if (!hasRequiredContact) {
           setStatus('Please complete your contact details before previewing.');
-        } else if (!summaryComplete) {
-          setStatus('Please complete your summary before previewing.');
-        } else if (!skillsComplete) {
-          setStatus('Please add at least one skill before previewing.');
+        } else if (!hasUnlockedPreviewStep) {
+          setStatus('Keep going—preview unlocks after the Skills step.');
         }
-        return null;
-      }
-      if (!template) {
-        setStatus('Select a template before previewing.');
         return null;
       }
 
@@ -837,12 +835,11 @@ export function useResumeBuilderState() {
       currentStepIndex,
       downloadFilename,
       hasRequiredContact,
+      hasUnlockedPreviewStep,
       payload,
       persistDraft,
       previewUrl,
       skillDraft,
-      skillsComplete,
-      summaryComplete,
       template,
     ],
   );
@@ -899,6 +896,7 @@ export function useResumeBuilderState() {
     // derived
     activeStep,
     hasRequiredContact,
+    hasUnlockedPreviewStep,
     summaryComplete,
     canPreview,
     stepCompletion,

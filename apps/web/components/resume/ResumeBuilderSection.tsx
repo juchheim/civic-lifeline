@@ -70,6 +70,7 @@ export function ResumeBuilderSection() {
     isLastStep,
     nextStepLabel,
     isActiveStepComplete,
+    hasUnlockedPreviewStep,
     skillValues,
     experience,
     education,
@@ -130,6 +131,7 @@ useEffect(() => {
   const isNextDisabled = !isActiveStepComplete || isAdvancingStep;
   const shouldUseNativeDisabled = !isTemplateStep && isNextDisabled;
   const showNextButton = !isLastStep;
+  const hasPreviewShortcutAccess = hasUnlockedPreviewStep;
 
   const previewDescriptionId = isPreviewStep ? buttonsHelpId : undefined;
 
@@ -163,7 +165,7 @@ useEffect(() => {
   }
 }, [isNextDisabled, currentStepIndex]);
 
-  const showCompactPreviewButton = canPreview && !isPreviewStep;
+  const showCompactPreviewButton = hasPreviewShortcutAccess && !isPreviewStep;
 
   const progressSection = (
     <div className="space-y-2" aria-live="polite">
@@ -246,7 +248,7 @@ useEffect(() => {
           <button
             type="button"
             onClick={() => handleGenerate('preview')}
-            disabled={isPreviewLoading}
+            disabled={!canPreview || isPreviewLoading}
             className="inline-flex items-center gap-1.5 rounded-full border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-slate-400 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 disabled:cursor-not-allowed disabled:opacity-60"
             title="Open a PDF preview in a new tab"
           >
