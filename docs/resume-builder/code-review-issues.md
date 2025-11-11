@@ -54,9 +54,9 @@ COMPLETE: 12. **User content goes into templates without escaping or sanitisatio
     - Files: `apps/web/resume/server/compile.ts`, `apps/web/resume/templates/*.hbs`, `apps/web/resume/server/__tests__/compile.test.ts`.  
     - Templates now compile with Handlebars’ default escaping, timeline helpers return plain text, and a unit test covers the behavior, so untrusted resume fields no longer render raw HTML.
 
-13. **PDF storage is per-process, volatile, and keeps binaries in memory until expiry**  
-    - Files: `apps/web/resume/server/pdf-store.ts:9-33`, `apps/web/app/api/pdf/route.ts:86-103`, `apps/web/app/api/resume/pdf/[id]/route.ts:10-21`.  
-    - Generated PDFs live only in an in-memory `Map`. Any request served by a different Node process (or a cold Lambda) cannot retrieve the preview URL, causing “PDF not found” errors under load. Records are never deleted after a successful download, so each preview holds the full binary in RAM for up to five minutes even if the user closes the tab.
+COMPLETE: 13. **PDF storage is per-process, volatile, and keeps binaries in memory until expiry**  
+    - Files: `apps/web/resume/server/pdf-store.ts`, `apps/web/app/api/pdf/route.ts`, `apps/web/app/api/resume/pdf/[id]/route.ts`, `apps/web/types/handlebars.d.ts`, `vitest.config.ts`.  
+    - Previews are now stored in MongoDB with a 5-minute TTL index, so every Node instance can serve them and expired blobs are cleaned up automatically.
 
 14. **Puppeteer pages aren’t cleaned up when rendering fails**  
     - File: `apps/web/resume/server/pdf-service.ts:64-74`.  

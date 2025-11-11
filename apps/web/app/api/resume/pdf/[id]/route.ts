@@ -1,3 +1,4 @@
+import { Buffer } from 'node:buffer';
 import { NextResponse } from 'next/server';
 import { getPdf } from '@/resume/server/pdf-store';
 
@@ -9,7 +10,7 @@ export async function GET(
 ) {
   const headers = new Headers({ 'Cache-Control': 'no-store' });
   const id = context.params.id;
-  const record = getPdf(id);
+  const record = await getPdf(id);
 
   if (!record) {
     return NextResponse.json({ error: 'PDF not found or expired' }, { status: 404, headers });
@@ -17,6 +18,5 @@ export async function GET(
 
   headers.set('Content-Type', 'application/pdf');
   headers.set('Content-Disposition', `inline; filename="${record.filename}"`);
-  const arrayBuffer = record.buffer.buffer.slice(record.buffer.byteOffset, record.buffer.byteOffset + record.buffer.byteLength) as ArrayBuffer;
-  return new Response(arrayBuffer, { status: 200, headers });
+  return new Response(Buffer.from(record.buffer), { status: 200, headers });
 }

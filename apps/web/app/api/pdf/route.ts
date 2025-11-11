@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
     const html = compileTemplate(template, payload);
     const pdf = await renderHtmlToPdf(html);
     const filename = buildResumeFilename(payload.name, template);
-    const { id } = savePdf(new Uint8Array(pdf), filename);
+    const { id } = await savePdf(new Uint8Array(pdf), filename);
     const previewPath = `/api/resume/pdf/${id}`;
     const previewUrl = `${request.nextUrl.origin}${previewPath}`;
 
