@@ -89,7 +89,7 @@ export function SummaryStep({
       )}
 
       <div className="flex flex-col gap-4 md:flex-row md:flex-wrap md:items-start md:justify-between">
-        <div className="flex-1 hidden md:block">
+        <div className="flex-1">
           <p id={summaryHelpId} className="text-sm text-neutral-500">
             Example: Store clerk with 2 years helping customers. Skilled in cash handling and restocking. Looking for
             full-time retail work.

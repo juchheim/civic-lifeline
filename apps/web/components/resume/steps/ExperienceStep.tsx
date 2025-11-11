@@ -72,6 +72,12 @@ export function ExperienceStep({
         {experience.map((entry, index) => {
           const timelineDraft =
             timelineDrafts[index] ?? { startMonth: '', startYear: '', endMonth: '', endYear: '', endPresent: false };
+          const startMonthId = `${experienceHelpId}-start-month-${index}`;
+          const startYearId = `${experienceHelpId}-start-year-${index}`;
+          const endMonthId = `${experienceHelpId}-end-month-${index}`;
+          const endYearId = `${experienceHelpId}-end-year-${index}`;
+          const startDateLabelId = `${experienceHelpId}-start-label-${index}`;
+          const endDateLabelId = `${experienceHelpId}-end-label-${index}`;
           return (
             <div key={`experience-${index}`} className="rounded-lg border border-neutral-200 bg-white p-4 shadow-sm">
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-200 pb-3">
@@ -143,63 +149,91 @@ export function ExperienceStep({
                   />
                 </label>
                 <div className="flex flex-col gap-2">
-                  <span className="text-xs font-semibold uppercase tracking-wide text-neutral-600">Start date</span>
+                  <span id={startDateLabelId} className="text-xs font-semibold uppercase tracking-wide text-neutral-600">
+                    Start date
+                  </span>
                   <div className="grid grid-cols-2 gap-2">
-                    <select
-                      className="rounded border border-neutral-300 px-2 py-2 text-sm focus:border-civic-green focus:outline-none focus:ring-4 focus:ring-civic-green/30"
-                      value={timelineDraft.startMonth}
-                      onChange={event => onUpdateTimelineDraft(index, 'start', 'month', event.target.value)}
-                    >
-                      <option value="">Month</option>
-                      {monthOptions.map(option => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                    <select
-                      className="rounded border border-neutral-300 px-2 py-2 text-sm focus:border-civic-green focus:outline-none focus:ring-4 focus:ring-civic-green/30"
-                      value={timelineDraft.startYear}
-                      onChange={event => onUpdateTimelineDraft(index, 'start', 'year', event.target.value)}
-                    >
-                      <option value="">Year</option>
-                      {yearOptions.map(year => (
-                        <option key={year} value={year}>
-                          {year}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="flex flex-col">
+                      <label htmlFor={startMonthId} className="sr-only">
+                        Start month
+                      </label>
+                      <select
+                        className="rounded border border-neutral-300 px-2 py-2 text-sm focus:border-civic-green focus:outline-none focus:ring-4 focus:ring-civic-green/30"
+                        value={timelineDraft.startMonth}
+                        onChange={event => onUpdateTimelineDraft(index, 'start', 'month', event.target.value)}
+                        id={startMonthId}
+                      >
+                        <option value="">Month</option>
+                        {monthOptions.map(option => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="flex flex-col">
+                      <label htmlFor={startYearId} className="sr-only">
+                        Start year
+                      </label>
+                      <select
+                        className="rounded border border-neutral-300 px-2 py-2 text-sm focus:border-civic-green focus:outline-none focus:ring-4 focus:ring-civic-green/30"
+                        value={timelineDraft.startYear}
+                        onChange={event => onUpdateTimelineDraft(index, 'start', 'year', event.target.value)}
+                        id={startYearId}
+                      >
+                        <option value="">Year</option>
+                        {yearOptions.map(year => (
+                          <option key={year} value={year}>
+                            {year}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
                 </div>
                 <div className="flex flex-col gap-2">
-                  <span className="text-xs font-semibold uppercase tracking-wide text-neutral-600">End date</span>
+                  <span id={endDateLabelId} className="text-xs font-semibold uppercase tracking-wide text-neutral-600">
+                    End date
+                  </span>
                   <div className="grid grid-cols-2 gap-2">
-                    <select
-                      className="rounded border border-neutral-300 px-2 py-2 text-sm focus:border-civic-green focus:outline-none focus:ring-4 focus:ring-civic-green/30"
-                      value={timelineDraft.endMonth}
-                      onChange={event => onUpdateTimelineDraft(index, 'end', 'month', event.target.value)}
-                      disabled={timelineDraft.endPresent}
-                    >
-                      <option value="">Month</option>
-                      {monthOptions.map(option => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                    <select
-                      className="rounded border border-neutral-300 px-2 py-2 text-sm focus:border-civic-green focus:outline-none focus:ring-4 focus:ring-civic-green/30"
-                      value={timelineDraft.endYear}
-                      onChange={event => onUpdateTimelineDraft(index, 'end', 'year', event.target.value)}
-                      disabled={timelineDraft.endPresent}
-                    >
-                      <option value="">Year</option>
-                      {yearOptions.map(year => (
-                        <option key={year} value={year}>
-                          {year}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="flex flex-col">
+                      <label htmlFor={endMonthId} className="sr-only">
+                        End month
+                      </label>
+                      <select
+                        className="rounded border border-neutral-300 px-2 py-2 text-sm focus:border-civic-green focus:outline-none focus:ring-4 focus:ring-civic-green/30"
+                        value={timelineDraft.endMonth}
+                        onChange={event => onUpdateTimelineDraft(index, 'end', 'month', event.target.value)}
+                        disabled={timelineDraft.endPresent}
+                        id={endMonthId}
+                      >
+                        <option value="">Month</option>
+                        {monthOptions.map(option => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="flex flex-col">
+                      <label htmlFor={endYearId} className="sr-only">
+                        End year
+                      </label>
+                      <select
+                        className="rounded border border-neutral-300 px-2 py-2 text-sm focus:border-civic-green focus:outline-none focus:ring-4 focus:ring-civic-green/30"
+                        value={timelineDraft.endYear}
+                        onChange={event => onUpdateTimelineDraft(index, 'end', 'year', event.target.value)}
+                        disabled={timelineDraft.endPresent}
+                        id={endYearId}
+                      >
+                        <option value="">Year</option>
+                        {yearOptions.map(year => (
+                          <option key={year} value={year}>
+                            {year}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
                   <label className="flex items-center gap-2 text-sm text-neutral-700">
                     <input

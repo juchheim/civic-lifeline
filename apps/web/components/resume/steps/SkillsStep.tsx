@@ -1,4 +1,4 @@
-import type { ChangeEvent } from 'react';
+import { useId, type ChangeEvent } from 'react';
 
 import { SKILL_SUGGESTIONS } from '../constants';
 
@@ -22,6 +22,7 @@ export function SkillsStep({
   onRemoveSkill,
   skillsHelpId,
 }: SkillsStepProps) {
+  const inputId = useId();
   const handleDraftChange = (event: ChangeEvent<HTMLInputElement>) => {
     onChangeDraft(event.target.value);
   };
@@ -56,7 +57,11 @@ export function SkillsStep({
             </button>
           </span>
         ))}
+        <label htmlFor={inputId} className="sr-only">
+          Add a skill
+        </label>
         <input
+          id={inputId}
           className="min-w-[12rem] flex-1 rounded border-none bg-transparent px-2 py-1 text-base text-neutral-900 outline-none placeholder:text-neutral-400"
           placeholder="Type a skill and press Enter"
           value={skillDraft}
@@ -71,6 +76,9 @@ export function SkillsStep({
           aria-describedby={skillsHelpId}
         />
       </div>
+      <p id={skillsHelpId} className="text-xs text-neutral-500">
+        Example: customer service, bilingual Spanish, POS register. Limit 10 skills.
+      </p>
       <div className="flex flex-wrap gap-2">
         {SKILL_SUGGESTIONS.map(skill => (
           <button
