@@ -7,8 +7,9 @@ describe('formatPhoneNumber', () => {
     expect(formatPhoneNumber('5551234567')).toBe('(555) 123-4567');
   });
 
-  it('formats US 11-digit numbers with leading country code', () => {
-    expect(formatPhoneNumber('1 (415) 555-7890')).toBe('+1 (415) 555-7890');
+  it('strips leading 1 from 11-digit numbers and formats as standard US number', () => {
+    expect(formatPhoneNumber('1 (415) 555-7890')).toBe('(415) 555-7890');
+    expect(formatPhoneNumber('14155557890')).toBe('(415) 555-7890');
   });
 
   it('formats 7-digit local numbers', () => {

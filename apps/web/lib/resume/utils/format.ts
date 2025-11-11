@@ -5,10 +5,11 @@ export function formatPhoneNumber(value: string | undefined): string {
   const digits = trimmed.replace(/\D+/g, '');
 
   if (digits.length === 11 && digits.startsWith('1')) {
+    // Strip leading 1 for resume formatting
     const area = digits.slice(1, 4);
     const prefix = digits.slice(4, 7);
     const line = digits.slice(7);
-    return `+1 (${area}) ${prefix}-${line}`;
+    return `(${area}) ${prefix}-${line}`;
   }
 
   if (digits.length === 10) {
