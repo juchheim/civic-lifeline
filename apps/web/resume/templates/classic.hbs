@@ -27,7 +27,7 @@
 <h2>Experience</h2>
 <ul>
 {{#each experience}}
-<li><b>{{title}}</b>, {{company}}{{#with (formatTimelineRange startDate endDate) as |timeline|}}{{#if timeline}} — {{{timeline}}}{{/if}}{{/with}}
+<li><b>{{title}}</b>, {{company}}{{#with (formatTimelineRange startDate endDate) as |timeline|}}{{#if timeline}} — {{timeline}}{{/if}}{{/with}}
 {{#if bullets}}<ul>{{#each bullets}}<li>{{this}}</li>{{/each}}</ul>{{/if}}
 </li>
 {{/each}}

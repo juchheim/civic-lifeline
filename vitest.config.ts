@@ -2,6 +2,7 @@ import { defineConfig } from "vitest/config";
 import path from "node:path";
 
 export default defineConfig({
+  assetsInclude: ['**/*.hbs'],
   test: {
     environment: "node",
     environmentMatchGlobs: [

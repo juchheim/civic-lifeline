@@ -1,10 +1,10 @@
 import Handlebars from 'handlebars';
 import type { ResumePayload } from './validation';
-import headPartial from '../templates/partials/head.hbs';
-import tokensCssPartial from '../templates/partials/tokens-css.hbs';
-import classicTemplate from '../templates/classic.hbs';
-import modernTemplate from '../templates/modern.hbs';
-import minimalTemplate from '../templates/minimal.hbs';
+import headPartial from '../templates/partials/head.hbs?raw';
+import tokensCssPartial from '../templates/partials/tokens-css.hbs?raw';
+import classicTemplate from '../templates/classic.hbs?raw';
+import modernTemplate from '../templates/modern.hbs?raw';
+import minimalTemplate from '../templates/minimal.hbs?raw';
 
 const PARTIALS: Record<string, string> = {
   head: headPartial,
@@ -32,11 +32,11 @@ function registerHelpersOnce() {
   if (helpersRegistered) return;
   Handlebars.registerHelper('formatTimelineRange', (start?: string, end?: string) => {
     const formatted = formatTimelineRange(start, end);
-    return formatted ? new Handlebars.SafeString(formatted) : '';
+    return formatted ?? '';
   });
   Handlebars.registerHelper('formatTimelineValue', (value?: string) => {
     const formatted = formatTimelineValue(value);
-    return formatted ? new Handlebars.SafeString(formatted) : '';
+    return formatted ?? '';
   });
   helpersRegistered = true;
 }
@@ -48,7 +48,7 @@ export function compileTemplate(templateName: string, data: ResumePayload) {
   if (!source) {
     throw new Error(`Unknown template: ${templateName}`);
   }
-  const template = Handlebars.compile(source, { noEscape: true });
+  const template = Handlebars.compile(source);
   return template({ ...data, templateName });
 }
 
@@ -82,7 +82,7 @@ function formatTimelineRange(start?: string, end?: string) {
   const startText = formatTimelineValue(start);
   const endText = formatTimelineValue(end);
   if (startText && endText) {
-    return `${startText}&ndash;${endText}`;
+    return `${startText}–${endText}`;
   }
   if (startText) {
     return startText;

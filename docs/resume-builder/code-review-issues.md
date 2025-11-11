@@ -50,9 +50,9 @@ COMPLETE: 11. **`ActionControls` is dead code**
 
 ## Server & PDF Pipeline
 
-12. **User content goes into templates without escaping or sanitisation**  
-    - Files: `apps/web/resume/server/compile.ts:44-52`, `apps/web/resume/templates/*.hbs`.  
-    - We compile templates with `noEscape: true`, so fields like `name`, `summary`, `bullets`, etc. render raw HTML/JS. Attackers can embed `<script>` tags that execute inside the Puppeteer instance during PDF generation (SSRF/data exfil) and can also inject arbitrary markup into the final PDF.
+COMPLETE: 12. **User content goes into templates without escaping or sanitisation**  
+    - Files: `apps/web/resume/server/compile.ts`, `apps/web/resume/templates/*.hbs`, `apps/web/resume/server/__tests__/compile.test.ts`.  
+    - Templates now compile with Handlebars’ default escaping, timeline helpers return plain text, and a unit test covers the behavior, so untrusted resume fields no longer render raw HTML.
 
 13. **PDF storage is per-process, volatile, and keeps binaries in memory until expiry**  
     - Files: `apps/web/resume/server/pdf-store.ts:9-33`, `apps/web/app/api/pdf/route.ts:86-103`, `apps/web/app/api/resume/pdf/[id]/route.ts:10-21`.  
