@@ -239,7 +239,7 @@ export function useResumeBuilderState() {
     return skills.length >= 1;
   }, [payload.skills]);
 
-  const canPreview = Boolean(template) && hasRequiredContact && hasUnlockedPreviewStep;
+  const canPreview = Boolean(template) && hasRequiredContact && skillsComplete && hasUnlockedPreviewStep;
 
   const stepCompletion = useMemo<Record<StepKey, boolean>>(
     () => ({
@@ -742,6 +742,8 @@ export function useResumeBuilderState() {
           setStatus('Select a template before previewing.');
         } else if (!hasRequiredContact) {
           setStatus('Please complete your contact details before previewing.');
+        } else if (!skillsComplete) {
+          setStatus('Add at least one skill before previewing.');
         } else if (!hasUnlockedPreviewStep) {
           setStatus('Keep going—preview unlocks after the Skills step.');
         }
@@ -865,6 +867,7 @@ export function useResumeBuilderState() {
       currentStepIndex,
       downloadFilename,
       hasRequiredContact,
+      skillsComplete,
       hasUnlockedPreviewStep,
       payload,
       persistDraft,
@@ -930,6 +933,7 @@ export function useResumeBuilderState() {
     hasRequiredContact,
     hasUnlockedPreviewStep,
     summaryComplete,
+    skillsComplete,
     canPreview,
     stepCompletion,
     progressPercent,

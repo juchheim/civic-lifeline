@@ -198,6 +198,27 @@ describe('ResumeBuilderSection', () => {
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Contact info' })).toBeVisible());
   });
 
+  it('only shows the preview shortcut after at least one skill is added', async () => {
+    render(<ResumeBuilderSection />);
+
+    await chooseTemplate();
+    await user.click(getFirstEnabledButton(/Next: Contact info/i));
+
+    await user.type(screen.getByLabelText(/Name/i), 'Jordan Example');
+    await user.type(screen.getByLabelText(/Email/i), 'jordan@example.com');
+    await user.type(screen.getByLabelText(/Phone/i), '5557891234');
+    await user.type(screen.getByLabelText(/^City/i), 'Dayton');
+    await user.selectOptions(screen.getByLabelText(/^State/i), 'OH');
+
+    await user.click(getFirstEnabledButton(/Next: Skills/i));
+
+    expect(screen.queryByRole('button', { name: /Preview so far/i })).toBeNull();
+
+    await user.click(screen.getByRole('button', { name: /^Customer Service$/i }));
+
+    await waitFor(() => expect(screen.getByRole('button', { name: /Preview so far/i })).toBeVisible());
+  });
+
   it('shows the loading state and auto-fills the summary before offering regenerate controls', async () => {
     const rewriteSummaryMock = vi.mocked(rewriteSummary);
     rewriteSummaryMock

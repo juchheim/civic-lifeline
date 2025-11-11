@@ -71,6 +71,7 @@ export function ResumeBuilderSection() {
     nextStepLabel,
     isActiveStepComplete,
     hasUnlockedPreviewStep,
+    skillsComplete,
     skillValues,
     experience,
     education,
@@ -165,7 +166,7 @@ useEffect(() => {
   }
 }, [isNextDisabled, currentStepIndex]);
 
-  const showCompactPreviewButton = hasPreviewShortcutAccess && !isPreviewStep;
+  const showCompactPreviewButton = hasPreviewShortcutAccess && !isPreviewStep && skillsComplete;
 
   const progressSection = (
     <div className="space-y-2" aria-live="polite">
