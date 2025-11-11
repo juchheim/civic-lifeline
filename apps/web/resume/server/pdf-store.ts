@@ -6,7 +6,7 @@ const COLLECTION_NAME = 'resumePdfPreviews';
 
 type PdfPreviewDocument = {
   _id: string;
-  buffer: Buffer;
+  buffer: string; // base64-encoded PDF
   filename: string;
   createdAt: Date;
   expiresAt: Date;
@@ -32,9 +32,11 @@ export async function savePdf(buffer: Uint8Array, filename: string) {
   const now = Date.now();
   const expiresAtDate = new Date(now + EXPIRY_MS);
 
+  const nodeBuffer = Buffer.isBuffer(buffer) ? buffer : Buffer.from(buffer);
+
   await collection.insertOne({
     _id: id,
-    buffer: Buffer.from(buffer),
+    buffer: nodeBuffer.toString('base64'),
     filename,
     createdAt: new Date(now),
     expiresAt: expiresAtDate,
@@ -50,15 +52,16 @@ export async function getPdf(id: string) {
     return null;
   }
 
-  const expiresAtMs = record.expiresAt.getTime();
+  const expiresAtMs = record.expiresAt instanceof Date ? record.expiresAt.getTime() : new Date(record.expiresAt).getTime();
   if (expiresAtMs < Date.now()) {
     await collection.deleteOne({ _id: id });
     return null;
   }
 
-  const buffer = new Uint8Array(record.buffer);
+  const storedBuffer = Buffer.from(record.buffer, 'base64');
+
   return {
-    buffer,
+    buffer: storedBuffer,
     filename: record.filename,
     expiresAt: expiresAtMs,
   };

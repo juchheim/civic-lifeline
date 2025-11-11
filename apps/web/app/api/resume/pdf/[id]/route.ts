@@ -1,4 +1,3 @@
-import { Buffer } from 'node:buffer';
 import { NextResponse } from 'next/server';
 import { getPdf } from '@/resume/server/pdf-store';
 
@@ -18,5 +17,5 @@ export async function GET(
 
   headers.set('Content-Type', 'application/pdf');
   headers.set('Content-Disposition', `inline; filename="${record.filename}"`);
-  return new Response(Buffer.from(record.buffer), { status: 200, headers });
+  return new Response(record.buffer, { status: 200, headers });
 }
