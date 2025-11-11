@@ -68,6 +68,8 @@ export function useResumeBuilderState() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewSignature, setPreviewSignature] = useState<string | null>(null);
   const previewWindowRef = useRef<Window | null>(null);
+  const [shouldPromptSummaryRegenerate, setShouldPromptSummaryRegenerate] = useState(false);
+  const [lastPromptedSummaryHash, setLastPromptedSummaryHash] = useState<string | null>(null);
   const computePreviewSignature = useCallback(
     (draft: ResumePayload, draftTemplate: TemplateName | null) =>
       JSON.stringify({
@@ -383,6 +385,7 @@ export function useResumeBuilderState() {
 
   const summaryContext = useMemo(() => buildSummaryContext(payload), [payload]);
   const summaryContextHash = useMemo(() => hashSummaryContext(summaryContext.request), [summaryContext]);
+  const summaryHasContent = Boolean((payload.summary ?? '').trim());
   const summaryDetails = summaryContext.display;
   const hasSummaryContextSignal = useMemo(
     () =>
@@ -422,6 +425,8 @@ export function useResumeBuilderState() {
         const aiSummary = await rewriteSummary(summaryContext.request);
         setPayload(prev => ({ ...prev, summary: aiSummary }));
         setHasUserEditedSummary(false);
+        setShouldPromptSummaryRegenerate(false);
+        setLastPromptedSummaryHash(summaryContextHash);
         return true;
       } catch (error) {
         const message =
@@ -435,17 +440,30 @@ export function useResumeBuilderState() {
     [
       hasSummaryContextSignal,
       isSummaryGenerating,
-      rewriteSummary,
       setPayload,
       summaryContext.request,
       summaryContextHash,
     ]);
 
+  const handlePromptedSummaryRegenerate = useCallback(async () => {
+    const success = await generateSummaryFromProfile();
+    if (success) {
+      setShouldPromptSummaryRegenerate(false);
+      setLastPromptedSummaryHash(summaryContextHash);
+    }
+  }, [generateSummaryFromProfile, summaryContextHash]);
+
+  const dismissSummaryRegeneratePrompt = useCallback(() => {
+    setShouldPromptSummaryRegenerate(false);
+    setLastPromptedSummaryHash(summaryContextHash);
+  }, [summaryContextHash]);
+
   const shouldAutoGenerateSummary =
     activeStep.key === 'summary' &&
     summaryContextHash !== lastAttemptedSummaryHash &&
     !isSummaryGenerating &&
-    !hasUserEditedSummary;
+    !hasUserEditedSummary &&
+    !summaryHasContent;
 
   useEffect(() => {
     if (!shouldAutoGenerateSummary) return;
@@ -463,6 +481,31 @@ export function useResumeBuilderState() {
       cancelled = true;
     };
   }, [generateSummaryFromProfile, shouldAutoGenerateSummary]);
+
+  useEffect(() => {
+    if (activeStep.key !== 'summary') return;
+    if (!hasSummaryContextSignal) return;
+    if (isSummaryGenerating) return;
+    if (!summaryHasContent) return;
+    if (summaryContextHash === lastAttemptedSummaryHash) return;
+    if (lastPromptedSummaryHash === summaryContextHash) return;
+    setShouldPromptSummaryRegenerate(true);
+    setLastPromptedSummaryHash(summaryContextHash);
+  }, [
+    activeStep.key,
+    hasSummaryContextSignal,
+    isSummaryGenerating,
+    summaryHasContent,
+    summaryContextHash,
+    lastAttemptedSummaryHash,
+    lastPromptedSummaryHash,
+  ]);
+
+  useEffect(() => {
+    if (activeStep.key !== 'summary') {
+      setShouldPromptSummaryRegenerate(false);
+    }
+  }, [activeStep.key]);
 
   const addExperience = useCallback(() => {
     setPayload(prev => {
@@ -962,6 +1005,7 @@ export function useResumeBuilderState() {
     summaryGenerationError,
     summaryDetails,
     hasSummaryContextSignal,
+    shouldPromptSummaryRegenerate,
     isPreviewLoading,
     previewUrl,
     previewWindowRef,
@@ -991,6 +1035,8 @@ export function useResumeBuilderState() {
     handleGoToStep,
     handleUpdateSummary,
     generateSummaryFromProfile,
+    handlePromptedSummaryRegenerate,
+    dismissSummaryRegeneratePrompt,
     addExperience,
     removeExperience,
     moveExperience,

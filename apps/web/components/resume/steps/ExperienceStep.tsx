@@ -1,3 +1,4 @@
+import { MAX_BULLETS } from '../constants';
 import type { ResumePayload } from '@/lib/resume/types';
 
 type ExperienceEntry = NonNullable<ResumePayload['experience']>[number];
@@ -215,19 +216,26 @@ export function ExperienceStep({
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold uppercase tracking-wide text-neutral-600">What you did</span>
                   <span className="text-xs text-neutral-500">
-                    {(bulletsInputs[index] ?? '').split('\n').filter(line => line.trim()).length} tasks (up to 8)
+                    {(bulletsInputs[index] ?? '').split('\n').filter(line => line.trim()).length} tasks (up to {MAX_BULLETS})
                   </span>
                 </div>
                 <textarea
                   className="min-h-[140px] rounded border border-neutral-300 px-3 py-2 text-base focus:border-civic-green focus:outline-none focus:ring-4 focus:ring-civic-green/30"
                   value={bulletsInputs[index] ?? ''}
-                  onChange={event => onUpdateExperienceField(index, 'bullets', event.target.value)}
+                  onChange={event => {
+                    onUpdateExperienceField(index, 'bullets', event.target.value);
+                  }}
                   placeholder={'Served customers at checkout\nRestocked shelves\nCleaned work area'}
                   spellCheck="true"
                 />
-                <span className="text-xs text-neutral-500">
-                  One task per line. Start each line with a verb: Served, Helped, Managed, Trained.
-                </span>
+                <div className="text-xs text-neutral-500">
+                  <p>One task per line. Start each line with a verb: Served, Helped, Managed, Trained.</p>
+                  {(bulletsInputs[index] ?? '').split('\n').filter(line => line.trim()).length > MAX_BULLETS && (
+                    <p className="mt-1 font-medium text-amber-600" role="status" aria-live="polite">
+                      Only the first {MAX_BULLETS} tasks will appear in your PDF. Remove one to add another.
+                    </p>
+                  )}
+                </div>
               </label>
             </div>
           );

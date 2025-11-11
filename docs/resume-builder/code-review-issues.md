@@ -20,9 +20,9 @@ COMPLETE: 4. **Summary auto-generation flag is lost after rehydration**
    - Files: `apps/web/components/resume/useResumeBuilderState.ts:149-423`.  
    - We now persist the `summaryEdited` flag alongside the draft and hydrate it directly, so AI drafts remain eligible for automatic regeneration after reloads instead of being treated as manual edits.
 
-5. **Experience bullets are silently truncated**  
-   - Files: `apps/web/components/resume/steps/ExperienceStep.tsx:214-220`, `apps/web/components/resume/useResumeBuilderState.ts:483-505`.  
-   - The UI lets users type unlimited lines and even shows a count that can exceed eight, but the state layer slices the array to `MAX_BULLETS` (8) without warning. Extra bullets simply vanish in the generated PDF.
+COMPLETE: 5. **Experience bullets are silently truncated**  
+   - Files: `apps/web/components/resume/steps/ExperienceStep.tsx:1-237`, `apps/web/components/resume/steps/__tests__/ExperienceStep.test.tsx`.  
+   - The textarea now enforces the eight-line limit, surfaces a warning when the cap is reached, and a unit test covers the behavior so users cannot unknowingly add tasks that would be dropped from the PDF.
 
 6. **Skill count copy does not match the actual limit**  
    - Files: `apps/web/components/resume/ResumeBuilderSection.tsx:41-45`, `apps/web/components/resume/constants.ts:4-10`.  

@@ -337,4 +337,58 @@ describe('ResumeBuilderSection', () => {
     const summaryArea = screen.getByTitle('Write 2-3 sentences about your experience') as HTMLTextAreaElement;
     expect(summaryArea.value).toBe('Energetic associate ready to support teams with dependable service.');
   });
+
+  it('prompts to refresh the summary when resume details change', async () => {
+    const rewriteSummaryMock = vi.mocked(rewriteSummary);
+    rewriteSummaryMock
+      .mockResolvedValueOnce(
+        'Dependable teammate with 3 years keeping checkout lines moving and coaching new cashiers.',
+      )
+      .mockResolvedValueOnce('Updated summary reflecting new skills.');
+
+    render(<ResumeBuilderSection />);
+
+    await chooseTemplate();
+    await user.click(getFirstEnabledButton(/Next: Contact info/i));
+
+    await user.type(screen.getByLabelText(/Name/i), 'Jordan Example');
+    await user.type(screen.getByLabelText(/Email/i), 'jordan@example.com');
+    await user.type(screen.getByLabelText(/Phone/i), '5551112222');
+    await user.type(screen.getByLabelText(/^City/i), 'Chicago');
+    await user.selectOptions(screen.getByLabelText(/^State/i), 'IL');
+
+    await user.click(getFirstEnabledButton(/Next: Skills/i));
+    await user.click(screen.getByRole('button', { name: /^Customer Service$/i }));
+
+    await user.click(getFirstEnabledButton(/Next: Experience/i));
+    await user.click(getFirstEnabledButton(/Next: Education/i));
+    await user.click(getFirstEnabledButton(/Next: Summary/i));
+
+    const summaryArea = await waitFor(
+      () => screen.getByTitle('Write 2-3 sentences about your experience') as HTMLTextAreaElement,
+    );
+    await waitFor(() =>
+      expect(summaryArea.value).toBe(
+        'Dependable teammate with 3 years keeping checkout lines moving and coaching new cashiers.',
+      ),
+    );
+
+    await user.click(screen.getByRole('button', { name: /Step 3: Skills/i }));
+    await user.click(screen.getByRole('button', { name: /^Teamwork$/i }));
+    await user.click(screen.getByRole('button', { name: /Step 6: Summary/i }));
+
+    const prompt = await screen.findByText(/We noticed you updated your resume details/i);
+    expect(prompt).toBeInTheDocument();
+
+    const regenerateNowButton = screen.getByRole('button', { name: /Regenerate now/i });
+    await user.click(regenerateNowButton);
+
+    await waitFor(() => expect(rewriteSummaryMock).toHaveBeenCalledTimes(2));
+    await waitFor(() =>
+      expect(
+        (screen.getByTitle('Write 2-3 sentences about your experience') as HTMLTextAreaElement).value,
+      ).toBe('Updated summary reflecting new skills.'),
+    );
+    expect(screen.queryByText(/We noticed you updated your resume details/i)).not.toBeInTheDocument();
+  });
 });

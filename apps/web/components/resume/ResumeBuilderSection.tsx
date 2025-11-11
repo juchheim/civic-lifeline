@@ -60,6 +60,7 @@ export function ResumeBuilderSection() {
     summaryGenerationError,
     summaryDetails,
     hasSummaryContextSignal,
+    shouldPromptSummaryRegenerate,
     isPreviewLoading,
     previewUrl,
     activeStep,
@@ -77,6 +78,8 @@ export function ResumeBuilderSection() {
     education,
     handleUpdateSummary,
     generateSummaryFromProfile,
+    handlePromptedSummaryRegenerate,
+    dismissSummaryRegeneratePrompt,
     downloadFilename,
     maxStepReached,
     addSkill,
@@ -339,6 +342,9 @@ useEffect(() => {
             onRegenerate={generateSummaryFromProfile}
             contextDetails={summaryDetails}
             hasContext={hasSummaryContextSignal}
+            showRegeneratePrompt={shouldPromptSummaryRegenerate}
+            onConfirmRegeneratePrompt={handlePromptedSummaryRegenerate}
+            onDismissRegeneratePrompt={dismissSummaryRegeneratePrompt}
           />
         );
       case 'skills':

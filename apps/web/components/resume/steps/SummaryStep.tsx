@@ -9,6 +9,9 @@ type SummaryStepProps = {
   onRegenerate: () => void;
   contextDetails: SummaryDisplayContext;
   hasContext: boolean;
+  showRegeneratePrompt: boolean;
+  onConfirmRegeneratePrompt: () => void | Promise<void>;
+  onDismissRegeneratePrompt: () => void | Promise<void>;
 };
 
 export function SummaryStep({
@@ -20,6 +23,9 @@ export function SummaryStep({
   onRegenerate,
   contextDetails,
   hasContext,
+  showRegeneratePrompt,
+  onConfirmRegeneratePrompt,
+  onDismissRegeneratePrompt,
 }: SummaryStepProps) {
   const charCount = summary.length;
   const minChars = 12;
@@ -51,6 +57,37 @@ export function SummaryStep({
 
   return (
     <div className="flex flex-col gap-4">
+      {showRegeneratePrompt && !isSummaryGenerating && (
+        <div
+          className="rounded-lg border border-brand-primary/40 bg-brand-primary/5 px-4 py-3 text-sm text-slate-800"
+          role="alert"
+          aria-live="polite"
+        >
+          <p className="font-semibold text-brand-primary">We noticed you updated your resume details.</p>
+          <p className="mt-1 text-slate-700">
+            Do you want to refresh the summary so it reflects your latest skills or experience?
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              type="button"
+              className="inline-flex items-center justify-center rounded-full bg-brand-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2"
+              onClick={() => void onConfirmRegeneratePrompt()}
+              disabled={isSummaryGenerating}
+            >
+              Regenerate now
+            </button>
+            <button
+              type="button"
+              className="inline-flex items-center justify-center rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
+              onClick={() => void onDismissRegeneratePrompt()}
+              disabled={isSummaryGenerating}
+            >
+              Keep current summary
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-col gap-4 md:flex-row md:flex-wrap md:items-start md:justify-between">
         <div className="flex-1 hidden md:block">
           <p id={summaryHelpId} className="text-sm text-neutral-500">
