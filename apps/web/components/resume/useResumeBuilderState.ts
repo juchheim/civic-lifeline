@@ -859,6 +859,7 @@ export function useResumeBuilderState() {
     setPayload(createDefaultPayload());
     setTemplate(null);
     setCurrentStepIndex(0);
+    setMaxStepReached(0);
     setSkillDraft('');
     setBulletsInputs([]);
     setTimelineInputs([]);

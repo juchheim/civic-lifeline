@@ -146,6 +146,8 @@ describe('ResumeBuilderSection', () => {
     await waitFor(() => expect(summaryArea.value).toContain('Customer-focused associate'));
 
     await user.click(getFirstEnabledButton(/Next: Preview/i));
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(openMock).not.toHaveBeenCalled();
 
     const previewButtons = screen.getAllByRole('button', { name: /Preview Resume/i });
     const previewButton = previewButtons.find(button => !button.hasAttribute('disabled'));
@@ -177,6 +179,23 @@ describe('ResumeBuilderSection', () => {
       expect(parsed.payload.summary).toContain('Customer-focused');
       expect(parsed.step).toBe('preview');
     }
+  });
+
+  it('keeps completed step chips interactive when returning to the template', async () => {
+    render(<ResumeBuilderSection />);
+
+    await chooseTemplate();
+    await user.click(getFirstEnabledButton(/Next: Contact info/i));
+
+    // Navigate back to the Template step using the chip controls.
+    await user.click(screen.getByLabelText(/Step 1: Template/i));
+
+    const contactChip = screen.getByLabelText(/Step 2: Contact info/i);
+    expect(contactChip).not.toHaveAttribute('disabled');
+    expect(contactChip.getAttribute('aria-disabled')).not.toBe('true');
+
+    await user.click(contactChip);
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Contact info' })).toBeVisible());
   });
 
   it('shows the loading state and auto-fills the summary before offering regenerate controls', async () => {

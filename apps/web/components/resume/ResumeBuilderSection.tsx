@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useId, useState, useTransition } from 'react';
-import { Sparkles, ShieldCheck, ChevronDown, ChevronUp, ArrowRightCircle } from 'lucide-react';
+import { Sparkles, ShieldCheck, ChevronDown, ChevronUp, ArrowRightCircle, Eye } from 'lucide-react';
 import type { TemplateName } from '@/resume/shared/templates';
 import { useResumeBuilderState } from './useResumeBuilderState';
 import { WIZARD_STEPS, EXPERIENCE_LIMIT, EDUCATION_LIMIT, MAX_SKILLS } from './constants';
@@ -123,12 +123,15 @@ useEffect(() => {
 }, [activeStep.key, templateError]);
 
   const isTemplateStep = activeStep.key === 'template';
+  const hasMovedPastTemplate = maxStepReached > 0;
+  const isTemplateContext = isTemplateStep && !hasMovedPastTemplate;
+  const isPreviewStep = activeStep.key === 'preview';
   const stepEyebrow = `Step ${currentStepIndex + 1} of ${WIZARD_STEPS.length} — ${activeStep.title}`;
   const isNextDisabled = !isActiveStepComplete || isAdvancingStep;
   const shouldUseNativeDisabled = !isTemplateStep && isNextDisabled;
   const showNextButton = !isLastStep;
 
-  const previewDescriptionId = activeStep.key === 'preview' ? buttonsHelpId : undefined;
+  const previewDescriptionId = isPreviewStep ? buttonsHelpId : undefined;
 
   const handleTemplateSelect = (nextTemplate: TemplateName) => {
     setTemplate(nextTemplate);
@@ -160,6 +163,8 @@ useEffect(() => {
   }
 }, [isNextDisabled, currentStepIndex]);
 
+  const showCompactPreviewButton = canPreview && !isPreviewStep;
+
   const progressSection = (
     <div className="space-y-2" aria-live="polite">
       <div
@@ -181,7 +186,6 @@ useEffect(() => {
           const isDone = index < maxStepReached;
           const canNavigate = index <= maxStepReached;
           const isFutureStep = index > currentStepIndex;
-          const isTemplateContext = isTemplateStep;
           const chipPadding = 'px-3 py-1.5';
           const baseFocusRing = isTemplateContext ? 'focus-visible:ring-0' : 'focus-visible:ring-1 focus-visible:ring-slate-400';
           const accent = isTemplateContext
@@ -237,6 +241,20 @@ useEffect(() => {
           );
         })}
       </ol>
+      {showCompactPreviewButton && (
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={() => handleGenerate('preview')}
+            disabled={isPreviewLoading}
+            className="inline-flex items-center gap-1.5 rounded-full border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-slate-400 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 disabled:cursor-not-allowed disabled:opacity-60"
+            title="Open a PDF preview in a new tab"
+          >
+            <Eye className="h-3.5 w-3.5" aria-hidden="true" />
+            Preview so far
+          </button>
+        </div>
+      )}
     </div>
   );
 
@@ -387,12 +405,12 @@ useEffect(() => {
               <p className="mt-3 text-sm font-semibold text-slate-600">{stepEyebrow}</p>
               <div className="mt-2">{progressSection}</div>
             </div>
-            {canPreview && (
+            {isPreviewStep && (
               <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:gap-3">
                 <button
                   type="button"
                   onClick={() => handleGenerate('preview')}
-                  disabled={isPreviewLoading}
+                  disabled={!canPreview || isPreviewLoading}
                   className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-brand-primary px-6 py-3 text-base font-semibold text-white shadow-lg shadow-brand-primary/25 transition hover:bg-brand-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70"
                   aria-describedby={previewDescriptionId}
                   title="Open a PDF preview in a new tab"
@@ -402,7 +420,7 @@ useEffect(() => {
                 <button
                   type="button"
                   onClick={() => handleGenerate('download')}
-                  disabled={isPreviewLoading}
+                  disabled={!canPreview || isPreviewLoading}
                   className="inline-flex w-full items-center justify-center gap-2 rounded-full border-2 border-brand-primary px-6 py-3 text-base font-semibold text-brand-primary transition hover:border-brand-primary/80 hover:text-brand-primary/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70"
                   title="Download the generated PDF"
                 >
@@ -493,12 +511,12 @@ useEffect(() => {
                   Next up: {WIZARD_STEPS[currentStepIndex + 1]?.title ?? 'next step'}
                 </p>
               )}
-              {canPreview && (
+              {isPreviewStep && (
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
                   <button
                     type="button"
                     onClick={() => handleGenerate('preview')}
-                    disabled={isPreviewLoading}
+                    disabled={!canPreview || isPreviewLoading}
                     className="flex-1 rounded-full bg-brand-primary px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-primary/30 transition hover:bg-brand-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-brand-primary/40 sm:text-base"
                     aria-describedby={previewDescriptionId}
                     title="Open a PDF preview in a new tab"
@@ -508,7 +526,7 @@ useEffect(() => {
                   <button
                     type="button"
                     onClick={() => handleGenerate('download')}
-                    disabled={isPreviewLoading}
+                    disabled={!canPreview || isPreviewLoading}
                     className="inline-flex flex-1 items-center justify-center rounded-full border-2 border-brand-primary px-5 py-3 text-sm font-semibold text-brand-primary transition hover:border-brand-primary/80 hover:text-brand-primary/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70 sm:text-base"
                     title="Download the generated PDF"
                   >

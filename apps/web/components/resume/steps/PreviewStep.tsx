@@ -14,16 +14,16 @@ export function PreviewStep({ stepCompletion, previewUrl, onGoToStep }: PreviewS
           Almost done! Use the checklist below to make sure everything is ready. You can jump back to any step.
         </p>
       </div>
-      <ul className="flex flex-col gap-3">
+      <ul className="grid grid-cols-1 gap-3 md:grid-cols-2">
         {WIZARD_STEPS.slice(0, -1).map((step, index) => {
           if (step.key === 'preview') return null;
           const isComplete = stepCompletion[step.key];
           return (
-            <li key={step.key}>
+            <li key={step.key} className="h-full">
               <button
                 type="button"
                 onClick={() => onGoToStep(index)}
-                className={`w-full flex items-center justify-between rounded-lg border px-4 py-3 text-left transition hover:shadow-sm focus:outline-none focus:ring-4 focus:ring-brand-primary/30 ${
+                className={`flex h-full w-full items-center justify-between rounded-lg border px-4 py-3 text-left transition hover:shadow-sm focus:outline-none focus:ring-4 focus:ring-brand-primary/30 ${
                   isComplete ? 'border-brand-primary bg-brand-primary/5 text-brand-primary' : 'border-neutral-200 bg-white text-neutral-700'
                 }`}
               >
@@ -43,8 +43,8 @@ export function PreviewStep({ stepCompletion, previewUrl, onGoToStep }: PreviewS
           );
         })}
       </ul>
-{previewUrl && (
-  <div className="rounded-lg border border-brand-primary/20 bg-brand-primary/5 p-4 text-neutral-800">
+      {previewUrl && (
+        <div className="rounded-lg border border-brand-primary/20 bg-brand-primary/5 p-4 text-neutral-800">
           <p className="text-base font-semibold">Your latest preview is ready.</p>
           <p className="mt-1 text-sm">
             Open the preview to double-check layout or use the download button below to save the PDF.
