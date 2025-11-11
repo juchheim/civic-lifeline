@@ -16,9 +16,9 @@ COMPLETE: 3. **Local storage versioning is defined but never enforced**
    - Files: `apps/web/components/resume/constants.ts:1-35`, `apps/web/components/resume/useResumeBuilderState.ts:83-226`.  
    - Hydration now checks the persisted `version` and clears incompatible or corrupt drafts before loading state, so bumping `STORAGE_VERSION` reliably resets users stuck on an outdated schema.
 
-4. **Summary auto-generation flag is lost after rehydration**  
-   - Files: `apps/web/components/resume/useResumeBuilderState.ts:149-152, 388-420`.  
-   - On load we run `setHasUserEditedSummary(Boolean(summary.trim()))`, marking every non-empty summary as “user edited” even if it was auto-generated. Returning users therefore never get another automatic draft when they change experience/skills; they must manually hit “Regenerate” each time.
+COMPLETE: 4. **Summary auto-generation flag is lost after rehydration**  
+   - Files: `apps/web/components/resume/useResumeBuilderState.ts:149-423`.  
+   - We now persist the `summaryEdited` flag alongside the draft and hydrate it directly, so AI drafts remain eligible for automatic regeneration after reloads instead of being treated as manual edits.
 
 5. **Experience bullets are silently truncated**  
    - Files: `apps/web/components/resume/steps/ExperienceStep.tsx:214-220`, `apps/web/components/resume/useResumeBuilderState.ts:483-505`.  

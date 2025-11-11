@@ -5,6 +5,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ResumeBuilderSection } from '../ResumeBuilderSection';
+import { STORAGE_VERSION } from '../constants';
 import { rewriteSummary } from '@/lib/resume/rewrite-summary';
 
 vi.mock('@/lib/resume/rewrite-summary', () => ({
@@ -311,7 +312,7 @@ describe('ResumeBuilderSection', () => {
 
   it('hydrates from saved draft data on initial render', async () => {
     const savedPayload = {
-      version: 2,
+      version: STORAGE_VERSION,
       payload: {
         name: 'Taylor Example',
         email: 'taylor@example.com',
@@ -324,6 +325,8 @@ describe('ResumeBuilderSection', () => {
       },
       template: 'modern' as const,
       step: 'summary' as const,
+      maxStep: 'summary' as const,
+      summaryEdited: false,
     };
 
     localStorageMock.setItem(STORAGE_KEY, JSON.stringify(savedPayload));

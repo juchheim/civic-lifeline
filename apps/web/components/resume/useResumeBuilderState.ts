@@ -94,10 +94,11 @@ export function useResumeBuilderState() {
         template: draftTemplate ?? null,
         step: WIZARD_STEPS[safeIndex]?.key ?? 'template',
         maxStep: WIZARD_STEPS[safeMaxIndex]?.key ?? WIZARD_STEPS[safeIndex]?.key ?? 'template',
+        summaryEdited: hasUserEditedSummary,
       };
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(record));
     },
-    [],
+    [hasUserEditedSummary],
   );
 
   useEffect(() => {
@@ -125,6 +126,7 @@ export function useResumeBuilderState() {
         template?: TemplateName;
         step?: StepKey;
         maxStep?: StepKey;
+        summaryEdited?: boolean;
       };
 
       if (typeof record.version !== 'number' || record.version !== STORAGE_VERSION) {
@@ -165,7 +167,11 @@ export function useResumeBuilderState() {
 
       setPayload(normalized);
       setSkillDraft('');
-      setHasUserEditedSummary(Boolean((normalized.summary ?? '').trim()));
+      const storedSummaryEdited =
+        typeof record.summaryEdited === 'boolean' ? record.summaryEdited : null;
+      setHasUserEditedSummary(
+        storedSummaryEdited ?? Boolean((normalized.summary ?? '').trim()),
+      );
 
       const bulletsState: string[] = [];
       (normalized.experience ?? []).forEach((exp, idx) => {
