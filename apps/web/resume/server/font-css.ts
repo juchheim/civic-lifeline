@@ -13,32 +13,32 @@ const FONT_VARIANTS: readonly FontVariant[] = [
   {
     family: 'Libre Baskerville',
     weight: 400,
-    file: '../fonts/LibreBaskerville-Regular-latin.woff2',
+    file: '../../public/resume/fonts/LibreBaskerville-Regular-latin.woff2',
   },
   {
     family: 'Libre Baskerville',
     weight: 700,
-    file: '../fonts/LibreBaskerville-Bold-latin.woff2',
+    file: '../../public/resume/fonts/LibreBaskerville-Bold-latin.woff2',
   },
   {
     family: 'Inter',
     weight: 400,
-    file: '../fonts/Inter-Regular-latin.woff2',
+    file: '../../public/resume/fonts/Inter-Regular-latin.woff2',
   },
   {
     family: 'Inter',
     weight: 600,
-    file: '../fonts/Inter-SemiBold-latin.woff2',
+    file: '../../public/resume/fonts/Inter-SemiBold-latin.woff2',
   },
   {
     family: 'IBM Plex Mono',
     weight: 400,
-    file: '../fonts/IBMPlexMono-Regular-latin.woff2',
+    file: '../../public/resume/fonts/IBMPlexMono-Regular-latin.woff2',
   },
   {
     family: 'IBM Plex Mono',
     weight: 600,
-    file: '../fonts/IBMPlexMono-SemiBold-latin.woff2',
+    file: '../../public/resume/fonts/IBMPlexMono-SemiBold-latin.woff2',
   },
 ] as const;
 
