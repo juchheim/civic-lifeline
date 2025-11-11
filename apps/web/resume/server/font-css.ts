@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 
 let cachedFontFaceCss: string | null = null;
 
@@ -6,44 +7,47 @@ type FontVariant = {
   family: string;
   weight: number;
   style?: 'normal' | 'italic';
-  file: string;
+  filename: string;
 };
 
 const FONT_VARIANTS: readonly FontVariant[] = [
   {
     family: 'Libre Baskerville',
     weight: 400,
-    file: '../../public/resume/fonts/LibreBaskerville-Regular-latin.woff2',
+    filename: 'LibreBaskerville-Regular-latin.woff2',
   },
   {
     family: 'Libre Baskerville',
     weight: 700,
-    file: '../../public/resume/fonts/LibreBaskerville-Bold-latin.woff2',
+    filename: 'LibreBaskerville-Bold-latin.woff2',
   },
   {
     family: 'Inter',
     weight: 400,
-    file: '../../public/resume/fonts/Inter-Regular-latin.woff2',
+    filename: 'Inter-Regular-latin.woff2',
   },
   {
     family: 'Inter',
     weight: 600,
-    file: '../../public/resume/fonts/Inter-SemiBold-latin.woff2',
+    filename: 'Inter-SemiBold-latin.woff2',
   },
   {
     family: 'IBM Plex Mono',
     weight: 400,
-    file: '../../public/resume/fonts/IBMPlexMono-Regular-latin.woff2',
+    filename: 'IBMPlexMono-Regular-latin.woff2',
   },
   {
     family: 'IBM Plex Mono',
     weight: 600,
-    file: '../../public/resume/fonts/IBMPlexMono-SemiBold-latin.woff2',
+    filename: 'IBMPlexMono-SemiBold-latin.woff2',
   },
 ] as const;
 
-function loadFontBase64(path: string) {
-  const buffer = readFileSync(new URL(path, import.meta.url));
+const FONT_BASE_PATH = resolve(process.cwd(), 'apps/web/public/resume/fonts');
+
+function loadFontBase64(filename: string) {
+  const filePath = resolve(FONT_BASE_PATH, filename);
+  const buffer = readFileSync(filePath);
   return buffer.toString('base64');
 }
 
@@ -53,8 +57,8 @@ export function getFontFaceCss() {
   }
 
   const css = FONT_VARIANTS.map(variant => {
-    const { family, weight, style = 'normal', file } = variant;
-    const base64 = loadFontBase64(file);
+    const { family, weight, style = 'normal', filename } = variant;
+    const base64 = loadFontBase64(filename);
     return `@font-face { font-family: '${family}'; font-style: ${style}; font-weight: ${weight}; font-display: swap; src: url(data:font/woff2;base64,${base64}) format('woff2'); }\n`;
   }).join('');
 
