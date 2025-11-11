@@ -43,7 +43,10 @@ const FONT_VARIANTS: readonly FontVariant[] = [
   },
 ] as const;
 
-const FONT_BASE_PATH = resolve(process.cwd(), 'apps/web/public/resume/fonts');
+// In local dev, cwd is the monorepo root; in Vercel, cwd is apps/web
+const FONT_BASE_PATH = process.env.VERCEL
+  ? resolve(process.cwd(), 'public/resume/fonts')
+  : resolve(process.cwd(), 'apps/web/public/resume/fonts');
 
 function loadFontBase64(filename: string) {
   const filePath = resolve(FONT_BASE_PATH, filename);
