@@ -102,50 +102,48 @@ export function useResumeBuilderState() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    const clearStoredDraft = () => {
+      try {
+        window.localStorage.removeItem(STORAGE_KEY);
+      } catch {
+        // ignore
+      }
+    };
     try {
       const raw = window.localStorage.getItem(STORAGE_KEY);
       if (!raw) return;
       const parsed = JSON.parse(raw) as unknown;
 
-      let storedPayload: ResumePayload | null = null;
+      if (!parsed || typeof parsed !== 'object' || !('payload' in parsed)) {
+        clearStoredDraft();
+        return;
+      }
+
+      const record = parsed as {
+        version?: number;
+        payload?: ResumePayload;
+        template?: TemplateName;
+        step?: StepKey;
+        maxStep?: StepKey;
+      };
+
+      if (typeof record.version !== 'number' || record.version !== STORAGE_VERSION) {
+        clearStoredDraft();
+        return;
+      }
+
+      if (!record.payload || typeof record.payload !== 'object') {
+        clearStoredDraft();
+        return;
+      }
+
       let storedTemplate: TemplateName | null = null;
       let storedStep: StepKey | null = null;
       let storedMaxStep: StepKey | null = null;
 
-      if (parsed && typeof parsed === 'object' && parsed !== null && 'payload' in parsed) {
-        const record = parsed as {
-          payload?: ResumePayload;
-          template?: TemplateName;
-          step?: StepKey;
-          maxStep?: StepKey;
-        };
-        if (record.payload && typeof record.payload === 'object') {
-          storedPayload = {
-            ...createDefaultPayload(),
-            ...record.payload,
-          };
-        }
-        if (record.template && (TEMPLATES as ReadonlyArray<string>).includes(record.template)) {
-          storedTemplate = record.template;
-        }
-        if (record.step && WIZARD_STEPS.some(step => step.key === record.step)) {
-          storedStep = record.step;
-        }
-        if (record.maxStep && WIZARD_STEPS.some(step => step.key === record.maxStep)) {
-          storedMaxStep = record.maxStep;
-        }
-      } else if (parsed && typeof parsed === 'object' && parsed !== null) {
-        storedPayload = {
-          ...createDefaultPayload(),
-          ...(parsed as ResumePayload),
-        };
-      }
-
-      if (!storedPayload) return;
-
       const normalized: ResumePayload = {
         ...createDefaultPayload(),
-        ...storedPayload,
+        ...record.payload,
       };
       if (normalized.phone) {
         normalized.phone = formatPhoneNumber(normalized.phone);
@@ -189,11 +187,17 @@ export function useResumeBuilderState() {
       });
       setTimelineInputs(timelineState);
 
+      if (record.template && (TEMPLATES as ReadonlyArray<string>).includes(record.template)) {
+        storedTemplate = record.template;
+      }
       if (storedTemplate) {
         setTemplate(storedTemplate);
       }
 
       let storedStepIndex: number | null = null;
+      if (record.step && WIZARD_STEPS.some(step => step.key === record.step)) {
+        storedStep = record.step;
+      }
       if (storedStep) {
         const index = WIZARD_STEPS.findIndex(step => step.key === storedStep);
         if (index >= 0) {
@@ -203,6 +207,9 @@ export function useResumeBuilderState() {
       }
 
       let storedMaxStepIndex: number | null = null;
+      if (record.maxStep && WIZARD_STEPS.some(step => step.key === record.maxStep)) {
+        storedMaxStep = record.maxStep;
+      }
       if (storedMaxStep) {
         const index = WIZARD_STEPS.findIndex(step => step.key === storedMaxStep);
         if (index >= 0) {
@@ -213,7 +220,7 @@ export function useResumeBuilderState() {
       const derivedMaxIndex = Math.max(storedMaxStepIndex ?? -1, storedStepIndex ?? -1, 0);
       setMaxStepReached(derivedMaxIndex);
     } catch {
-      // ignore corrupted storage
+      clearStoredDraft();
     }
   }, []);
 

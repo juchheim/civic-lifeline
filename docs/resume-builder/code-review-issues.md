@@ -12,9 +12,9 @@ COMPLETE: 2. **Highest completed step is not persisted, so progress + preview un
    - Files: `apps/web/components/resume/useResumeBuilderState.ts:83-365, 796-829`.  
    - Local storage records now include both the current step key and the highest step reached, and hydration restores the max of the two. Preview unlock/step navigation therefore survives reloads even if the user backed up before closing the tab.
 
-3. **Local storage versioning is defined but never enforced**  
-   - Files: `apps/web/components/resume/constants.ts:4-10`, `apps/web/components/resume/useResumeBuilderState.ts:90-186`.  
-   - `STORAGE_VERSION` is written with every draft but never read, so incompatible schema changes or migrations cannot be detected. Old drafts will continue to load with missing/invalid fields and no automatic reset.
+COMPLETE: 3. **Local storage versioning is defined but never enforced**  
+   - Files: `apps/web/components/resume/constants.ts:1-35`, `apps/web/components/resume/useResumeBuilderState.ts:83-226`.  
+   - Hydration now checks the persisted `version` and clears incompatible or corrupt drafts before loading state, so bumping `STORAGE_VERSION` reliably resets users stuck on an outdated schema.
 
 4. **Summary auto-generation flag is lost after rehydration**  
    - Files: `apps/web/components/resume/useResumeBuilderState.ts:149-152, 388-420`.  
