@@ -8,6 +8,7 @@ const nextConfig = {
     outputFileTracingIncludes: {
       "/api/pdf": [
         "./resume/templates/**/*",
+        "./public/resume/fonts/**/*",
         "../../node_modules/@sparticuz/**",
       ],
     },
