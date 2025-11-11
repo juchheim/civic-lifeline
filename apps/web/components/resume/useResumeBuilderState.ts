@@ -66,7 +66,16 @@ export function useResumeBuilderState() {
   const [hasUserEditedSummary, setHasUserEditedSummary] = useState(false);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewSignature, setPreviewSignature] = useState<string | null>(null);
   const previewWindowRef = useRef<Window | null>(null);
+  const computePreviewSignature = useCallback(
+    (draft: ResumePayload, draftTemplate: TemplateName | null) =>
+      JSON.stringify({
+        template: draftTemplate ?? null,
+        payload: draft,
+      }),
+    [],
+  );
 
   const activeStep = WIZARD_STEPS[currentStepIndex];
   const hasUnlockedPreviewStep = PREVIEW_UNLOCK_STEP_INDEX >= 0 && maxStepReached >= PREVIEW_UNLOCK_STEP_INDEX;
@@ -709,6 +718,23 @@ export function useResumeBuilderState() {
     [],
   );
 
+  const normalizedPayloadForSignature = useMemo(
+    () => buildSubmissionPayload(payload),
+    [buildSubmissionPayload, payload],
+  );
+
+  const currentDraftSignature = useMemo(
+    () => computePreviewSignature(normalizedPayloadForSignature, template),
+    [computePreviewSignature, normalizedPayloadForSignature, template],
+  );
+
+  useEffect(() => {
+    if (!previewSignature) return;
+    if (previewSignature === currentDraftSignature) return;
+    setPreviewUrl(null);
+    setPreviewSignature(null);
+  }, [currentDraftSignature, previewSignature]);
+
   const handleGenerate = useCallback(
     async (mode: 'preview' | 'download' = 'preview') => {
       if (!canPreview) {
@@ -731,11 +757,6 @@ export function useResumeBuilderState() {
         link.click();
         document.body.removeChild(link);
       };
-
-      if (mode === 'download' && previewUrl) {
-        triggerDownload(previewUrl);
-        return previewUrl;
-      }
 
       let draftForSubmit = payload;
       const draftSkill = normalizeSkillLabel(skillDraft);
@@ -763,6 +784,13 @@ export function useResumeBuilderState() {
       }
 
       const submissionPayload = buildSubmissionPayload(draftForSubmit);
+      const submissionSignature = computePreviewSignature(submissionPayload, template);
+
+      if (mode === 'download' && previewUrl && previewSignature && previewSignature === submissionSignature) {
+        triggerDownload(previewUrl);
+        return previewUrl;
+      }
+
       persistDraft(submissionPayload, template, currentStepIndex);
       setStatus(mode === 'preview' ? 'Generating PDF preview...' : 'Preparing download...');
       setIsPreviewLoading(true);
@@ -804,6 +832,7 @@ export function useResumeBuilderState() {
             ? new URL(data.previewUrl, window.location.origin).toString()
             : data.previewUrl;
         setPreviewUrl(absoluteUrl);
+        setPreviewSignature(submissionSignature);
 
         if (mode === 'preview') {
           if (previewWindowRef.current && !previewWindowRef.current.closed) {
@@ -832,12 +861,14 @@ export function useResumeBuilderState() {
     [
       buildSubmissionPayload,
       canPreview,
+      computePreviewSignature,
       currentStepIndex,
       downloadFilename,
       hasRequiredContact,
       hasUnlockedPreviewStep,
       payload,
       persistDraft,
+      previewSignature,
       previewUrl,
       skillDraft,
       template,
@@ -866,6 +897,7 @@ export function useResumeBuilderState() {
     setLastAttemptedSummaryHash(null);
     setHasUserEditedSummary(false);
     setPreviewUrl(null);
+    setPreviewSignature(null);
     setIsPreviewLoading(false);
     if (previewWindowRef.current && !previewWindowRef.current.closed) {
       previewWindowRef.current.close();
