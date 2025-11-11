@@ -58,10 +58,10 @@ COMPLETE: 13. **PDF storage is per-process, volatile, and keeps binaries in memo
     - Files: `apps/web/resume/server/pdf-store.ts`, `apps/web/app/api/pdf/route.ts`, `apps/web/app/api/resume/pdf/[id]/route.ts`, `apps/web/types/handlebars.d.ts`, `vitest.config.ts`.  
     - Previews are now stored in MongoDB with a 5-minute TTL index, so every Node instance can serve them and expired blobs are cleaned up automatically.
 
-14. **Puppeteer pages aren’t cleaned up when rendering fails**  
-    - File: `apps/web/resume/server/pdf-service.ts:64-74`.  
-    - `renderHtmlToPdf` opens a page, calls `setContent`/`pdf`, and only closes the page on success. Any timeout or rendering error leaks a page handle, eventually exhausting the process.
+COMPLETE: 14. **Puppeteer pages aren’t cleaned up when rendering fails**  
+   - File: `apps/web/resume/server/pdf-service.ts:64-95`.  
+   - `renderHtmlToPdf` now wraps `newPage`, `setContent`, and `pdf` in a `try/finally`, ensuring the page closes even when rendering throws. Failed renders no longer leak Chromium page handles under load.
 
-15. **Templates require live Google Fonts during PDF generation**  
-    - Files: `apps/web/resume/templates/classic.hbs:5-7`, `modern.hbs:5-13`, `minimal.hbs:5-7`.  
-    - Every PDF render depends on fetching `fonts.googleapis.com`. Serverless environments without outbound network (or during transient DNS/firewall failures) will hang or throw timeouts, making PDF generation unreliable.
+COMPLETE: 15. **Templates require live Google Fonts during PDF generation**  
+   - Files: `apps/web/resume/server/font-css.ts`, `apps/web/resume/server/compile.ts`, `apps/web/resume/templates/partials/head.hbs`, `apps/web/resume/templates/*.hbs`.  
+   - The build inlines local `.woff2` font assets via data URIs and removes external Google Fonts `<link>` tags. PDF rendering now uses bundled fonts and no longer depends on outbound network access.

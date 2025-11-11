@@ -5,6 +5,7 @@ import tokensCssPartial from '../templates/partials/tokens-css.hbs?raw';
 import classicTemplate from '../templates/classic.hbs?raw';
 import modernTemplate from '../templates/modern.hbs?raw';
 import minimalTemplate from '../templates/minimal.hbs?raw';
+import { getFontFaceCss } from './font-css';
 
 const PARTIALS: Record<string, string> = {
   head: headPartial,
@@ -49,7 +50,8 @@ export function compileTemplate(templateName: string, data: ResumePayload) {
     throw new Error(`Unknown template: ${templateName}`);
   }
   const template = Handlebars.compile(source);
-  return template({ ...data, templateName });
+  const fontFaceCss = getFontFaceCss();
+  return template({ ...data, templateName, fontFaceCss });
 }
 
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as const;

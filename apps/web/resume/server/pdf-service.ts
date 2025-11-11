@@ -63,13 +63,23 @@ export async function getBrowser() {
 
 export async function renderHtmlToPdf(html: string) {
   const browser = await getBrowser();
-  const page = await browser.newPage();
-  await page.setContent(html, { waitUntil: 'networkidle0', timeout: 10000 });
-  const pdf = await page.pdf({
-    format: 'Letter',
-    printBackground: true,
-    margin: { top: '0.75in', right: '0.6in', bottom: '0.75in', left: '0.6in' },
-  });
-  await page.close();
-  return pdf;
+  let page: Awaited<ReturnType<Browser['newPage']>> | null = null;
+
+  try {
+    page = await browser.newPage();
+    await page.setContent(html, { waitUntil: 'networkidle0', timeout: 10000 });
+    return await page.pdf({
+      format: 'Letter',
+      printBackground: true,
+      margin: { top: '0.75in', right: '0.6in', bottom: '0.75in', left: '0.6in' },
+    });
+  } finally {
+    if (page) {
+      try {
+        await page.close();
+      } catch {
+        // ignore errors while cleaning up the page
+      }
+    }
+  }
 }
