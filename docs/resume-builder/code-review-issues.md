@@ -28,9 +28,9 @@ COMPLETE: 6. **Skill count copy does not match the actual limit**
    - Files: `apps/web/components/resume/constants.ts:1-12`, `apps/web/components/resume/ResumeBuilderSection.tsx:41-45`, `apps/web/components/resume/useResumeBuilderState.ts:319-848`.  
    - `MAX_SKILLS` has been reduced to 10, so both the UI copy and the enforcement layer now agree on the cap users see.
 
-7. **Year pickers allow impossible future dates**  
-   - File: `apps/web/components/resume/ResumeBuilderSection.tsx:31-34`.  
-   - `YEAR_OPTIONS` starts at `currentYear + 1`, so start/end dates can be set in the future. The API accepts those values, producing résumés with invalid timelines.
+COMPLETE: 7. **Year pickers allow impossible future dates**  
+   - File: `apps/web/components/resume/ResumeBuilderSection.tsx:31-36`.  
+   - `YEAR_OPTIONS` now starts at the current year (not current year + 1), preventing users from selecting future start or end dates in the experience step.
 
 ## Frontend Accessibility & UX
 

@@ -30,7 +30,7 @@ const MONTH_OPTIONS = [
 
 const YEAR_RANGE = 60;
 const CURRENT_YEAR = new Date().getFullYear();
-const YEAR_OPTIONS = Array.from({ length: YEAR_RANGE }, (_, index) => String(CURRENT_YEAR + 1 - index));
+const YEAR_OPTIONS = Array.from({ length: YEAR_RANGE }, (_, index) => String(CURRENT_YEAR - index));
 
 const HERO_HIGHLIGHTS = [
   'Guided steps keep you focused—no blank page dread.',
