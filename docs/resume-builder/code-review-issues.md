@@ -48,7 +48,20 @@ COMPLETE: 11. **`ActionControls` is dead code**
     - File: `apps/web/components/resume/ActionControls.tsx`.  
     - The unused component has been deleted so the controls logic lives only in `ResumeBuilderSection`.
 
-## Frontend Code Hygiene
+## Server & PDF Pipeline
 
-11. **`ActionControls` is dead code**  
-    - File: `
+12. **User content goes into templates without escaping or sanitisation**  
+    - Files: `apps/web/resume/server/compile.ts:44-52`, `apps/web/resume/templates/*.hbs`.  
+    - We compile templates with `noEscape: true`, so fields like `name`, `summary`, `bullets`, etc. render raw HTML/JS. Attackers can embed `<script>` tags that execute inside the Puppeteer instance during PDF generation (SSRF/data exfil) and can also inject arbitrary markup into the final PDF.
+
+13. **PDF storage is per-process, volatile, and keeps binaries in memory until expiry**  
+    - Files: `apps/web/resume/server/pdf-store.ts:9-33`, `apps/web/app/api/pdf/route.ts:86-103`, `apps/web/app/api/resume/pdf/[id]/route.ts:10-21`.  
+    - Generated PDFs live only in an in-memory `Map`. Any request served by a different Node process (or a cold Lambda) cannot retrieve the preview URL, causing “PDF not found” errors under load. Records are never deleted after a successful download, so each preview holds the full binary in RAM for up to five minutes even if the user closes the tab.
+
+14. **Puppeteer pages aren’t cleaned up when rendering fails**  
+    - File: `apps/web/resume/server/pdf-service.ts:64-74`.  
+    - `renderHtmlToPdf` opens a page, calls `setContent`/`pdf`, and only closes the page on success. Any timeout or rendering error leaks a page handle, eventually exhausting the process.
+
+15. **Templates require live Google Fonts during PDF generation**  
+    - Files: `apps/web/resume/templates/classic.hbs:5-7`, `modern.hbs:5-13`, `minimal.hbs:5-7`.  
+    - Every PDF render depends on fetching `fonts.googleapis.com`. Serverless environments without outbound network (or during transient DNS/firewall failures) will hang or throw timeouts, making PDF generation unreliable.
