@@ -10,8 +10,6 @@ const links = [
   { href: "/food", label: "Food" },
   { href: "/resume", label: "Resume Builder" },
   { href: "/housing-utilities", label: "Housing & Utilities" },
-  { href: "/housing", label: "Housing" },
-  { href: "/broadband", label: "Broadband" },
   { href: "/stats", label: "Stats" },
 ];
 

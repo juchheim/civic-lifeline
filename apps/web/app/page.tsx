@@ -13,7 +13,7 @@ const sections = [
     description: "Make a resume quickly with easy guidance.",
   },
   {
-    href: "/housing",
+    href: "/housing-utilities",
     title: "Housing/Utilities",
     description: "Check fair rent, locate counselors, and find info on utilities.",
   },
@@ -29,7 +29,7 @@ const sections = [
   },
 ];
 
-const priorityRoutes = new Set(["/food", "/resume", "/housing"]);
+const priorityRoutes = new Set(["/food", "/resume", "/housing-utilities"]);
 const essentialSections = sections.filter((section) => priorityRoutes.has(section.href));
 const exploratorySections = sections.filter((section) => !priorityRoutes.has(section.href));
 
@@ -60,7 +60,7 @@ const essentialStyles: Record<
     description: "text-white/95",
     icon: "text-white/90",
   },
-  "/housing": {
+  "/housing-utilities": {
     container: "border-amber-600 bg-amber-600 shadow-lg shadow-amber-600/20 hover:shadow-xl hover:shadow-amber-600/30",
     cta: "text-white",
     badge: "bg-amber-600 text-white",

@@ -39,9 +39,9 @@ const HERO_HIGHLIGHTS = [
 ] as const;
 
 const PREP_ITEMS = [
-  { title: 'Work history', detail: 'Job titles, employers, dates, and key wins.' },
+  { title: 'Work history', detail: 'Job titles, employers, and dates.' },
   { title: 'Education', detail: 'Schools, certifications, and graduation years.' },
-  { title: 'Skills', detail: 'Up to 10 strengths you want to highlight.' },
+  { title: 'Skills', detail: 'Strengths you want to highlight.' },
 ] as const;
 
 export function ResumeBuilderSection() {
@@ -282,11 +282,11 @@ useEffect(() => {
   const rightRailPanels = (
     <div className="space-y-5 text-slate-800">
       <section className="rounded-2xl border border-slate-200 bg-white/80 p-5 shadow-sm shadow-slate-200/50">
-        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Why it matters</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">How it works</p>
         <ul className="mt-3 space-y-3 text-sm leading-relaxed text-slate-600">
           {HERO_HIGHLIGHTS.map(highlight => (
-            <li key={highlight} className="flex items-start gap-3">
-              <span className="mt-1 h-2 w-2 rounded-full bg-slate-300" aria-hidden />
+            <li key={highlight} className="flex gap-3">
+              <span className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full bg-slate-300" aria-hidden />
               <span>{highlight}</span>
             </li>
           ))}
