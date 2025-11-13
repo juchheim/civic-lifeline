@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCountiesCollection } from "@cl/db";
 
+export const runtime = "nodejs";
+
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const stateCode = url.searchParams.get("stateCode");

@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { getStatesCollection } from "@cl/db";
 
+export const runtime = "nodejs";
+
 export async function GET() {
   try {
     const statesCollection = await getStatesCollection();
