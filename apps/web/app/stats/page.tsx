@@ -6,7 +6,6 @@ import { useQuery } from "@tanstack/react-query";
 import EducationLevelCard from "@/components/EducationLevelCard";
 import HousingBurdenCard from "@/components/HousingBurdenCard";
 import MedianIncomeCard from "@/components/MedianIncomeCard";
-import MinimumWageCard from "@/components/MinimumWageCard";
 import PovertyStatCard from "@/components/PovertyStatCard";
 import SnapParticipationCard from "@/components/SnapParticipationCard";
 import UninsuredRateCard from "@/components/UninsuredRateCard";
@@ -47,7 +46,6 @@ export default function StatsPage() {
   });
 
   const selectedCounty = counties.find((county) => county.fips === countyFips);
-  const selectedState = states.find((state) => state.code === selectedStateCode);
   // Reset county selection when state changes
   useEffect(() => {
     if (counties.length > 0 && !counties.find((c) => c.fips === countyFips)) {
@@ -95,24 +93,6 @@ export default function StatsPage() {
             </div>
             <SourceChip source="BLS LAUS" lastUpdated={data?.lastUpdated ?? new Date().toISOString()} />
           </header>
-
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-            <PovertyStatCard
-              countyFips={countyFips}
-              stateFips={selectedCounty?.stateFips}
-              countyNameFallback={selectedCounty?.name}
-            />
-            <MedianIncomeCard
-              countyFips={countyFips}
-              stateFips={selectedCounty?.stateFips}
-              countyNameFallback={selectedCounty?.name}
-            />
-            <SnapParticipationCard countyFips={countyFips} stateFips={selectedCounty?.stateFips} />
-            <EducationLevelCard countyFips={countyFips} stateFips={selectedCounty?.stateFips} />
-            <MinimumWageCard stateName={selectedState?.name} />
-            <UninsuredRateCard countyFips={countyFips} stateFips={selectedCounty?.stateFips} />
-            <HousingBurdenCard countyFips={countyFips} stateFips={selectedCounty?.stateFips} />
-          </div>
 
           <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-4 sm:p-5">
             <div className="flex flex-wrap items-center gap-4">
@@ -163,6 +143,23 @@ export default function StatsPage() {
                 Time range: {start}–{end}
               </div>
             </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+            <PovertyStatCard
+              countyFips={countyFips}
+              stateFips={selectedCounty?.stateFips}
+              countyNameFallback={selectedCounty?.name}
+            />
+            <MedianIncomeCard
+              countyFips={countyFips}
+              stateFips={selectedCounty?.stateFips}
+              countyNameFallback={selectedCounty?.name}
+            />
+            <SnapParticipationCard countyFips={countyFips} stateFips={selectedCounty?.stateFips} />
+            <EducationLevelCard countyFips={countyFips} stateFips={selectedCounty?.stateFips} />
+            <UninsuredRateCard countyFips={countyFips} stateFips={selectedCounty?.stateFips} />
+            <HousingBurdenCard countyFips={countyFips} stateFips={selectedCounty?.stateFips} />
           </div>
 
           {isError && (

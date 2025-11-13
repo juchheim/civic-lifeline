@@ -28,15 +28,17 @@ export function useCachedStat<T>(
 
     let canceled = false;
 
-    const load = async () => {
-      const cached = getCachedStat(cacheKey) as T | null;
-      setState({
-        data: cached ?? undefined,
-        loading: true,
-        error: undefined,
-        loaded: Boolean(cached),
-      });
+    const cached = getCachedStat(cacheKey) as T | null;
+    if (cached) {
+      setState({ data: cached, loading: false, error: undefined, loaded: true });
+      return () => {
+        canceled = true;
+      };
+    }
 
+    setState({ data: undefined, loading: true, error: undefined, loaded: false });
+
+    (async () => {
       try {
         const data = await fetcher();
         if (canceled) return;
@@ -45,22 +47,15 @@ export function useCachedStat<T>(
       } catch (error) {
         if (canceled) return;
         const message = error instanceof Error ? error.message : "Failed to load data";
-        setState((prev) => ({
-          data: prev.data,
-          loading: false,
-          error: message,
-          loaded: true,
-        }));
+        setState({ data: undefined, loading: false, error: message, loaded: true });
       }
-    };
-
-    load();
+    })();
 
     return () => {
       canceled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cacheKey, fetcher, ...deps]);
+  }, [cacheKey, ...deps]);
 
   return state;
 }
