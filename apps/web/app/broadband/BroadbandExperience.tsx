@@ -1,13 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { FocusEvent, FormEvent, KeyboardEvent } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
+import type { FormEvent } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { zBroadbandSummaryResponse } from "@cl/types";
 import SourceChip from "@/components/SourceChip";
 import SuccessAlert from "@/components/SuccessAlert";
-
-type Suggestion = { id: string; name: string; lat: number; lon: number; kind: string };
+import LocationInput, { type LocationInputHandle } from "@/components/LocationInput";
 
 const DEFAULT_QUERY = "";
 
@@ -15,15 +14,6 @@ interface BroadbandExperienceProps {
   showIntro?: boolean;
   wrapperClassName?: string;
   id?: string;
-}
-
-function useDebouncedValue<T>(value: T, delayMs: number): T {
-  const [debounced, setDebounced] = useState(value);
-  useEffect(() => {
-    const timeout = setTimeout(() => setDebounced(value), delayMs);
-    return () => clearTimeout(timeout);
-  }, [value, delayMs]);
-  return debounced;
 }
 
 async function fetchBroadband(query: string) {
@@ -51,88 +41,9 @@ async function fetchBroadband(query: string) {
 export default function BroadbandExperience({ showIntro = true, wrapperClassName, id }: BroadbandExperienceProps) {
   const [locationInput, setLocationInput] = useState(DEFAULT_QUERY);
   const [searchQuery, setSearchQuery] = useState(DEFAULT_QUERY);
-  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
-  const [isSuggestionOpen, setIsSuggestionOpen] = useState(false);
-  const [isSuggestLoading, setIsSuggestLoading] = useState(false);
-  const [suggestError, setSuggestError] = useState<string | null>(null);
-  const [activeSuggestionIndex, setActiveSuggestionIndex] = useState<number | null>(null);
   const [suppressSuggestions, setSuppressSuggestions] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
-  const comboboxRef = useRef<HTMLDivElement | null>(null);
-
-  const debouncedQuery = useDebouncedValue(locationInput, 350);
-
-  useEffect(() => {
-    const query = debouncedQuery.trim();
-
-    if (suppressSuggestions) {
-      setSuggestions([]);
-      setIsSuggestionOpen(false);
-      setIsSuggestLoading(false);
-      setSuggestError(null);
-      setActiveSuggestionIndex(null);
-      return;
-    }
-
-    if (query.length < 3) {
-      setSuggestions([]);
-      setSuggestError(null);
-      setIsSuggestionOpen(false);
-      setActiveSuggestionIndex(null);
-      setIsSuggestLoading(false);
-      return;
-    }
-
-    let cancelled = false;
-    const controller = new AbortController();
-    setIsSuggestionOpen(true);
-    setIsSuggestLoading(true);
-    setSuggestError(null);
-
-    fetch(`/api/geocode/suggest?q=${encodeURIComponent(query)}&limit=5`, {
-      headers: { accept: "application/json" },
-      signal: controller.signal,
-    })
-      .then(async (res) => {
-        if (cancelled) return;
-        if (res.status === 404) {
-          setSuggestions([]);
-          setSuggestError("No matches. Try a full address, city & state, or ZIP.");
-          setActiveSuggestionIndex(null);
-          return;
-        }
-        if (res.status === 429) {
-          setSuggestions([]);
-          setSuggestError("Too many searches, please pause briefly.");
-          setActiveSuggestionIndex(null);
-          return;
-        }
-        if (!res.ok) {
-          setSuggestions([]);
-          setSuggestError("Suggestion service unavailable. You can still search manually.");
-          setActiveSuggestionIndex(null);
-          return;
-        }
-        const data = (await res.json()) as Suggestion[];
-        setSuggestions(data.slice(0, 5));
-        setSuggestError(data.length === 0 ? "No matches. Try a full address, city & state, or ZIP." : null);
-        setActiveSuggestionIndex(null);
-      })
-      .catch((error) => {
-        if (cancelled || (error instanceof Error && error.name === "AbortError")) return;
-        setSuggestions([]);
-        setSuggestError("Suggestion service unavailable. You can still search manually.");
-        setActiveSuggestionIndex(null);
-      })
-      .finally(() => {
-        if (!cancelled) setIsSuggestLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-      controller.abort();
-    };
-  }, [debouncedQuery, suppressSuggestions]);
+  const locationInputHandleRef = useRef<LocationInputHandle | null>(null);
 
   const { data, isLoading, isFetching, isError, error } = useQuery({
     queryKey: ["broadband", searchQuery],
@@ -142,6 +53,20 @@ export default function BroadbandExperience({ showIntro = true, wrapperClassName
   });
 
   const coverage = data?.coverage ?? null;
+
+  const executeSearch = useCallback(() => {
+    const trimmed = locationInput.trim();
+    if (!trimmed) {
+      setLocationError("Enter an address, city, or ZIP code.");
+      return;
+    }
+    locationInputHandleRef.current?.reset();
+    setLocationError(null);
+    setSearchQuery(trimmed);
+    setLocationInput(trimmed);
+    setSuppressSuggestions(true);
+  }, [locationInput]);
+
   const speedLabels = useMemo(
     () => [
       { key: "25_3" as const, label: "25 Mbps down / 3 Mbps up" },
@@ -151,96 +76,12 @@ export default function BroadbandExperience({ showIntro = true, wrapperClassName
     [],
   );
 
-  const handleSuggestionPick = useCallback((suggestion: Suggestion) => {
-    setLocationInput(suggestion.name);
-    setSearchQuery(suggestion.name);
-    setSuggestions([]);
-    setSuggestError(null);
-    setIsSuggestionOpen(false);
-    setActiveSuggestionIndex(null);
-    setSuppressSuggestions(true);
-    setLocationError(null);
-  }, []);
-
-  const handleComboboxBlur = useCallback((event: FocusEvent<HTMLDivElement>) => {
-    const related = event.relatedTarget;
-    if (related && comboboxRef.current && comboboxRef.current.contains(related as Node)) {
-      return;
-    }
-    setIsSuggestionOpen(false);
-    setActiveSuggestionIndex(null);
-  }, []);
-
-  const handleInputFocus = useCallback(() => {
-    if (suggestions.length > 0 || suggestError || isSuggestLoading) {
-      setIsSuggestionOpen(true);
-    }
-  }, [isSuggestLoading, suggestError, suggestions.length]);
-
-  const handleInputKeyDown = useCallback(
-    (event: KeyboardEvent<HTMLInputElement>) => {
-      if (event.key === "ArrowDown") {
-        if (suggestions.length === 0) return;
-        event.preventDefault();
-        setIsSuggestionOpen(true);
-        setActiveSuggestionIndex((index) => {
-          if (index === null) return 0;
-          return Math.min(index + 1, suggestions.length - 1);
-        });
-        return;
-      }
-      if (event.key === "ArrowUp") {
-        if (suggestions.length === 0) return;
-        event.preventDefault();
-        setActiveSuggestionIndex((index) => {
-          if (index === null || index <= 0) return 0;
-          return index - 1;
-        });
-        return;
-      }
-      if (event.key === "Enter") {
-        if (activeSuggestionIndex !== null && suggestions[activeSuggestionIndex]) {
-          event.preventDefault();
-          handleSuggestionPick(suggestions[activeSuggestionIndex]);
-          return;
-        }
-        event.preventDefault();
-        setLocationError(null);
-        const trimmed = locationInput.trim();
-        if (!trimmed) return;
-        setSearchQuery(trimmed);
-        setLocationInput(trimmed);
-        setSuppressSuggestions(true);
-        setIsSuggestionOpen(false);
-        setActiveSuggestionIndex(null);
-        setSuggestions([]);
-        return;
-      }
-      if (event.key === "Escape") {
-        setIsSuggestionOpen(false);
-        setActiveSuggestionIndex(null);
-      }
-    },
-    [activeSuggestionIndex, handleSuggestionPick, locationInput, suggestions],
-  );
-
   const handleSubmit = useCallback(
     (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault();
-      const trimmed = locationInput.trim();
-      if (!trimmed) {
-        setLocationError("Enter an address, city, or ZIP code.");
-        return;
-      }
-      setLocationError(null);
-      setSearchQuery(trimmed);
-      setLocationInput(trimmed);
-      setSuppressSuggestions(true);
-      setIsSuggestionOpen(false);
-      setActiveSuggestionIndex(null);
-      setSuggestions([]);
+      executeSearch();
     },
-    [locationInput],
+    [executeSearch],
   );
 
   const queryLabel = useMemo(() => {
@@ -286,63 +127,26 @@ export default function BroadbandExperience({ showIntro = true, wrapperClassName
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
         <form className="space-y-4" onSubmit={handleSubmit}>
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-slate-700" htmlFor="broadband-location">
-              Address or ZIP code
-            </label>
-            <div
-              ref={comboboxRef}
-              role="combobox"
-              aria-haspopup="listbox"
-              aria-expanded={isSuggestionOpen}
-              aria-owns="broadband-suggestion-list"
-              className="relative"
-              onBlur={handleComboboxBlur}
-            >
-              <input
-                id="broadband-location"
-                value={locationInput}
-                onChange={(event) => {
-                  setLocationInput(event.target.value);
-                  setLocationError(null);
-                  setSuppressSuggestions(false);
-                }}
-                onFocus={handleInputFocus}
-                onKeyDown={handleInputKeyDown}
-                className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/30"
-                placeholder="Yazoo County, MS or 39194"
-                aria-autocomplete="list"
-                aria-controls="broadband-suggestion-list"
-              />
-              {isSuggestionOpen && (suggestions.length > 0 || suggestError || isSuggestLoading) && (
-                <ul
-                  id="broadband-suggestion-list"
-                  role="listbox"
-                  className="absolute z-10 mt-1 max-h-56 w-full overflow-y-auto rounded border border-slate-200 bg-white text-sm shadow-lg"
-                >
-                  {suggestions.map((suggestion, index) => (
-                    <li key={suggestion.id}>
-                      <button
-                        type="button"
-                        role="option"
-                        aria-selected={index === activeSuggestionIndex}
-                        className={`flex w-full items-start gap-2 px-3 py-2 text-left ${
-                          index === activeSuggestionIndex ? "bg-brand-primary/10 text-brand-primary" : "hover:bg-slate-100"
-                        }`}
-                        onMouseDown={(event) => {
-                          event.preventDefault();
-                          handleSuggestionPick(suggestion);
-                        }}
-                      >
-                        <span className="flex-1">{suggestion.name}</span>
-                        {suggestion.kind && <span className="text-xs uppercase text-slate-500">{suggestion.kind}</span>}
-                      </button>
-                    </li>
-                  ))}
-                  {isSuggestLoading && <li className="px-3 py-2 text-slate-500">Searching…</li>}
-                  {!isSuggestLoading && suggestError && <li className="px-3 py-2 text-slate-500">{suggestError}</li>}
-                </ul>
-              )}
-            </div>
+            <LocationInput
+              ref={locationInputHandleRef}
+              id="broadband-location"
+              label="Address or ZIP code"
+              value={locationInput}
+              onChange={(next) => {
+                setLocationInput(next);
+                setLocationError(null);
+                setSuppressSuggestions(false);
+              }}
+              placeholder="Yazoo County, MS or 39194"
+              suppressSuggestions={suppressSuggestions}
+              onSuggestionSelect={(suggestion) => {
+                setLocationInput(suggestion.name);
+                setSearchQuery(suggestion.name);
+                setSuppressSuggestions(true);
+                setLocationError(null);
+              }}
+              onSubmit={executeSearch}
+            />
             {locationError && (
               <div className="rounded-xl border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">{locationError}</div>
             )}
@@ -422,4 +226,3 @@ export default function BroadbandExperience({ showIntro = true, wrapperClassName
     </div>
   );
 }
-

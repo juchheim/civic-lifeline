@@ -1,19 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { zCounselorsResponse, zFmrResponse } from "@cl/types";
 import SourceChip from "@/components/SourceChip";
 import SuccessAlert from "@/components/SuccessAlert";
-
-type Suggestion = { id: string; name: string; lat: number; lon: number; kind: string };
-
-interface LocationSelection {
-  label: string;
-  lat: number;
-  lon: number;
-  postalCode?: string;
-}
+import LocationInputWithGeocode, { type LocationInputWithGeocodeHandle } from "@/components/LocationInputWithGeocode";
+import { locationCopy } from "@/config/locationCopy";
+import type { LocationSelection } from "@/types/location";
 
 interface CounselorSearchParams {
   radius: string;
@@ -39,15 +33,6 @@ interface HousingExperienceProps {
 const DEFAULT_RADIUS = "100";
 // During the HUD shutdown we pin to the static dataset year. Update when live HUD API resumes (docs/hud-fmr-static.md).
 const DEFAULT_FMR_YEAR = "2024";
-
-function useDebouncedValue<T>(value: T, delayMs: number): T {
-  const [debounced, setDebounced] = useState(value);
-  useEffect(() => {
-    const timeout = setTimeout(() => setDebounced(value), delayMs);
-    return () => clearTimeout(timeout);
-  }, [value, delayMs]);
-  return debounced;
-}
 
 async function fetchCounselors(params: CounselorSearchParams) {
   const search = new URLSearchParams();
@@ -93,140 +78,19 @@ async function fetchFmr(params: FmrSearchParams) {
   return zFmrResponse.parse(json);
 }
 
-async function geocodeQuery(query: string): Promise<LocationSelection> {
-  const res = await fetch(`/api/geocode?q=${encodeURIComponent(query)}`, { headers: { accept: "application/json" } });
-  const json = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    const message = (json as any)?.error || "We could not find that location.";
-    throw new Error(typeof message === "string" ? message : "We could not find that location.");
-  }
-  if (typeof json.lat !== "number" || typeof json.lon !== "number") {
-    throw new Error("Geocoding service returned invalid coordinates.");
-  }
-  return {
-    label: typeof json.name === "string" ? json.name : query,
-    lat: json.lat,
-    lon: json.lon,
-    postalCode: typeof json.address?.postalCode === "string" ? json.address.postalCode : undefined,
-  };
-}
-
 export default function HousingExperience({ showIntro = true, wrapperClassName, id }: HousingExperienceProps) {
   const [locationInput, setLocationInput] = useState("");
   const [selectedLocation, setSelectedLocation] = useState<LocationSelection | null>(null);
-  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
-  const [suggestError, setSuggestError] = useState<string | null>(null);
-  const [isSuggestionOpen, setIsSuggestionOpen] = useState(false);
-  const [isSuggestLoading, setIsSuggestLoading] = useState(false);
-  const [activeSuggestionIndex, setActiveSuggestionIndex] = useState<number | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [isResolving, setIsResolving] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [isGeolocating, setIsGeolocating] = useState(false);
   const [suppressSuggestions, setSuppressSuggestions] = useState(false);
   const [advanced, setAdvanced] = useState({ radius: DEFAULT_RADIUS, lat: "", lon: "", fips: "", year: DEFAULT_FMR_YEAR });
+  const locationInputHandleRef = useRef<LocationInputWithGeocodeHandle | null>(null);
 
   const [counselorSearch, setCounselorSearch] = useState<CounselorSearchParams | null>(null);
   const [fmrSearch, setFmrSearch] = useState<FmrSearchParams | null>(null);
-
-  const debouncedQuery = useDebouncedValue(locationInput, 350);
-  const comboboxRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    const query = debouncedQuery.trim();
-    if (suppressSuggestions) {
-      setSuggestions([]);
-      setSuggestError(null);
-      setIsSuggestionOpen(false);
-      setActiveSuggestionIndex(null);
-      setIsSuggestLoading(false);
-      return;
-    }
-    if (query.length < 3) {
-      setSuggestions([]);
-      setSuggestError(null);
-      setIsSuggestionOpen(false);
-      setActiveSuggestionIndex(null);
-      setIsSuggestLoading(false);
-      return;
-    }
-
-    let cancelled = false;
-    const controller = new AbortController();
-    setIsSuggestLoading(true);
-    setIsSuggestionOpen(true);
-    setSuggestError(null);
-
-    fetch(`/api/geocode/suggest?q=${encodeURIComponent(query)}&limit=5`, {
-      headers: { accept: "application/json" },
-      signal: controller.signal,
-    })
-      .then(async (res) => {
-        if (cancelled) return;
-        if (res.status === 404) {
-          setSuggestions([]);
-          setSuggestError("No matches. Try a full address, city & state, or ZIP.");
-          setActiveSuggestionIndex(null);
-          return;
-        }
-        if (res.status === 429) {
-          setSuggestions([]);
-          setSuggestError("Too many searches, please pause briefly.");
-          setActiveSuggestionIndex(null);
-          return;
-        }
-        if (!res.ok) {
-          setSuggestions([]);
-          setSuggestError("Suggestion service unavailable. You can still search manually.");
-          setActiveSuggestionIndex(null);
-          return;
-        }
-        const data = (await res.json()) as Suggestion[];
-        setSuggestions(data.slice(0, 5));
-        setSuggestError(data.length === 0 ? "No matches. Try a full address, city & state, or ZIP." : null);
-        setActiveSuggestionIndex(null);
-      })
-      .catch((error) => {
-        if (cancelled || (error instanceof Error && error.name === "AbortError")) return;
-        setSuggestions([]);
-        setSuggestError("Suggestion service unavailable. You can still search manually.");
-        setActiveSuggestionIndex(null);
-      })
-      .finally(() => {
-        if (!cancelled) setIsSuggestLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-      controller.abort();
-    };
-  }, [debouncedQuery, suppressSuggestions]);
-
-  const handleSuggestionPick = useCallback((suggestion: Suggestion) => {
-    setSelectedLocation({ label: suggestion.name, lat: suggestion.lat, lon: suggestion.lon });
-    setLocationInput(suggestion.name);
-    setSuggestions([]);
-    setSuggestError(null);
-    setIsSuggestionOpen(false);
-    setActiveSuggestionIndex(null);
-    setLocationError(null);
-    setSuppressSuggestions(false);
-  }, []);
-
-  const handleComboboxBlur = useCallback((event: React.FocusEvent<HTMLDivElement>) => {
-    const related = event.relatedTarget;
-    if (related && comboboxRef.current && comboboxRef.current.contains(related as Node)) {
-      return;
-    }
-    setIsSuggestionOpen(false);
-    setActiveSuggestionIndex(null);
-  }, []);
-
-  const handleInputFocus = useCallback(() => {
-    if (suggestions.length > 0 || suggestError || isSuggestLoading) {
-      setIsSuggestionOpen(true);
-    }
-  }, [isSuggestLoading, suggestError, suggestions.length]);
 
   const runSearch = useCallback(async () => {
     const trimmedQuery = locationInput.trim();
@@ -243,29 +107,17 @@ export default function HousingExperience({ showIntro = true, wrapperClassName, 
     }
 
     setLocationError(null);
-    setIsSuggestionOpen(false);
-    setActiveSuggestionIndex(null);
 
-    let location = selectedLocation;
     const needsLocation = !manualLat && !manualLon;
+    const location = selectedLocation;
 
     if (needsLocation && !location) {
       if (!trimmedQuery) {
-        setLocationError("Enter a location or provide coordinates in Advanced options.");
-        return;
+        setLocationError(locationCopy.enterLocationOrProvideCoords);
+      } else {
+        setLocationError("Resolve the location before searching or provide coordinates in Advanced options.");
       }
-      setIsResolving(true);
-      try {
-        location = await geocodeQuery(trimmedQuery);
-        setSelectedLocation(location);
-        setLocationInput(location.label);
-      } catch (error) {
-        const message = error instanceof Error ? error.message : "We could not find that location.";
-        setLocationError(message);
-        setIsResolving(false);
-        return;
-      }
-      setIsResolving(false);
+      return;
     }
 
     const counselorParams: CounselorSearchParams = { radius };
@@ -278,7 +130,7 @@ export default function HousingExperience({ showIntro = true, wrapperClassName, 
     } else if (trimmedQuery) {
       counselorParams.q = trimmedQuery;
     } else {
-      setLocationError("Enter a location or provide coordinates in Advanced options.");
+      setLocationError(locationCopy.enterLocationOrProvideCoords);
       return;
     }
 
@@ -294,7 +146,7 @@ export default function HousingExperience({ showIntro = true, wrapperClassName, 
     } else if (trimmedQuery) {
       fmrParams.q = trimmedQuery;
     } else {
-      setLocationError("Enter a location or provide a county FIPS in Advanced options.");
+      setLocationError(locationCopy.provideCountyFipsOrLocation);
       return;
     }
 
@@ -305,7 +157,7 @@ export default function HousingExperience({ showIntro = true, wrapperClassName, 
   const handleUseCurrentLocation = useCallback(() => {
     setLocationError(null);
     if (typeof navigator === "undefined" || !navigator.geolocation) {
-      setLocationError("Your browser does not support geolocation. Please enter a location instead.");
+      setLocationError(locationCopy.browserNoGeolocation);
       return;
     }
     setIsGeolocating(true);
@@ -316,10 +168,7 @@ export default function HousingExperience({ showIntro = true, wrapperClassName, 
         const label = "Current location";
         setSelectedLocation({ label, lat: latitude, lon: longitude });
         setLocationInput(label);
-        setSuggestions([]);
-        setSuggestError(null);
-        setIsSuggestionOpen(false);
-        setActiveSuggestionIndex(null);
+        locationInputHandleRef.current?.reset();
         setSuppressSuggestions(true);
         setAdvanced((prev) => ({
           ...prev,
@@ -353,45 +202,6 @@ export default function HousingExperience({ showIntro = true, wrapperClassName, 
       }
     );
   }, [advanced, setCounselorSearch, setFmrSearch]);
-
-  const handleInputKeyDown = useCallback(
-    (event: React.KeyboardEvent<HTMLInputElement>) => {
-      if (event.key === "ArrowDown") {
-        if (suggestions.length === 0) return;
-        event.preventDefault();
-        setIsSuggestionOpen(true);
-        setActiveSuggestionIndex((index) => {
-          const next = index === null ? 0 : Math.min(index + 1, suggestions.length - 1);
-          return next;
-        });
-        return;
-      }
-      if (event.key === "ArrowUp") {
-        if (suggestions.length === 0) return;
-        event.preventDefault();
-        setActiveSuggestionIndex((index) => {
-          if (index === null || index <= 0) return 0;
-          return index - 1;
-        });
-        return;
-      }
-      if (event.key === "Enter") {
-        if (activeSuggestionIndex !== null && suggestions[activeSuggestionIndex]) {
-          event.preventDefault();
-          handleSuggestionPick(suggestions[activeSuggestionIndex]);
-          return;
-        }
-        event.preventDefault();
-        void runSearch();
-        return;
-      }
-      if (event.key === "Escape") {
-        setIsSuggestionOpen(false);
-        setActiveSuggestionIndex(null);
-      }
-    },
-    [activeSuggestionIndex, handleSuggestionPick, runSearch, suggestions]
-  );
 
   const counselorsQuery = useQuery({
     queryKey: [
@@ -454,69 +264,40 @@ export default function HousingExperience({ showIntro = true, wrapperClassName, 
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
         <form
           className="space-y-4"
-          onSubmit={(event) => {
+          onSubmit={async (event) => {
             event.preventDefault();
+            const needsLocation = !advanced.lat.trim() && !advanced.lon.trim();
+            if (needsLocation && !selectedLocation) {
+              const selection = await locationInputHandleRef.current?.geocode();
+              if (!selection) {
+                return;
+              }
+            }
             void runSearch();
           }}
         >
           <div className="space-y-2">
-            <label htmlFor="housing-location" className="text-sm font-medium text-slate-700">
-              Address or ZIP code
-            </label>
-            <div
-              ref={comboboxRef}
-              role="combobox"
-              aria-haspopup="listbox"
-              aria-expanded={isSuggestionOpen}
-              aria-owns="housing-suggestion-list"
-              className="relative"
-              onBlur={handleComboboxBlur}
-            >
-              <input
-                id="housing-location"
-                value={locationInput}
-                onChange={(event) => {
-                  setLocationInput(event.target.value);
-                  setLocationError(null);
-                  setSuppressSuggestions(false);
-                }}
-                onFocus={handleInputFocus}
-                onKeyDown={handleInputKeyDown}
-                className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/30"
-                placeholder="E.g. 39194 or 123 Main St, Greenville, MS"
-                aria-autocomplete="list"
-                aria-controls="housing-suggestion-list"
-              />
-              {isSuggestionOpen && (suggestions.length > 0 || suggestError || isSuggestLoading) && (
-                <ul
-                  id="housing-suggestion-list"
-                  role="listbox"
-                  className="absolute z-10 mt-1 max-h-56 w-full overflow-y-auto rounded border border-slate-200 bg-white text-sm shadow-lg"
-                >
-                  {suggestions.map((suggestion, index) => (
-                    <li key={suggestion.id}>
-                      <button
-                        type="button"
-                        role="option"
-                        aria-selected={index === activeSuggestionIndex}
-                        className={`flex w-full items-start gap-2 px-3 py-2 text-left ${
-                          index === activeSuggestionIndex ? "bg-brand-primary/10 text-brand-primary" : "hover:bg-slate-100"
-                        }`}
-                        onMouseDown={(event) => {
-                          event.preventDefault();
-                          handleSuggestionPick(suggestion);
-                        }}
-                      >
-                        <span className="flex-1">{suggestion.name}</span>
-                        {suggestion.kind && <span className="text-xs uppercase text-slate-500">{suggestion.kind}</span>}
-                      </button>
-                    </li>
-                  ))}
-                  {isSuggestLoading && <li className="px-3 py-2 text-slate-500">Searching…</li>}
-                  {!isSuggestLoading && suggestError && <li className="px-3 py-2 text-slate-500">{suggestError}</li>}
-                </ul>
-              )}
-            </div>
+            <LocationInputWithGeocode
+              ref={locationInputHandleRef}
+              id="housing-location"
+              label="Address or ZIP code"
+              value={locationInput}
+              onChange={(next) => {
+                setLocationInput(next);
+                setLocationError(null);
+                setSuppressSuggestions(false);
+              }}
+              placeholder="E.g. 39194 or 123 Main St, Greenville, MS"
+              suppressSuggestions={suppressSuggestions}
+              onLocationSelect={(selection) => {
+                setSelectedLocation(selection);
+                setLocationInput(selection.label);
+                setLocationError(null);
+                setSuppressSuggestions(false);
+              }}
+              onGeocodeStateChange={setIsResolving}
+              onGeocodeError={(message) => setLocationError(message)}
+            />
             <div className="text-xs text-slate-500">
               Selected location: <span className="font-medium text-slate-700">{searchSummary}</span>
               {counselorSearch?.radius ? ` • Radius ${counselorSearch.radius} mi` : null}
@@ -772,4 +553,3 @@ export default function HousingExperience({ showIntro = true, wrapperClassName, 
     </div>
   );
 }
-

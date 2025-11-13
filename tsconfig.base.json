@@ -1,14 +1,17 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
-    "lib": ["ES2020", "DOM"],
+    "target": "ES2021",
+    "lib": ["ES2021", "DOM"],
     "module": "ESNext",
+    "jsx": "react-jsx",
     "moduleResolution": "Bundler",
     "strict": true,
     "skipLibCheck": true,
     "noEmit": true,
     "baseUrl": ".",
+    "allowJs": true,
     "paths": {
+      "@/*": ["apps/web/*"],
       "@types/*": ["packages/types/src/*"],
       "@utils/*": ["packages/utils/src/*"],
       "@cl/types": ["packages/types/src/index.ts"],

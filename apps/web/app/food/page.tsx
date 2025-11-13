@@ -1,36 +1,20 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type FocusEvent,
-  type FormEvent,
-  type KeyboardEvent,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Check, Crosshair, Loader2, Sparkles } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { zSnapResponse, type SnapResponse, type SnapItem } from "@cl/types";
 import { bboxToQueryParam } from "@cl/utils";
 import EmptyState from "@/components/EmptyState";
+import LocationInputWithGeocode, { type LocationInputWithGeocodeHandle } from "@/components/LocationInputWithGeocode";
+import { locationCopy } from "@/config/locationCopy";
 import StoreCard from "@/components/StoreCard";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 
 const MapView = dynamic(() => import("@/components/MapView"), { ssr: false });
 
 type Bbox = [number, number, number, number];
-type Suggestion = { id: string; name: string; lat: number; lon: number; kind: string };
-
-function useDebouncedValue<T>(value: T, delayMs: number): T {
-  const [debounced, setDebounced] = useState(value);
-  useEffect(() => {
-    const t = setTimeout(() => setDebounced(value), delayMs);
-    return () => clearTimeout(t);
-  }, [value, delayMs]);
-  return debounced;
-}
 
 export default function FoodPage() {
   // const log = useMemo(() => createLogger("ui/food"), []);
@@ -44,20 +28,11 @@ export default function FoodPage() {
   const [isManualOpen, setIsManualOpen] = useState(false);
   const [isLocationBlocked, setIsLocationBlocked] = useState(false);
   const [overlayState, setOverlayState] = useState<"awaiting" | "confirming" | "hidden">("awaiting");
-  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
-  const [suggestError, setSuggestError] = useState<string | null>(null);
-  const [isSuggestLoading, setIsSuggestLoading] = useState(false);
-  const [activeSuggestionIndex, setActiveSuggestionIndex] = useState<number | null>(null);
-  const [isSuggestionOpen, setIsSuggestionOpen] = useState(false);
-  const [liveMessage, setLiveMessage] = useState("");
   const debouncedBbox = useDebouncedValue(bbox, 400);
-  const debouncedManualQuery = useDebouncedValue(manualQuery, 350);
-  const comboboxRef = useRef<HTMLDivElement | null>(null);
+  const manualInputHandleRef = useRef<LocationInputWithGeocodeHandle | null>(null);
   const manualInputRef = useRef<HTMLInputElement | null>(null);
   const overlayTimerRef = useRef<number | null>(null);
-  const listboxId = "manual-location-listbox";
   const mapSectionRef = useRef<HTMLDivElement | null>(null);
-  const shouldShowDropdown = isSuggestionOpen && (isSuggestLoading || suggestions.length > 0 || !!suggestError);
 
   const typesParam = useMemo(() => (selectedTypes.size ? Array.from(selectedTypes).sort().join(",") : undefined), [selectedTypes]);
   const bboxParam = useMemo(() => (debouncedBbox ? bboxToQueryParam(debouncedBbox) : undefined), [debouncedBbox]);
@@ -133,114 +108,6 @@ export default function FoodPage() {
   }, []);
 
   useEffect(() => {
-    const query = debouncedManualQuery.trim();
-    if (query.length < 3) {
-      setSuggestions([]);
-      setSuggestError(null);
-      setIsSuggestionOpen(false);
-      setActiveSuggestionIndex(null);
-      setIsSuggestLoading(false);
-      return;
-    }
-
-    let cancelled = false;
-    const controller = new AbortController();
-    setIsSuggestLoading(true);
-    setIsSuggestionOpen(true);
-    setSuggestError(null);
-
-    const fetchSuggestions = async () => {
-      try {
-        const res = await fetch(`/api/geocode/suggest?q=${encodeURIComponent(query)}&limit=5`, {
-          headers: { accept: "application/json" },
-          signal: controller.signal,
-        });
-        if (cancelled) return;
-
-        if (res.status === 404) {
-          setSuggestions([]);
-          setSuggestError("No matches. Try a full address, city & state, or ZIP.");
-          setActiveSuggestionIndex(null);
-          return;
-        }
-
-        if (res.status === 429) {
-          setSuggestions([]);
-          setSuggestError("Too many searches, please pause briefly.");
-          setActiveSuggestionIndex(null);
-          return;
-        }
-
-        if (!res.ok) {
-          setSuggestions([]);
-          setSuggestError("Suggestion service unavailable. You can still search manually.");
-          setActiveSuggestionIndex(null);
-          return;
-        }
-
-        const data = (await res.json()) as Suggestion[];
-        setSuggestions(data.slice(0, 5));
-        setSuggestError(null);
-        setActiveSuggestionIndex(null);
-      } catch (error) {
-        if (cancelled) return;
-        if (error instanceof Error && error.name === "AbortError") {
-          return;
-        }
-        setSuggestions([]);
-        setSuggestError("Suggestion service unavailable. You can still search manually.");
-        setActiveSuggestionIndex(null);
-      } finally {
-        if (!cancelled) {
-          setIsSuggestLoading(false);
-        }
-      }
-    };
-
-    void fetchSuggestions();
-
-    return () => {
-      cancelled = true;
-      controller.abort();
-    };
-  }, [debouncedManualQuery]);
-
-  useEffect(() => {
-    if (!isSuggestionOpen) {
-      setLiveMessage("");
-      return;
-    }
-
-    if (activeSuggestionIndex !== null && suggestions[activeSuggestionIndex]) {
-      const current = suggestions[activeSuggestionIndex];
-      setLiveMessage(`Suggestion ${activeSuggestionIndex + 1} of ${suggestions.length}: ${current.name}`);
-      return;
-    }
-
-    if (isSuggestLoading) {
-      setLiveMessage("Searching for suggestions…");
-      return;
-    }
-
-    if (suggestError) {
-      setLiveMessage(suggestError);
-      return;
-    }
-
-    if (suggestions.length > 0) {
-      setLiveMessage(`${suggestions.length} suggestion${suggestions.length === 1 ? "" : "s"} available.`);
-      return;
-    }
-
-    if (debouncedManualQuery.trim().length >= 3) {
-      setLiveMessage("No matches. Try a full address, city & state, or ZIP.");
-      return;
-    }
-
-    setLiveMessage("");
-  }, [activeSuggestionIndex, debouncedManualQuery, isSuggestionOpen, isSuggestLoading, suggestError, suggestions]);
-
-  useEffect(() => {
     if (!initialCenter) {
       if (overlayTimerRef.current) {
         clearTimeout(overlayTimerRef.current);
@@ -271,136 +138,21 @@ export default function FoodPage() {
     [setFocusedItem]
   );
 
-  const performManualGeocode = useCallback(
-    async (input: string) => {
-      const query = input.trim();
-      if (!query) {
-        setLocationError("Please enter a location.");
-        return;
-      }
-      setLocationError(null);
-      setIsGeocoding(true);
-      setIsSuggestionOpen(false);
-      setActiveSuggestionIndex(null);
-      setIsSuggestLoading(false);
-      setSuggestions([]);
-      setSuggestError(null);
-      try {
-        const res = await fetch(`/api/geocode?q=${encodeURIComponent(query)}`, {
-          headers: { accept: "application/json" },
-        });
-        if (!res.ok) {
-          throw new Error("Geocode failed");
-        }
-        const json = await res.json();
-        if (typeof json.lat !== "number" || typeof json.lon !== "number") {
-          throw new Error("Invalid geocode response");
-        }
-        handleLocationSelected(json.lat, json.lon);
-      } catch (err) {
-        console.error(err);
-        setLocationError("We couldn't find that location. Try a full address, city and state, or ZIP code.");
-      } finally {
-        setIsGeocoding(false);
-      }
-    },
-    [handleLocationSelected]
-  );
-
-  const handleSuggestionPick = useCallback(
-    (suggestion: Suggestion) => {
-      setManualQuery(suggestion.name);
-      setLocationError(null);
-      setSuggestions([]);
-      setSuggestError(null);
-      setIsSuggestionOpen(false);
-      setActiveSuggestionIndex(null);
-      handleLocationSelected(suggestion.lat, suggestion.lon);
-    },
-    [handleLocationSelected]
-  );
-
-  const handleComboboxBlur = useCallback(
-    (event: FocusEvent<HTMLDivElement>) => {
-      const related = event.relatedTarget;
-      if (related && comboboxRef.current && comboboxRef.current.contains(related as Node)) {
-        return;
-      }
-      setIsSuggestionOpen(false);
-      setActiveSuggestionIndex(null);
-    },
-    [comboboxRef]
-  );
-
-  const handleInputFocus = useCallback(() => {
-    if (manualQuery.trim().length >= 3 || suggestions.length > 0 || suggestError || isSuggestLoading) {
-      setIsSuggestionOpen(true);
-    }
-  }, [isSuggestLoading, manualQuery, suggestError, suggestions]);
-
-  const handleInputKeyDown = useCallback(
-    (event: KeyboardEvent<HTMLInputElement>) => {
-      if (event.key === "ArrowDown") {
-        if (suggestions.length === 0) return;
-        event.preventDefault();
-        setIsSuggestionOpen(true);
-        setActiveSuggestionIndex((prev) => {
-          if (suggestions.length === 0) return null;
-          if (prev === null) return 0;
-          return (prev + 1) % suggestions.length;
-        });
-        return;
-      }
-
-      if (event.key === "ArrowUp") {
-        if (suggestions.length === 0) return;
-        event.preventDefault();
-        setIsSuggestionOpen(true);
-        setActiveSuggestionIndex((prev) => {
-          if (suggestions.length === 0) return null;
-          if (prev === null) return suggestions.length - 1;
-          return (prev - 1 + suggestions.length) % suggestions.length;
-        });
-        return;
-      }
-
-      if (event.key === "Enter") {
-        if (isSuggestionOpen && activeSuggestionIndex !== null && suggestions[activeSuggestionIndex]) {
-          event.preventDefault();
-          handleSuggestionPick(suggestions[activeSuggestionIndex]);
-          return;
-        }
-        event.preventDefault();
-        void performManualGeocode(manualQuery);
-        return;
-      }
-
-      if (event.key === "Escape") {
-        if (isSuggestionOpen) {
-          event.preventDefault();
-          setIsSuggestionOpen(false);
-          setActiveSuggestionIndex(null);
-        }
-      }
-    },
-    [activeSuggestionIndex, handleSuggestionPick, isSuggestionOpen, manualQuery, performManualGeocode, suggestions]
-  );
-
   const handleManualSubmit = useCallback(
     (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault();
-      void performManualGeocode(manualQuery);
+      void manualInputHandleRef.current?.geocode();
     },
-    [manualQuery, performManualGeocode]
+    []
   );
 
   const handleUseCurrentLocation = useCallback(() => {
     setLocationError(null);
     setIsLocationBlocked(false);
-    if (!navigator.geolocation) {
-      setLocationError("Your browser does not support geolocation. Please enter your location instead.");
-      return;
-    }
+        if (!navigator.geolocation) {
+      setLocationError(locationCopy.browserNoGeolocation);
+        return;
+      }
     setIsGeolocating(true);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
@@ -423,7 +175,7 @@ export default function FoodPage() {
           setTimeout(() => {
             manualInputRef.current?.focus();
           }, 16);
-          setLocationError("Location is blocked. Type an address instead.");
+          setLocationError(locationCopy.locationBlocked);
           return;
         }
         setLocationError("We couldn't access your current location. Please allow access or enter it manually.");
@@ -503,81 +255,32 @@ export default function FoodPage() {
                   className="mt-4 space-y-4 rounded-2xl border border-slate-200/80 bg-white/70 p-4 shadow-inner shadow-slate-200/70"
                   onSubmit={handleManualSubmit}
                 >
-                  <div>
-                    <label htmlFor="manual-location" className="block text-sm font-semibold text-slate-700">
-                      Search another location
-                    </label>
-                    <div ref={comboboxRef} className="relative mt-2" onBlur={handleComboboxBlur} onFocus={handleInputFocus}>
-                      <input
-                        ref={manualInputRef}
-                        id="manual-location"
-                        name="location"
-                        value={manualQuery}
-                        autoComplete="off"
-                        onChange={(event) => {
-                          setManualQuery(event.target.value);
-                          setLocationError(null);
-                          setSuggestError(null);
-                        }}
-                        onKeyDown={handleInputKeyDown}
-                        role="combobox"
-                        aria-haspopup="listbox"
-                        aria-expanded={shouldShowDropdown}
-                        aria-controls={listboxId}
-                        aria-autocomplete="list"
-                        aria-activedescendant={
-                          shouldShowDropdown && activeSuggestionIndex !== null && suggestions[activeSuggestionIndex]
-                            ? `${listboxId}-option-${suggestions[activeSuggestionIndex].id}`
-                            : undefined
-                        }
-                        placeholder="123 Main St, Jackson MS"
-                        className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-base text-slate-900 placeholder:text-slate-400 focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/40"
-                      />
-                      {shouldShowDropdown && (
-                        <div className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-10 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-500/10">
-                          {isSuggestLoading ? (
-                            <div className="px-4 py-3 text-sm text-slate-500">Searching…</div>
-                          ) : suggestions.length > 0 ? (
-                            <ul id={listboxId} role="listbox" aria-label="Address suggestions" className="max-h-60 overflow-auto py-1">
-                              {suggestions.map((suggestion, index) => {
-                                const isActive = index === activeSuggestionIndex;
-                                const kindLabel = suggestion.kind
-                                  ? suggestion.kind.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase())
-                                  : "";
-                                return (
-                                  <li
-                                    key={suggestion.id}
-                                    id={`${listboxId}-option-${suggestion.id}`}
-                                    role="option"
-                                    aria-selected={isActive}
-                                    className={`cursor-pointer px-4 py-2 text-sm font-medium transition ${
-                                      isActive ? "bg-brand-primary text-white" : "text-slate-800 hover:bg-brand-primary/5"
-                                    }`}
-                                    onMouseDown={(event) => event.preventDefault()}
-                                    onMouseEnter={() => setActiveSuggestionIndex(index)}
-                                    onClick={() => handleSuggestionPick(suggestion)}
-                                  >
-                                    <div>{suggestion.name}</div>
-                                    {kindLabel && (
-                                      <div className={`text-xs ${isActive ? "text-brand-primary/20" : "text-slate-500"}`}>{kindLabel}</div>
-                                    )}
-                                  </li>
-                                );
-                              })}
-                            </ul>
-                          ) : (
-                            <div className="px-4 py-3 text-sm text-slate-500">
-                              {suggestError ?? "No matches. Try a full address, city & state, or ZIP."}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                      <p aria-live="polite" className="sr-only">
-                        {liveMessage}
-                      </p>
-                    </div>
-                    <p className="mt-2 mb-6 text-xs text-slate-500">Enter address, city & state, or ZIP code.</p>
-                  </div>
+                  <LocationInputWithGeocode
+                    ref={manualInputHandleRef}
+                    inputRef={manualInputRef}
+                    id="manual-location"
+                    label="Search another location"
+                    value={manualQuery}
+                    onChange={(next) => {
+                      setManualQuery(next);
+                      setLocationError(null);
+                    }}
+                    placeholder="123 Main St, Jackson MS"
+                    helperText="Enter address, city & state, or ZIP code."
+                    disabled={isGeocoding || isGeolocating}
+                    size="lg"
+                    onLocationSelect={(selection) => {
+                      setLocationError(null);
+                      handleLocationSelected(selection.lat, selection.lon);
+                    }}
+                    onGeocodeStateChange={setIsGeocoding}
+                    onGeocodeError={(message) => setLocationError(message)}
+                    inputClassName="bg-white text-slate-900"
+                    listClassName="shadow-xl shadow-slate-500/10"
+                    getSuggestionKindLabel={(kind) =>
+                        kind ? kind.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase()) : null
+                      }
+                  />
                   <div className="flex items-center gap-3">
                     <button
                       type="submit"
@@ -590,13 +293,8 @@ export default function FoodPage() {
                       type="button"
                       onClick={() => {
                         setManualQuery("");
-                        setSuggestions([]);
-                        setSuggestError(null);
                         setLocationError(null);
-                        setIsSuggestionOpen(false);
-                        setActiveSuggestionIndex(null);
-                        setIsSuggestLoading(false);
-                        setLiveMessage("");
+                        manualInputHandleRef.current?.reset();
                       }}
                       className="rounded-2xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2"
                     >
@@ -606,7 +304,7 @@ export default function FoodPage() {
                 </form>
               )}
 
-              {locationError && <p className="text-sm font-medium text-rose-600">{locationError}</p>}
+                      {locationError && <p className="text-sm font-medium text-rose-600">{locationError}</p>}
             </div>
           </div>
           <div className="relative">

@@ -8,7 +8,7 @@
 ## Current State
 - Housing counselors route and UI only accept `lat`, `lon`, optional `radius`; inputs must be manually provided (`apps/web/app/housing/page.tsx` form).
 - FMR route and UI require a 5-digit county FIPS code; there is no helper to derive FIPS from a location query.
-- A Nominatim-based geocode proxy (`/api/geocode`, `/api/geocode/suggest`) already exists for the Food finder; no shared facility to reuse it for housing.
+- A Nominatim-based geocode proxy (`/api/geocode`, `/api/geocode/suggest`) already exists for the Food finder, and we now have shared `LocationInput` / `LocationInputWithGeocode` components that wrap these endpoints for both food and housing UIs.
 
 ## Proposed Experience
 - A single “Search by address or ZIP” field with autocomplete (reusing `/api/geocode/suggest`) drives both counselor and FMR lookups.
@@ -31,8 +31,8 @@
 - Add unit coverage around the new helpers (query parsing, FCC response handling, caching fall-through).
 
 ## Frontend Updates
-- Replace the coordinate/FIPS forms with a shared location search component:
-  - Reuse the food flow’s debounce and suggestion UX.
+- Replace the coordinate/FIPS forms with the shared `LocationInputWithGeocode` component:
+  - Leverage the common debounce/suggestion UX and the built-in `/api/geocode` submit handler.
   - On submit or selection, persist `{lat, lon, displayName, postalCode}` in state.
   - Automatically trigger counselor + FMR queries using the resolved data (converting to the new APIs).
   - Provide an expandable “Advanced options” section exposing manual coordinate/FIPS inputs in case of lookup issues.

@@ -1,7 +1,7 @@
 # Address Autocomplete Plan (/food)
 
 ## Summary
-Add address autocomplete to the manual location input on `/food`. Use the free public OpenStreetMap Nominatim search endpoint via our server as the data source, with strict rate limiting, caching, and attribution. No geographic biasing (no viewbox or bounding) will be used.
+Add address autocomplete to the manual location input on `/food` (and, now that the shared components exist, reuse it for housing/broadband experiences). Use the free public OpenStreetMap Nominatim search endpoint via our server as the data source, with strict rate limiting, caching, and attribution. No geographic biasing (no viewbox or bounding) will be used.
 
 ## Traffic capacity before needing a free-tier-with-key upgrade
 - Public Nominatim policy effectively limits us to approximately 1 request per second from our server IP.
@@ -23,7 +23,7 @@ Add address autocomplete to the manual location input on `/food`. Use the free p
 - No provider lock-in; the server endpoint remains provider-agnostic.
 
 ## Architecture
-- Client (Food page): Accessible combobox wraps the existing manual input; queries our server suggest route.
+- Client (Food page and any future location entry): Accessible combobox (`LocationInput` / `LocationInputWithGeocode`) wraps the manual input; queries our server suggest route.
 - Server: Lightweight `/api/geocode/suggest` endpoint proxies to public Nominatim with debounce-friendly parameters and strict rate limiting + caching.
 - Upstream: `https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&countrycodes=us&limit=5&q=<query>`
 
@@ -51,7 +51,7 @@ Add address autocomplete to the manual location input on `/food`. Use the free p
   - `404` if no matches.
 
 ## Client behavior (UI/UX)
-- Transform the manual text input into a combobox:
+- Transform the manual text input into a combobox (implemented today via `LocationInput` and `LocationInputWithGeocode` so other apps can drop it in without rebuilding the pattern):
   - Debounce: 300–400ms; only query when `q.length >= 3`.
   - Show up to 5 suggestions.
   - Keyboard: Up/Down to navigate, Enter to select, Esc to close.
@@ -108,4 +108,3 @@ Add address autocomplete to the manual location input on `/food`. Use the free p
 ---
 
 If traffic or UX indicates we are consistently approaching the public Nominatim limits, we can switch the backend implementation of `/api/geocode/suggest` to a free key-based provider without changing the frontend code.
-
