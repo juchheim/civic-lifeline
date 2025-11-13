@@ -37,8 +37,8 @@ const sections = [
   },
   {
     href: "/stats",
-    title: "Stats — Unemployment",
-    description: "See unemployment numbers by county.",
+    title: "Local Safety Net",
+    description: "See unemployment and economic indicators by county.",
   },
   {
     href: "/coming-soon",
@@ -146,7 +146,7 @@ export default function HomePage() {
         {
           "@type": "ListItem",
           position: 4,
-          name: "Unemployment Statistics",
+          name: "Local Safety Net Statistics",
           description: "View county-level unemployment trends and economic indicators",
           url: `${baseUrl}/stats`,
         },

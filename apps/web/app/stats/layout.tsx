@@ -3,9 +3,9 @@ import type { Metadata } from "next";
 const baseUrl = process.env.NEXT_PUBLIC_APP_BASE_URL || "https://civiclifeline.org";
 
 export const metadata: Metadata = {
-  title: "Unemployment & Local Statistics",
+  title: "Local Safety Net — County Statistics",
   description:
-    "View county-level unemployment trends and supporting economic indicators including poverty rates, median income, SNAP participation, education levels, uninsured rates, and housing burden. Data from BLS LAUS and Census ACS.",
+    "Select a state and county to view unemployment trends and supporting economic indicators including poverty rates, median income, SNAP participation, education levels, uninsured rates, and housing burden. Data from BLS LAUS and Census ACS.",
   keywords: [
     "unemployment rate",
     "county statistics",
@@ -23,15 +23,15 @@ export const metadata: Metadata = {
     "local statistics",
   ],
   openGraph: {
-    title: "Unemployment & Local Statistics by County | Civic Lifeline",
+    title: "Local Safety Net — County Statistics | Civic Lifeline",
     description:
-      "See unemployment trends from BLS LAUS plus supporting indicators like poverty, SNAP usage, housing burden, and median wages by county.",
+      "Select a state and county to see unemployment trends from BLS LAUS plus supporting indicators like poverty, SNAP usage, housing burden, and median wages.",
     url: "/stats",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "County Unemployment & Economic Indicators",
+    title: "Local Safety Net — County Economic Indicators",
     description:
       "Track unemployment trends and local safety net metrics by county. Data from BLS and Census Bureau, updated regularly.",
   },
@@ -44,9 +44,9 @@ export default function StatsLayout({ children }: { children: React.ReactNode })
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "WebApplication",
-    name: "County Statistics Dashboard",
+    name: "Local Safety Net Statistics",
     description:
-      "Interactive dashboard showing county-level unemployment trends and supporting economic indicators from BLS LAUS and Census ACS.",
+      "Interactive dashboard showing county-level unemployment trends and supporting economic indicators from BLS LAUS and Census ACS. Select a state and county to view local safety net metrics.",
     url: `${baseUrl}/stats`,
     applicationCategory: "DataVisualization",
     operatingSystem: "Web",

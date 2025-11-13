@@ -85,9 +85,9 @@ export default function StatsPage() {
           <header className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">County Metrics</p>
-              <h1 className="text-3xl font-semibold text-slate-900">Unemployment & Local Safety Net</h1>
+              <h1 className="text-3xl font-semibold text-slate-900">Local Safety Net</h1>
               <p className="mt-2 max-w-2xl text-sm text-slate-600">
-                Mix and match a state and county to see the latest unemployment trend from BLS LAUS,
+                Select a state and your county to see the latest unemployment trend from BLS LAUS,
                 plus supporting indicators like poverty, SNAP usage, housing burden, and median wages.
               </p>
             </div>
