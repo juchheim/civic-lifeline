@@ -106,8 +106,8 @@ Each hook is responsible for:
 ### Phase 7 – Final Composition & Cleanup
 - [x] Create `state/index.ts` exporting the assembled `useResumeBuilderState` and re-export needed types.
 - [x] Update imports in consuming components to point at the new path if necessary.
-- [ ] Remove any remaining inline logic from the original file, leaving only the composition wrapper (or delete the original if replaced).
-- [ ] Run full test suite + manual regression on resume builder.
+- [x] Remove remaining inline logic from the original file, leaving only the composition wrapper (or delete the original if replaced).
+- [x] Run full test suite + manual regression on resume builder. (Manual QA completed by user; vitest suite run on 2025-02-20.)
 
 ---
 
