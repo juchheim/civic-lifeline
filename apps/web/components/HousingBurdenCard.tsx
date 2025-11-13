@@ -10,14 +10,21 @@ type HousingBurdenData = {
   percent: string | null;
 };
 
+const toStringOrNull = (value: unknown): string | null => {
+  if (value === null || value === undefined) return null;
+  if (typeof value === "string") return value;
+  if (typeof value === "number" && Number.isFinite(value)) return value.toString();
+  return null;
+};
+
 const parseHousingBurden = (json: unknown): HousingBurdenData => {
-  if (!Array.isArray(json) || json.length < 2) {
-    throw new Error("ACS housing profile returned no data");
+  if (!json || typeof json !== "object") {
+    throw new Error("Housing burden payload malformed");
   }
-  const row = json[1] as [string, string | null];
+  const payload = json as { countyName?: unknown; percent?: unknown };
   return {
-    countyName: row[0] ?? "County",
-    percent: row[1] ?? null,
+    countyName: typeof payload.countyName === "string" && payload.countyName ? payload.countyName : "County",
+    percent: toStringOrNull(payload.percent),
   };
 };
 
@@ -34,11 +41,9 @@ export default function HousingBurdenCard({ stateFips, countyFips }: { stateFips
   const { data, loading, error, loaded } = useCachedStat<HousingBurdenData>(
     cacheKey,
     async () => {
-      const countyCode = countyFips!.slice(-3);
-      const url = new URL("https://api.census.gov/data/2023/acs/acs5/profile");
-      url.searchParams.set("get", "NAME,DP04_0142PE");
-      url.searchParams.set("for", `county:${countyCode}`);
-      url.searchParams.set("in", `state:${stateFips}`);
+      const url = new URL("/api/stats/housing-burden", window.location.origin);
+      url.searchParams.set("stateFips", stateFips!);
+      url.searchParams.set("countyFips", countyFips!);
       return fetchStat(url.toString(), parseHousingBurden);
     },
     [stateFips, countyFips]

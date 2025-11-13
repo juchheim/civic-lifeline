@@ -10,14 +10,21 @@ type MedianIncomeData = {
   medianIncome: string | null;
 };
 
+const toStringOrNull = (value: unknown): string | null => {
+  if (value === null || value === undefined) return null;
+  if (typeof value === "string") return value;
+  if (typeof value === "number" && Number.isFinite(value)) return value.toString();
+  return null;
+};
+
 const parseMedianIncome = (json: unknown): MedianIncomeData => {
-  if (!Array.isArray(json) || json.length < 2) {
-    throw new Error("ACS median income returned no data");
+  if (!json || typeof json !== "object") {
+    throw new Error("Median income payload malformed");
   }
-  const row = json[1] as [string, string | null];
+  const payload = json as { countyName?: unknown; medianIncome?: unknown };
   return {
-    countyName: row[0] ?? "County",
-    medianIncome: row[1] ?? null,
+    countyName: typeof payload.countyName === "string" && payload.countyName ? payload.countyName : "County",
+    medianIncome: toStringOrNull(payload.medianIncome),
   };
 };
 
@@ -36,11 +43,9 @@ export default function MedianIncomeCard({ countyFips, stateFips, countyNameFall
   const { data, loading, error, loaded } = useCachedStat<MedianIncomeData>(
     cacheKey,
     async () => {
-      const countyCode = countyFips!.slice(-3);
-      const url = new URL("https://api.census.gov/data/timeseries/poverty/saipe");
-      url.searchParams.set("get", "NAME,SAEMHI_PT");
-      url.searchParams.set("for", `county:${countyCode}`);
-      url.searchParams.set("in", `state:${stateFips}`);
+      const url = new URL("/api/stats/median-income", window.location.origin);
+      url.searchParams.set("stateFips", stateFips!);
+      url.searchParams.set("countyFips", countyFips!);
       url.searchParams.set("time", "2023");
       return fetchStat(url.toString(), parseMedianIncome);
     },
