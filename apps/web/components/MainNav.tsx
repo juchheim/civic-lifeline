@@ -11,6 +11,7 @@ const links = [
   { href: "/resume", label: "Resume Builder" },
   { href: "/housing-utilities", label: "Housing & Utilities" },
   { href: "/stats", label: "Stats" },
+  { href: "/benefits", label: "Benefits" },
 ];
 
 export default function MainNav() {
