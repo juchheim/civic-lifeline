@@ -4,6 +4,7 @@
 The stats page (`/stats`) works in development but doesn't display states in production because:
 1. Missing MongoDB connection environment variables in Vercel
 2. States/counties collections may not be seeded in production MongoDB
+3. Census APIs enforce rate limits that can trigger errors if too many requests are issued at once
 
 ## Required Environment Variables
 
