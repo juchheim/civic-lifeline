@@ -4,7 +4,7 @@ import { ResumeBuilderSection } from "@/components/resume/ResumeBuilderSection";
 const baseUrl = process.env.NEXT_PUBLIC_APP_BASE_URL || "https://civiclifeline.org";
 
 export const metadata: Metadata = {
-  title: "Resume Builder — Create Professional Resumes",
+  title: "Resume Builder — Free Professional Resumes",
   description:
     "Free resume builder with guided steps and AI-powered summary support. Create professional resumes quickly and download ready-to-use PDFs instantly. No registration required.",
   keywords: [

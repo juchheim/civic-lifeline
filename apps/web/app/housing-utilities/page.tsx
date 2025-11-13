@@ -4,7 +4,7 @@ import HousingUtilitiesClient from "./HousingUtilitiesClient";
 const baseUrl = process.env.NEXT_PUBLIC_APP_BASE_URL || "https://civiclifeline.org";
 
 export const metadata: Metadata = {
-  title: "Housing & Utilities — Counselors, Rent Data & Broadband",
+  title: "Housing & Utilities — Rent & Counselors",
   description:
     "Find HUD housing counselors, check fair market rent, locate utility providers, and view broadband coverage. Comprehensive housing and utility resources with verified data from HUD, EPA, FCC.",
   keywords: [
