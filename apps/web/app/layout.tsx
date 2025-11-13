@@ -14,9 +14,83 @@ const footerLinks = [
   { href: "/stats", label: "Job Numbers" },
 ];
 
+const baseUrl = process.env.NEXT_PUBLIC_APP_BASE_URL || "https://civiclifeline.org";
+
 export const metadata: Metadata = {
-  title: "Civic Lifeline",
-  description: "Community data and services",
+  metadataBase: new URL(baseUrl),
+  title: {
+    default: "Civic Lifeline — Essential Resources & Tools",
+    template: "%s | Civic Lifeline",
+  },
+  description:
+    "Free tools and verified public data for food assistance, housing help, job resources, and essential services. No registration required. SNAP retailers, HUD counselors, unemployment stats, and more.",
+  keywords: [
+    "SNAP retailers",
+    "food assistance",
+    "EBT stores",
+    "resume builder",
+    "housing counselors",
+    "fair market rent",
+    "unemployment statistics",
+    "broadband coverage",
+    "utility costs",
+    "HUD counselors",
+    "BLS LAUS",
+    "community resources",
+    "essential services",
+    "USDA SNAP",
+    "Census data",
+    "free tools",
+    "no registration",
+    "verified data",
+  ],
+  authors: [{ name: "Civic Lifeline" }],
+  creator: "Civic Lifeline",
+  publisher: "Civic Lifeline",
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: "/",
+    siteName: "Civic Lifeline",
+    title: "Civic Lifeline — Essential Resources & Tools",
+    description:
+      "Free tools and verified public data for food assistance, housing help, job resources, and essential services across the United States.",
+    images: [
+      {
+        url: "/opengraph-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Civic Lifeline — Essential Resources & Tools",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Civic Lifeline — Find Help for Food, Housing, Jobs & More",
+    description:
+      "Free tools with verified government data. Find SNAP retailers, create resumes, locate housing counselors, and access unemployment statistics.",
+    images: ["/twitter-image.png"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  alternates: {
+    canonical: "/",
+  },
+  category: "Community Resources",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

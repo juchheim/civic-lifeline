@@ -1,5 +1,23 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight, ExternalLink } from "lucide-react";
+
+const baseUrl = process.env.NEXT_PUBLIC_APP_BASE_URL || "https://civiclifeline.org";
+
+export const metadata: Metadata = {
+  title: "Home",
+  description:
+    "Find the help you need with free tools and verified data. Locate SNAP retailers, build resumes, find housing counselors, check utility costs, and view unemployment statistics.",
+  openGraph: {
+    title: "Civic Lifeline — Essential Resources & Tools",
+    description:
+      "Free tools and verified public data for food assistance, housing help, job resources, and essential services across the United States.",
+    url: "/",
+  },
+  alternates: {
+    canonical: "/",
+  },
+};
 
 const sections = [
   {
@@ -86,8 +104,63 @@ const highlightPoints = [
 ];
 
 export default function HomePage() {
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: "Civic Lifeline",
+    description:
+      "Free tools and verified public data for food assistance, housing help, job resources, and essential services across the United States.",
+    url: baseUrl,
+    potentialAction: {
+      "@type": "SearchAction",
+      target: {
+        "@type": "EntryPoint",
+        urlTemplate: `${baseUrl}/api/geocode/suggest?q={search_term_string}`,
+      },
+      "query-input": "required name=search_term_string",
+    },
+    mainEntity: {
+      "@type": "ItemList",
+      itemListElement: [
+        {
+          "@type": "ListItem",
+          position: 1,
+          name: "Food Access",
+          description: "Find stores that accept SNAP benefits on an interactive map",
+          url: `${baseUrl}/food`,
+        },
+        {
+          "@type": "ListItem",
+          position: 2,
+          name: "Resume Builder",
+          description: "Create professional resumes with guided steps and AI assistance",
+          url: `${baseUrl}/resume`,
+        },
+        {
+          "@type": "ListItem",
+          position: 3,
+          name: "Housing & Utilities",
+          description: "Find housing counselors, fair market rent data, and utility information",
+          url: `${baseUrl}/housing-utilities`,
+        },
+        {
+          "@type": "ListItem",
+          position: 4,
+          name: "Unemployment Statistics",
+          description: "View county-level unemployment trends and economic indicators",
+          url: `${baseUrl}/stats`,
+        },
+      ],
+    },
+  };
+
   return (
-    <div className="mx-auto my-4 max-w-[85rem] overflow-hidden rounded-[2.5rem] border border-slate-200 bg-white/95 px-4 py-8 shadow-xl shadow-slate-400/10 backdrop-blur sm:px-6 lg:px-8">
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
+      <div className="mx-auto my-4 max-w-[85rem] overflow-hidden rounded-[2.5rem] border border-slate-200 bg-white/95 px-4 py-8 shadow-xl shadow-slate-400/10 backdrop-blur sm:px-6 lg:px-8">
       <div className="grid gap-10 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1fr)] lg:gap-12">
         <div className="flex flex-col gap-8 rounded-3xl bg-civic-blue px-6 py-7 text-white shadow-lg shadow-civic-blue/20 sm:px-8 lg:px-10">
           <div className="space-y-4">
@@ -166,5 +239,6 @@ export default function HomePage() {
         </div>
       </div>
     </div>
+    </>
   );
 }
