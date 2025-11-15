@@ -379,6 +379,22 @@ function useLocalHelpSearch() {
   });
 }
 
+function formatLocalHelpLocation(location: BenefitsLocation): string {
+  if (location.zip) return location.zip;
+  const stateCode = resolveStateCode(location.stateCode) ?? resolveStateCode(location.stateName);
+  if (location.countyName && stateCode) {
+    return `${location.countyName}, ${stateCode}`;
+  }
+  const labelParts = location.displayLabel.split(",").map((part) => part.trim()).filter(Boolean);
+  if (stateCode && labelParts.length) {
+    return `${labelParts[0]}, ${stateCode}`;
+  }
+  if (labelParts.length >= 2) {
+    return `${labelParts[0]}, ${labelParts[1]}`;
+  }
+  return location.displayLabel;
+}
+
 export default function BenefitsClient() {
   const { location, setLocationFromResolved, clearLocation } = useBenefitsLocation();
   const [locationInputValue, setLocationInputValue] = useState("");
@@ -1031,7 +1047,7 @@ function FoodAndMoneyPanel({ location, promptForLocation }: BenefitPanelHelpers)
       setHelpErrors((prev) => ({ ...prev, [kind]: undefined }));
       localHelpMutation.mutate(
         {
-          locationText: location.displayLabel,
+          locationText: formatLocalHelpLocation(location),
           latitude: location.latitude,
           longitude: location.longitude,
           kind,
@@ -1373,7 +1389,7 @@ function HealthCoveragePanel({ location, promptForLocation }: BenefitPanelHelper
       return;
     }
     localHelpMutation.mutate({
-      locationText: location.displayLabel,
+      locationText: formatLocalHelpLocation(location),
       latitude: location.latitude,
       longitude: location.longitude,
       kind: "health",
@@ -1624,7 +1640,7 @@ function BillsHousingPanel({ location, promptForLocation }: BenefitPanelHelpers)
       if (!ensureLocation()) return;
       if (!location) return;
       localHelpMutation.mutate({
-        locationText: location.displayLabel,
+        locationText: formatLocalHelpLocation(location),
         latitude: location.latitude,
         longitude: location.longitude,
         kind,
@@ -1819,7 +1835,7 @@ function SecurityDisabilityPanel({ location, promptForLocation }: BenefitPanelHe
       if (!ensureLocation()) return;
       if (!location) return;
       localHelpMutation.mutate({
-        locationText: location.displayLabel,
+        locationText: formatLocalHelpLocation(location),
         latitude: location.latitude,
         longitude: location.longitude,
         kind,
