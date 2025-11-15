@@ -244,6 +244,29 @@ const LEARN_MORE_LINKS: Record<BenefitSection["id"], Array<{ label: string; href
   ],
 };
 
+type FoodHelpKind = Extract<BenefitLocalHelpKind, "food" | "kids" | "cash">;
+
+const FOOD_HELP_CATEGORIES: Array<{ kind: FoodHelpKind; label: string; description: string; cta: string }> = [
+  {
+    kind: "food",
+    label: "SNAP food help",
+    description: "Talk with someone about EBT cards, interviews, and recertification.",
+    cta: "Search SNAP helpers",
+  },
+  {
+    kind: "kids",
+    label: "WIC for moms & kids",
+    description: "Find WIC clinics, formula support, and breastfeeding help.",
+    cta: "Search WIC helpers",
+  },
+  {
+    kind: "cash",
+    label: "Cash help for bills",
+    description: "Ask your local office about TANF or other emergency cash programs.",
+    cta: "Search cash assistance offices",
+  },
+];
+
 function PanelGuidance({ guide }: { guide: PanelGuide }) {
   return (
     <div className="space-y-6 rounded-2xl border border-slate-200 bg-white p-5 text-sm text-slate-700 shadow-sm">
@@ -977,11 +1000,19 @@ function BenefitsDisclaimerModal({ onClose }: { onClose: () => void }) {
 
 function FoodAndMoneyPanel({ location, promptForLocation }: BenefitPanelHelpers) {
   const localHelpMutation = useLocalHelpSearch();
-  const hasSearched = localHelpMutation.isSuccess || localHelpMutation.isError;
-  const remoteError = localHelpMutation.isError
-    ? "We had trouble loading local programs. Please try again or contact a local American Job Center."
-    : undefined;
+  const [activeHelpKind, setActiveHelpKind] = useState<FoodHelpKind>("food");
+  const [helpResults, setHelpResults] = useState<Partial<Record<FoodHelpKind, BenefitsLocalHelpResponse>>>({});
+  const [helpErrors, setHelpErrors] = useState<Partial<Record<FoodHelpKind, string | undefined>>>({});
+  const [hasRequestedKind, setHasRequestedKind] = useState<Partial<Record<FoodHelpKind, boolean>>>({});
+  const [pendingKind, setPendingKind] = useState<FoodHelpKind | null>(null);
   const locationAlertId = useId();
+
+  useEffect(() => {
+    setHelpResults({});
+    setHelpErrors({});
+    setHasRequestedKind({});
+    setPendingKind(null);
+  }, [location?.displayLabel]);
 
   const ensureLocation = useCallback(() => {
     if (!location) {
@@ -992,59 +1023,106 @@ function FoodAndMoneyPanel({ location, promptForLocation }: BenefitPanelHelpers)
   }, [location, promptForLocation]);
 
   const runLocalHelpSearch = useCallback(
-    (kind: BenefitLocalHelpKind) => {
+    (kind: FoodHelpKind) => {
       if (!ensureLocation()) return;
       if (!location) return;
-      localHelpMutation.mutate({
-        locationText: location.displayLabel,
-        latitude: location.latitude,
-        longitude: location.longitude,
-        kind,
-      });
+      setPendingKind(kind);
+      setHasRequestedKind((prev) => ({ ...prev, [kind]: true }));
+      setHelpErrors((prev) => ({ ...prev, [kind]: undefined }));
+      localHelpMutation.mutate(
+        {
+          locationText: location.displayLabel,
+          latitude: location.latitude,
+          longitude: location.longitude,
+          kind,
+        },
+        {
+          onSuccess: (data) => {
+            setHelpResults((prev) => ({ ...prev, [kind]: data }));
+          },
+          onError: (error) => {
+            const fallbackMessage =
+              "We had trouble loading local programs. Please try again or contact a local American Job Center.";
+            setHelpErrors((prev) => ({
+              ...prev,
+              [kind]: error instanceof Error ? error.message : fallbackMessage,
+            }));
+          },
+          onSettled: () => {
+            setPendingKind((current) => (current === kind ? null : current));
+          },
+        },
+      );
     },
     [ensureLocation, localHelpMutation, location],
   );
 
+  const activeCategory = FOOD_HELP_CATEGORIES.find((category) => category.kind === activeHelpKind) ?? FOOD_HELP_CATEGORIES[0]!;
+  const activeResults = helpResults[activeHelpKind];
+  const activeError = helpErrors[activeHelpKind];
+  const hasActiveSearch = Boolean(hasRequestedKind[activeHelpKind]);
+  const isActiveLoading = pendingKind === activeHelpKind && localHelpMutation.isPending;
+  const locationSummary = location
+    ? `Showing ${activeCategory.label.toLowerCase()} near ${location.displayLabel}.`
+    : "Add your city or ZIP to search near you.";
+
   return (
     <div className="space-y-6">
       <PanelGuidance guide={PANEL_GUIDANCE["food-money"]} />
-      <BenefitCard
-        title="Food help near you"
-        description="Search for food pantries, SNAP helpers, and cash aid in your area."
-      >
-        <p className="text-sm text-slate-600">
-          {location ? `Searching near: ${location.displayLabel}` : "Add your city or ZIP to search near you."}
-        </p>
+      <BenefitCard title="Local food, WIC, and cash helpers" description="Pick what you need help with and we will show nearby offices.">
         {!location ? (
           <p id={locationAlertId} className="text-sm text-amber-700">
-            Add your city or ZIP above so we can look for food help near you.
+            Add your city or ZIP above so we can look near you.
           </p>
-        ) : null}
-        <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+        ) : (
+          <p className="text-sm text-slate-600">Using location: {location.displayLabel}</p>
+        )}
+        <div className="mt-4 flex flex-wrap gap-2" role="tablist" aria-label="Food and cash help categories">
+          {FOOD_HELP_CATEGORIES.map((category) => {
+            const isActive = activeHelpKind === category.kind;
+            return (
+              <button
+                key={category.kind}
+                type="button"
+                onClick={() => setActiveHelpKind(category.kind)}
+                className={`rounded-full border px-4 py-1.5 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2 ${
+                  isActive ? "border-brand-primary bg-brand-primary text-white" : "border-slate-300 bg-white text-slate-700 hover:bg-brand-primary/10"
+                }`}
+                aria-pressed={isActive}
+              >
+                {category.label}
+              </button>
+            );
+          })}
+        </div>
+        <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/70 px-4 py-3 text-sm text-slate-700">
+          <p className="font-semibold text-slate-900">{activeCategory.label}</p>
+          <p className="mt-1">{activeCategory.description}</p>
+        </div>
+        <div className="mt-4 flex flex-col gap-2 sm:flex-row">
           <button
             type="button"
             className={buttonVariants.primary}
-            onClick={() => runLocalHelpSearch("food")}
-            disabled={localHelpMutation.isPending}
+            onClick={() => runLocalHelpSearch(activeHelpKind)}
+            disabled={!location || isActiveLoading}
             aria-describedby={!location ? locationAlertId : undefined}
           >
-            {localHelpMutation.isPending ? "Searching…" : "Get food help near me"}
+            {isActiveLoading ? "Searching…" : activeCategory.cta}
           </button>
-          <button
-            type="button"
-            className={buttonVariants.secondary}
-            onClick={promptForLocation}
-          >
+          <button type="button" className={buttonVariants.secondary} onClick={promptForLocation}>
             {location ? "Change location" : "Set my location"}
           </button>
         </div>
-        <div className="mt-4 space-y-2">
+        <div className="mt-5 space-y-3">
+          <p className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600">
+            {locationSummary}
+          </p>
           <BenefitLocalHelpList
-            items={localHelpMutation.data?.items ?? []}
-            isLoading={localHelpMutation.isPending}
-            errorMessage={remoteError}
-            hasSearched={hasSearched}
-            source={localHelpMutation.data?.source}
+            items={activeResults?.items ?? []}
+            isLoading={isActiveLoading}
+            errorMessage={activeError}
+            hasSearched={hasActiveSearch}
+            source={activeResults?.source}
           />
           <LocalHelpDisclaimer />
           <AmericanJobCenterHint />
@@ -1052,7 +1130,8 @@ function FoodAndMoneyPanel({ location, promptForLocation }: BenefitPanelHelpers)
       </BenefitCard>
 
       <BenefitCard title="SNAP and WIC basics">
-        <ul className="space-y-2 text-sm text-slate-600">
+        <p className="text-sm text-slate-600">Use the local search above or visit an office to ask about these programs.</p>
+        <ul className="mt-3 space-y-2 text-sm text-slate-600">
           <li className="flex gap-2">
             <span aria-hidden className="text-brand-primary">•</span>
             SNAP gives monthly grocery money on an EBT card.
@@ -1061,42 +1140,31 @@ function FoodAndMoneyPanel({ location, promptForLocation }: BenefitPanelHelpers)
             <span aria-hidden className="text-brand-primary">•</span>
             WIC gives food and formula for pregnant people, babies, and kids under 5.
           </li>
+          <li className="flex gap-2">
+            <span aria-hidden className="text-brand-primary">•</span>
+            Bring ID, proof of address, and income info when you visit an office.
+          </li>
         </ul>
-        <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-          <button
-            type="button"
-            className={buttonVariants.primary}
-            onClick={() => runLocalHelpSearch("food")}
-            disabled={localHelpMutation.isPending}
-            aria-describedby={!location ? locationAlertId : undefined}
-          >
-            Look up SNAP helpers
-          </button>
-          <button
-            type="button"
-            className={buttonVariants.secondary}
-            onClick={() => runLocalHelpSearch("kids")}
-            disabled={localHelpMutation.isPending}
-            aria-describedby={!location ? locationAlertId : undefined}
-          >
-            Look up WIC helpers
-          </button>
-        </div>
       </BenefitCard>
 
       <BenefitCard
         title="Cash help for bills"
-        description="Some states offer TANF or other cash aid for rent, utilities, and daily needs."
+        description="Some states offer TANF or other cash aid for rent, utilities, and daily needs. Use the search above and ask about:"
       >
-        <button
-          type="button"
-          className={buttonVariants.primary}
-          onClick={() => runLocalHelpSearch("cash")}
-          disabled={localHelpMutation.isPending}
-          aria-describedby={!location ? locationAlertId : undefined}
-        >
-          Find cash assistance offices
-        </button>
+        <ul className="space-y-2 text-sm text-slate-600">
+          <li className="flex gap-2">
+            <span aria-hidden className="text-brand-primary">•</span>
+            Emergency cash or vouchers for rent, utilities, diapers, or gas.
+          </li>
+          <li className="flex gap-2">
+            <span aria-hidden className="text-brand-primary">•</span>
+            TANF (Temporary Assistance for Needy Families) and other state cash programs.
+          </li>
+          <li className="flex gap-2">
+            <span aria-hidden className="text-brand-primary">•</span>
+            What to bring: photo ID, proof of address, and recent pay stubs or benefit letters.
+          </li>
+        </ul>
       </BenefitCard>
       <LearnMoreLinks sectionId="food-money" />
     </div>

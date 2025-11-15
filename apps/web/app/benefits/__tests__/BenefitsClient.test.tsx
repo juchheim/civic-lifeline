@@ -125,6 +125,13 @@ describe("BenefitsClient", () => {
     });
   });
 
+  it("shows category toggles for local food, WIC, and cash help", () => {
+    renderBenefitsPage();
+    expect(screen.getByRole("button", { name: /SNAP food help/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /WIC for moms/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Cash help for bills/i })).toBeInTheDocument();
+  });
+
   it("allows jumping to other sections via the quick nav", async () => {
     renderBenefitsPage();
     const user = userEvent.setup();
