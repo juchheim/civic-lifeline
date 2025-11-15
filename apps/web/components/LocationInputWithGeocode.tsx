@@ -28,6 +28,9 @@ function createSelection(query: string, payload: any): LocationSelection {
     lat: payload?.lat,
     lon: payload?.lon,
     postalCode: typeof payload?.address?.postalCode === "string" ? payload.address.postalCode : undefined,
+    state: typeof payload?.address?.state === "string" ? payload.address.state : undefined,
+    stateCode: typeof payload?.address?.stateCode === "string" ? payload.address.stateCode : undefined,
+    county: typeof payload?.address?.county === "string" ? payload.address.county : undefined,
   };
 }
 
@@ -127,11 +130,14 @@ const LocationInputWithGeocode = forwardRef<LocationInputWithGeocodeHandle, Loca
         {...inputProps}
         ref={locationInputRef}
         onSuggestionSelect={(suggestion) => {
-          const selection = {
+          const selection: LocationSelection = {
             label: suggestion.name,
             lat: suggestion.lat,
             lon: suggestion.lon,
             postalCode: undefined,
+            county: suggestion.county,
+            state: suggestion.state,
+            stateCode: suggestion.stateCode,
           };
           onLocationSelect(selection);
           onGeocodeError?.(null);

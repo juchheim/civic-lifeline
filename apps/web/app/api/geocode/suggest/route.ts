@@ -14,7 +14,16 @@ let lastRefillMs = Date.now();
 
 const CACHE_MAX_SIZE = 200;
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
-type Suggestion = { id: string; name: string; lat: number; lon: number; kind: string };
+type Suggestion = {
+  id: string;
+  name: string;
+  lat: number;
+  lon: number;
+  kind: string;
+  state?: string;
+  stateCode?: string;
+  county?: string;
+};
 type CacheEntry = { expiresAt: number; value: Suggestion[] };
 const cache = new Map<string, CacheEntry>();
 
@@ -137,16 +146,43 @@ export async function GET(request: NextRequest) {
       return Response.json({ error: "Suggestion lookup failed." }, { status });
     }
 
-    const payload: Array<{ place_id: number; display_name: string; lat: string; lon: string; type?: string }> = await res.json();
+    const payload: Array<{
+      place_id: number;
+      display_name: string;
+      lat: string;
+      lon: string;
+      type?: string;
+      address?: Record<string, unknown>;
+    }> = await res.json();
 
     responseBody = payload
-      .map((item) => ({
-        id: String(item.place_id),
-        name: item.display_name,
-        lat: Number.parseFloat(item.lat),
-        lon: Number.parseFloat(item.lon),
-        kind: item.type ?? "",
-      }))
+      .map((item) => {
+        const address = item.address && typeof item.address === "object" ? item.address : {};
+        const county =
+          typeof address?.county === "string"
+            ? address.county
+            : typeof address?.region === "string"
+              ? address.region
+              : undefined;
+        const state =
+          typeof address?.state === "string"
+            ? address.state
+            : typeof address?.state_district === "string"
+              ? address.state_district
+              : undefined;
+        const stateCode = typeof address?.state_code === "string" ? address.state_code : undefined;
+        const suggestion: Suggestion = {
+          id: String(item.place_id),
+          name: item.display_name,
+          lat: Number.parseFloat(item.lat),
+          lon: Number.parseFloat(item.lon),
+          kind: item.type ?? "",
+          county,
+          state,
+          stateCode,
+        };
+        return suggestion;
+      })
       .filter((item) => Number.isFinite(item.lat) && Number.isFinite(item.lon));
 
     if (responseBody.length === 0) {
@@ -167,4 +203,3 @@ export async function GET(request: NextRequest) {
     return Response.json({ error: "Suggestion service timed out." }, { status: 504 });
   }
 }
-

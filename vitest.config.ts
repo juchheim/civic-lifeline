@@ -8,6 +8,7 @@ export default defineConfig({
     environmentMatchGlobs: [
       ["apps/web/components/**", "jsdom"],
       ["apps/web/lib/**", "jsdom"],
+      ["apps/web/app/benefits/**", "jsdom"],
     ],
   },
   esbuild: {

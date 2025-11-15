@@ -3,7 +3,7 @@
 export default function EmptyState({ kind }: { kind: "food" | "housing" | "broadband" | "jobs" }) {
   let message = "";
   if (kind === "food") message = "No retailers in this view. Try zooming out or searching another area.";
-  if (kind === "housing") message = "No counselors within 30 miles. Increase radius or call 211.";
+  if (kind === "housing") message = "No counselors within 30 miles. Increase the radius or contact a local job center for more options.";
   if (kind === "broadband") message = "No summary available for this county. Check back soon.";
   if (kind === "jobs") message = "No series available for this county yet. Choose another county or try later.";
   return (
@@ -12,5 +12,4 @@ export default function EmptyState({ kind }: { kind: "food" | "housing" | "broad
     </div>
   );
 }
-
 

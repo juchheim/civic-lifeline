@@ -166,6 +166,9 @@ export type LocationSuggestion = {
   lat: number;
   lon: number;
   kind: string;
+  state?: string;
+  stateCode?: string;
+  county?: string;
 };
 
 export type LocationSelection = {
@@ -173,6 +176,9 @@ export type LocationSelection = {
   lat: number;
   lon: number;
   postalCode?: string;
+  state?: string;
+  stateCode?: string;
+  county?: string;
 };
 ```
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   zUtilitiesCostsResponse,
@@ -10,15 +10,12 @@ import {
   type UtilitiesCostDistribution,
 } from "@cl/types";
 import SuccessAlert from "@/components/SuccessAlert";
+import LocationInputWithGeocode, { type LocationInputWithGeocodeHandle } from "@/components/LocationInputWithGeocode";
+import type { LocationSelection } from "@/types/location";
 
 interface UtilitiesSearchParams {
   state: string;
   county?: string;
-}
-
-interface ChoiceOption {
-  label: string;
-  value: string;
 }
 
 const currencyFormatter = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
@@ -61,22 +58,6 @@ async function fetchStates(): Promise<Array<{ code: string; name: string; fips: 
   return (json as Array<{ code: string; name: string; fips: string }>).sort((a, b) => a.name.localeCompare(b.name));
 }
 
-async function fetchCountyOptions(stateCode: string): Promise<ChoiceOption[]> {
-  if (!stateCode) return [];
-  const res = await fetch(`/api/counties?stateCode=${encodeURIComponent(stateCode)}`, { headers: { accept: "application/json" } });
-  const json = await res.json().catch(() => []);
-  if (!res.ok) {
-    throw new Error("Unable to load counties for that state.");
-  }
-  return (json as Array<{ name: string }>).map((county) => ({ label: county.name, value: county.name }));
-}
-
-function buildSearchParams(state: string, value: string): UtilitiesSearchParams {
-  const trimmed = value.trim();
-  if (!trimmed) throw new Error("Enter a county name.");
-  return { state, county: trimmed };
-}
-
 function formatMonthly(value: number | null) {
   if (value === null || Number.isNaN(value)) return "—";
   return currencyFormatter.format(Math.round(value));
@@ -98,10 +79,12 @@ const ASSUMPTIONS = {
 };
 
 export default function UtilitiesExperience() {
-  const [stateCode, setStateCode] = useState("MS");
   const [locationInput, setLocationInput] = useState("");
-  const [formError, setFormError] = useState<string | null>(null);
+  const [locationError, setLocationError] = useState<string | null>(null);
   const [searchParams, setSearchParams] = useState<UtilitiesSearchParams | null>(null);
+  const [resolvedLabel, setResolvedLabel] = useState<string | null>(null);
+  const [isGeocoding, setIsGeocoding] = useState(false);
+  const locationInputRef = useRef<LocationInputWithGeocodeHandle | null>(null);
   const [expandedCost, setExpandedCost] = useState<string | null>(null);
   const [activeProviderTab, setActiveProviderTab] = useState<(typeof providerTabs)[number]["id"]>("water");
 
@@ -111,12 +94,56 @@ export default function UtilitiesExperience() {
     staleTime: 86_400_000,
   });
 
-  const { data: countyChoices = [], isPending: isCountyLoading, error: countyError } = useQuery({
-    queryKey: ["utilities-counties", stateCode],
-    queryFn: () => fetchCountyOptions(stateCode),
-    staleTime: 3600_000,
-    enabled: Boolean(stateCode),
-  });
+  const stateLookup = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const state of states) {
+      map.set(state.name.toLowerCase(), state.code.toUpperCase());
+    }
+    return map;
+  }, [states]);
+
+  const resolveStateCode = useCallback(
+    (selection: LocationSelection) => {
+      if (selection.stateCode && selection.stateCode.length === 2) {
+        return selection.stateCode.toUpperCase();
+      }
+      if (selection.state) {
+        const match = stateLookup.get(selection.state.toLowerCase());
+        if (match) return match;
+      }
+      return null;
+    },
+    [stateLookup],
+  );
+
+  const resolveCountyName = useCallback((selection: LocationSelection) => {
+    if (selection.county) return selection.county;
+    const countyPattern = /([^,]*(county|parish|borough|census area|municipality|city and borough))/i;
+    const match = selection.label.match(countyPattern);
+    if (match) return match[0].trim();
+    const firstComma = selection.label.split(",")[0]?.trim();
+    return firstComma || null;
+  }, []);
+
+  const handleLocationResolved = useCallback(
+    (selection: LocationSelection) => {
+      const state = resolveStateCode(selection);
+      if (!state) {
+        setLocationError("We couldn't determine the state for that location. Try another search.");
+        return;
+      }
+      const county = resolveCountyName(selection);
+      if (!county) {
+        setLocationError("We couldn't determine the county for that location. Try another search.");
+        return;
+      }
+      setSearchParams({ state, county });
+      setResolvedLabel(`${county}, ${state}`);
+      setLocationError(null);
+      setLocationInput(selection.label);
+    },
+    [resolveCountyName, resolveStateCode],
+  );
 
   const costsQuery = useQuery({
     queryKey: ["utilities-costs", searchParams?.state ?? "", searchParams?.county ?? ""],
@@ -177,65 +204,44 @@ export default function UtilitiesExperience() {
     return waterQuery;
   })();
 
-  const handleSubmit = (event: React.FormEvent) => {
-    event.preventDefault();
-    setFormError(null);
-    try {
-      const params = buildSearchParams(stateCode, locationInput);
-      setSearchParams(params);
-    } catch (error) {
-      setFormError(error instanceof Error ? error.message : "Enter a county name.");
-    }
-  };
-
-  const isAnyLoading = Boolean(searchParams && (costsQuery.isFetching || activeProviderQuery.isFetching));
+  const isAnyLoading = Boolean(
+    (searchParams && (costsQuery.isFetching || activeProviderQuery.isFetching)) || isGeocoding,
+  );
 
   return (
     <div className="space-y-6">
       <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <label className="text-sm font-medium text-slate-700">
-            State
-            <select
-              className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/30"
-              value={stateCode}
-              onChange={(event) => {
-                setStateCode(event.target.value);
-                setLocationInput("");
-                setFormError(null);
-              }}
-            >
-              {states.length === 0 && <option value="">Loading states…</option>}
-              {states.map((state) => (
-                <option key={state.code} value={state.code}>
-                  {state.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="text-sm font-medium text-slate-700">
-            County name
-            <input
-              list="utilities-county-options"
-              className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 shadow-sm placeholder-slate-400 focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/30"
-              placeholder="Start typing a county (e.g., Yazoo County)"
+        <form
+          className="space-y-4"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void locationInputRef.current?.geocode();
+          }}
+        >
+          <div className="space-y-2">
+            <LocationInputWithGeocode
+              ref={locationInputRef}
+              label="Search by address or ZIP code"
               value={locationInput}
-              onChange={(event) => setLocationInput(event.target.value)}
+              onChange={(next) => {
+                setLocationInput(next);
+                setLocationError(null);
+              }}
+              placeholder="E.g. Yazoo County, MS or 39194"
+              helperText="We’ll match it to the right county automatically."
+              onLocationSelect={handleLocationResolved}
+              onGeocodeStateChange={setIsGeocoding}
+              onGeocodeError={(message) => setLocationError(message)}
             />
-            <datalist id="utilities-county-options">
-              {countyChoices.map((option) => (
-                <option key={option.value} value={option.label} />
-              ))}
-            </datalist>
-          </label>
-          {formError && (
-            <div className="rounded-xl border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">{formError}</div>
-          )}
-          {countyError && (
-            <p className="text-xs text-amber-600">
-              {countyError?.message || "Unable to load county suggestions."}
-            </p>
-          )}
+            {locationError && (
+              <div className="rounded-xl border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">{locationError}</div>
+            )}
+            {statesError && (
+              <p className="text-xs text-amber-600">
+                {statesError.message || "Unable to load state metadata."}
+              </p>
+            )}
+          </div>
           <div className="flex flex-wrap items-center gap-3">
             <button
               type="submit"
@@ -244,13 +250,15 @@ export default function UtilitiesExperience() {
             >
               {isAnyLoading ? "Searching…" : "Search utilities data"}
             </button>
-            {(isStatesLoading || isCountyLoading) && <span className="text-xs text-slate-500">Loading choices…</span>}
-            {statesError && <span className="text-xs text-red-600">{statesError.message}</span>}
+            {isGeocoding && <span className="text-xs text-slate-500">Resolving location…</span>}
+            {isStatesLoading && <span className="text-xs text-slate-500">Loading states…</span>}
           </div>
         </form>
         {(costsQuery.data || activeProviderQuery.data) && (
           <div className="mt-4">
-            <SuccessAlert message="Location found – data loaded successfully" />
+            <SuccessAlert
+              message={resolvedLabel ? `Showing utilities data for ${resolvedLabel}` : "Location found – data loaded successfully"}
+            />
           </div>
         )}
       </section>
@@ -264,7 +272,7 @@ export default function UtilitiesExperience() {
             </div>
             {costsQuery.isFetching && <span className="text-xs text-slate-500">Refreshing…</span>}
           </div>
-          {!searchParams && <p className="mt-4 text-sm text-slate-500">Enter a county to see typical utility bills.</p>}
+          {!searchParams && <p className="mt-4 text-sm text-slate-500">Search for an address or ZIP code to see typical utility bills.</p>}
           {costsQuery.error && (
             <p className="mt-4 rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-sm text-red-700">
               {costsQuery.error instanceof Error ? costsQuery.error.message : "Unable to load cost data."}

@@ -34,4 +34,4 @@
 
 ## Empty State Copy (examples)
 - *“We couldn’t find retailers in this view. Try zooming out or choosing a different category.”*
-- *“No counselors found within 30 miles. Increase the radius or call 211.”*
+- *“No counselors found within 30 miles. Increase the radius or contact a local job center for more options.”*

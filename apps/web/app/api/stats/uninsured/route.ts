@@ -3,36 +3,48 @@ import { CensusApiError, censusErrorResponse, fetchCensusDataset, invalidParamRe
 
 export const runtime = "nodejs";
 
+const DATASET_PATH = "timeseries/healthins/sahie";
+const SELECT_FIELDS = "NAME,NUI_PT,PCTUI_PT";
+type Scope = "county" | "state" | "national";
+type CensusRow = [string | null, string | null, string | null];
+
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const stateFips = url.searchParams.get("stateFips")?.trim();
-  const countyFips = url.searchParams.get("countyFips")?.trim();
+  const countyFips = url.searchParams.get("countyFips")?.trim() ?? null;
   const time = url.searchParams.get("time")?.trim() ?? "2022";
 
   if (!stateFips || !/^\d{2}$/.test(stateFips)) {
     return invalidParamResponse("stateFips parameter required (2 digits)");
   }
-  if (!countyFips || !/^\d{5}$/.test(countyFips)) {
-    return invalidParamResponse("countyFips parameter required (5 digits)");
+  if (countyFips) {
+    if (!/^\d{5}$/.test(countyFips)) {
+      return invalidParamResponse("countyFips parameter required (5 digits)");
+    }
+    if (countyFips.slice(0, 2) !== stateFips) {
+      return invalidParamResponse("countyFips must belong to the same stateFips");
+    }
   }
 
-  const countyCode = countyFips.slice(-3);
-
   try {
-    const json = await fetchCensusDataset("timeseries/healthins/sahie", {
-      get: "NAME,NUI_PT,PCTUI_PT",
-      for: `county:${countyCode}`,
-      in: `state:${stateFips}`,
-      time,
-    });
+    const [countyRow, stateRow, nationalRow] = await Promise.all([
+      countyFips ? fetchCountyRow(stateFips, countyFips, time) : Promise.resolve(null),
+      fetchStateRow(stateFips, time),
+      fetchNationalRow(time),
+    ]);
 
-    const row = json[1] as [string, string | null, string | null];
+    const county = toAreaStats(countyRow, "county", countyFips);
+    const state = toAreaStats(stateRow, "state", stateFips);
+    const national = toAreaStats(nationalRow, "national", "us");
 
     return NextResponse.json(
       {
-        countyName: row[0] ?? "County",
-        uninsuredEstimate: row[1] ?? null,
-        uninsuredPercent: row[2] ?? null,
+        countyName: county?.name,
+        uninsuredEstimate: county?.estimate ?? null,
+        uninsuredPercent: county?.percent ?? null,
+        county,
+        state,
+        national,
         source: {
           dataset: "SAHIE",
           time,
@@ -43,7 +55,7 @@ export async function GET(req: NextRequest) {
         headers: {
           "Cache-Control": "public, max-age=0, s-maxage=21600",
         },
-      }
+      },
     );
   } catch (error) {
     if (error instanceof CensusApiError) {
@@ -54,3 +66,49 @@ export async function GET(req: NextRequest) {
   }
 }
 
+async function fetchCountyRow(stateFips: string, countyFips: string, time: string): Promise<CensusRow | null> {
+  const countyCode = countyFips.slice(-3);
+  const json = await fetchCensusDataset(DATASET_PATH, {
+    get: SELECT_FIELDS,
+    for: `county:${countyCode}`,
+    in: `state:${stateFips}`,
+    time,
+  });
+  return (json[1] as CensusRow) ?? null;
+}
+
+async function fetchStateRow(stateFips: string, time: string): Promise<CensusRow | null> {
+  const json = await fetchCensusDataset(DATASET_PATH, {
+    get: SELECT_FIELDS,
+    for: `state:${stateFips}`,
+    time,
+  });
+  return (json[1] as CensusRow) ?? null;
+}
+
+async function fetchNationalRow(time: string): Promise<CensusRow | null> {
+  const json = await fetchCensusDataset(DATASET_PATH, {
+    get: SELECT_FIELDS,
+    for: "us:1",
+    time,
+  });
+  return (json[1] as CensusRow) ?? null;
+}
+
+function toAreaStats(row: CensusRow | null, scope: Scope, fips?: string | null) {
+  if (!row) return null;
+  const [name, estimate, percent] = row;
+  return {
+    name: name ?? getScopeLabel(scope),
+    estimate: estimate ?? null,
+    percent: percent ?? null,
+    fips: fips ?? null,
+    scope,
+  };
+}
+
+function getScopeLabel(scope: Scope) {
+  if (scope === "national") return "United States";
+  if (scope === "state") return "State";
+  return "County";
+}

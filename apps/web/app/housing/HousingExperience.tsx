@@ -92,38 +92,49 @@ export default function HousingExperience({ showIntro = true, wrapperClassName, 
   const [counselorSearch, setCounselorSearch] = useState<CounselorSearchParams | null>(null);
   const [fmrSearch, setFmrSearch] = useState<FmrSearchParams | null>(null);
 
-  const runSearch = useCallback(async () => {
-    const trimmedQuery = locationInput.trim();
-    const manualLat = advanced.lat.trim();
-    const manualLon = advanced.lon.trim();
-    const manualFips = advanced.fips.trim();
-    const manualYear = advanced.year.trim() || DEFAULT_FMR_YEAR;
-    const radius = advanced.radius.trim() || DEFAULT_RADIUS;
+  const runSearch = useCallback(
+    async (selectionOverride?: LocationSelection) => {
+      const trimmedQuery = locationInput.trim();
+      const manualLat = advanced.lat.trim();
+      const manualLon = advanced.lon.trim();
+      const manualFips = advanced.fips.trim();
+      const manualYear = advanced.year.trim() || DEFAULT_FMR_YEAR;
+      const radius = advanced.radius.trim() || DEFAULT_RADIUS;
 
-    const hasPartialCoords = (manualLat && !manualLon) || (!manualLat && manualLon);
-    if (hasPartialCoords) {
-      setLocationError("Provide both latitude and longitude to use manual coordinates.");
-      return;
-    }
-
-    setLocationError(null);
-
-    const needsLocation = !manualLat && !manualLon;
-    const location = selectedLocation;
-
-    if (needsLocation && !location) {
-      if (!trimmedQuery) {
-        setLocationError(locationCopy.enterLocationOrProvideCoords);
-      } else {
-        setLocationError("Resolve the location before searching or provide coordinates in Advanced options.");
+      const hasPartialCoords = (manualLat && !manualLon) || (!manualLat && manualLon);
+      if (hasPartialCoords) {
+        setLocationError("Provide both latitude and longitude to use manual coordinates.");
+        return;
       }
-      return;
-    }
 
-    const counselorParams: CounselorSearchParams = { radius };
-    if (manualLat && manualLon) {
-      counselorParams.lat = manualLat;
-      counselorParams.lon = manualLon;
+      setLocationError(null);
+
+      const needsLocation = !manualLat && !manualLon;
+      let location = selectionOverride ?? selectedLocation;
+
+      if (selectionOverride) {
+        setSelectedLocation(selectionOverride);
+        setLocationInput(selectionOverride.label);
+      }
+
+      if (needsLocation && !location) {
+        if (!trimmedQuery) {
+          setLocationError(locationCopy.enterLocationOrProvideCoords);
+          return;
+        }
+        const selection = await locationInputHandleRef.current?.geocode();
+        if (!selection) {
+          return;
+        }
+        location = selection;
+        setSelectedLocation(selection);
+        setLocationInput(selection.label);
+      }
+
+      const counselorParams: CounselorSearchParams = { radius };
+      if (manualLat && manualLon) {
+        counselorParams.lat = manualLat;
+        counselorParams.lon = manualLon;
     } else if (location) {
       counselorParams.lat = location.lat.toFixed(6);
       counselorParams.lon = location.lon.toFixed(6);
@@ -150,9 +161,11 @@ export default function HousingExperience({ showIntro = true, wrapperClassName, 
       return;
     }
 
-    setCounselorSearch(counselorParams);
-    setFmrSearch(fmrParams);
-  }, [advanced, locationInput, selectedLocation]);
+      setCounselorSearch(counselorParams);
+      setFmrSearch(fmrParams);
+    },
+    [advanced, locationInput, selectedLocation]
+  );
 
   const handleUseCurrentLocation = useCallback(() => {
     setLocationError(null);
@@ -264,15 +277,8 @@ export default function HousingExperience({ showIntro = true, wrapperClassName, 
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
         <form
           className="space-y-4"
-          onSubmit={async (event) => {
+          onSubmit={(event) => {
             event.preventDefault();
-            const needsLocation = !advanced.lat.trim() && !advanced.lon.trim();
-            if (needsLocation && !selectedLocation) {
-              const selection = await locationInputHandleRef.current?.geocode();
-              if (!selection) {
-                return;
-              }
-            }
             void runSearch();
           }}
         >
@@ -294,6 +300,7 @@ export default function HousingExperience({ showIntro = true, wrapperClassName, 
                 setLocationInput(selection.label);
                 setLocationError(null);
                 setSuppressSuggestions(false);
+                void runSearch(selection);
               }}
               onGeocodeStateChange={setIsResolving}
               onGeocodeError={(message) => setLocationError(message)}

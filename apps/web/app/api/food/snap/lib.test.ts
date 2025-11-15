@@ -32,8 +32,21 @@ describe("snap lib", () => {
     const bbox = normalizeBbox("-90.7,32.6,-90.1,33.1");
     const url = buildArcgisUrl(bbox, 123, "https://services2.arcgis.com/xyz/ArcGIS/rest/services/Test/FeatureServer/0/query");
     const u = new URL(url);
-    expect(u.searchParams.get("geometry")).toBe("-90.7,32.6,-90.1,33.1");
-    expect(u.searchParams.get("resultRecordCount")).toBe("123");
-    expect(u.searchParams.get("f")).toBe("json");
+    const params = u.searchParams;
+    expect(params.get("resultRecordCount")).toBe("123");
+    expect(params.get("f")).toBe("json");
+    expect(params.get("inSR")).toBe("102100");
+    expect(params.get("outSR")).toBe("4326");
+    expect(params.get("geometryType")).toBe("esriGeometryEnvelope");
+    // SNAP queries use Web Mercator meters (EPSG:3857/102100), so expect projected geometry.
+    const geometry = params.get("geometry");
+    expect(geometry).toBeTruthy();
+    const projected = geometry!.split(",").map(Number);
+    expect(projected).toHaveLength(4);
+    const [xmin, ymin, xmax, ymax] = projected;
+    expect(xmin).toBeLessThan(xmax);
+    expect(ymin).toBeLessThan(ymax);
+    expect(Math.abs(xmin)).toBeGreaterThan(1_000_000);
+    expect(Math.abs(ymin)).toBeGreaterThan(3_000_000);
   });
 });

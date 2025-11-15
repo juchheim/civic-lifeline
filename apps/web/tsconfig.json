@@ -8,7 +8,8 @@
       "@/*": ["./*"],
       "@cl/db": ["../../packages/db/src/index.ts"],
       "@cl/types": ["../../packages/types/src/index.ts"],
-      "@cl/utils": ["../../packages/utils/src/index.ts"]
+      "@cl/utils": ["../../packages/utils/src/index.ts"],
+      "@types/*": ["../../packages/types/src/*"]
     },
     "allowJs": true,
     "esModuleInterop": true,

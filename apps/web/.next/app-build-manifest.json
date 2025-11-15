@@ -1,9 +1,9 @@
 {
   "pages": {
-    "/housing-utilities/page": [
+    "/benefits/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/housing-utilities/page.js"
+      "static/chunks/app/benefits/page.js"
     ],
     "/layout": [
       "static/chunks/webpack.js",

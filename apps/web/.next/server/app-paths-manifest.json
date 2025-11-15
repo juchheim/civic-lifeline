@@ -1,6 +1,6 @@
 {
   "/_not-found/page": "app/_not-found/page.js",
-  "/housing-utilities/page": "app/housing-utilities/page.js",
-  "/api/states/route": "app/api/states/route.js",
-  "/api/counties/route": "app/api/counties/route.js"
+  "/benefits/page": "app/benefits/page.js",
+  "/manifest.webmanifest/route": "app/manifest.webmanifest/route.js",
+  "/api/benefits/state-social-security/route": "app/api/benefits/state-social-security/route.js"
 }
