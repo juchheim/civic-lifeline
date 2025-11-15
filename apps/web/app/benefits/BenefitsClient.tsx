@@ -19,6 +19,7 @@ import {
   zBenefitStateSocialSecurityResponse,
 } from "@cl/types";
 import BenefitLocalHelpList from "@/components/benefits/BenefitLocalHelpList";
+import CollapsibleGuideSection from "@/components/benefits/CollapsibleGuideSection";
 import { SocialSecurityOfficesPanel } from "@/components/benefits/SocialSecurityOfficesPanel";
 import LocationInputWithGeocode, { type LocationInputWithGeocodeHandle } from "@/components/LocationInputWithGeocode";
 import type { LocationSelection } from "@/types/location";
@@ -267,58 +268,61 @@ const FOOD_HELP_CATEGORIES: Array<{ kind: FoodHelpKind; label: string; descripti
   },
 ];
 
-function PanelGuidance({ guide }: { guide: PanelGuide }) {
+function PanelGuidance({ guide, title = "Program basics" }: { guide: PanelGuide; title?: string }) {
   return (
-    <div className="space-y-6 rounded-2xl border border-slate-200 bg-white p-5 text-sm text-slate-700 shadow-sm">
-      <div>
-        <p className="text-sm font-semibold text-slate-900">What this can help with</p>
-        <ul className="mt-2 list-disc space-y-1 pl-5">
-          {guide.helps.map((item) => (
-            <li key={item}>{item}</li>
-          ))}
-        </ul>
-      </div>
-      <div>
-        <p className="text-sm font-semibold text-slate-900">Good to know before you start</p>
-        <ul className="mt-2 list-disc space-y-1 pl-5">
-          {guide.goodToKnow.map((item) => (
-            <li key={item}>{item}</li>
-          ))}
-        </ul>
-      </div>
-      <div>
-        <p className="text-sm font-semibold text-slate-900">Next steps</p>
-        <ol className="mt-2 list-decimal space-y-1 pl-5">
-          {guide.steps.map((item) => (
-            <li key={item}>{item}</li>
-          ))}
-        </ol>
-        <ul className="mt-3 space-y-1 text-sm">
-          {guide.officialLinks.map((link) => (
-            <li key={link.href}>
-              <a
-                href={link.href}
-                target="_blank"
-                rel="noreferrer"
-                className="font-semibold text-brand-primary underline-offset-2 hover:underline"
-              >
+    <section className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 text-sm text-slate-700 shadow-sm sm:p-5">
+      <h4 className="text-sm font-semibold uppercase tracking-[0.3em] text-slate-500">{title}</h4>
+      <div className="mt-3 space-y-4">
+        <div>
+          <h5 className="text-sm font-semibold text-slate-900">What this can help with</h5>
+          <ul className="mt-1.5 list-disc space-y-1 pl-5">
+            {guide.helps.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        </div>
+        <div>
+          <h5 className="text-sm font-semibold text-slate-900">Good to know before you start</h5>
+          <ul className="mt-1.5 list-disc space-y-1 pl-5">
+            {guide.goodToKnow.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        </div>
+        <div>
+          <h5 className="text-sm font-semibold text-slate-900">Next steps</h5>
+          <ol className="mt-1.5 list-decimal space-y-1 pl-5">
+            {guide.steps.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ol>
+          <ul className="mt-2 space-y-1 text-sm">
+            {guide.officialLinks.map((link) => (
+              <li key={link.href}>
+                <a
+                  href={link.href}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-semibold text-brand-primary underline-offset-2 hover:underline"
+                >
+                  {link.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div className="rounded-2xl border border-slate-100 bg-white px-4 py-3">
+          <p className="text-sm font-semibold text-slate-900">Related tools on Civic Lifeline</p>
+          <div className="mt-2 flex flex-wrap gap-3 text-sm">
+            {guide.relatedLinks.map((link) => (
+              <Link key={link.href} href={link.href} className="font-semibold text-brand-primary underline-offset-4 hover:underline">
                 {link.label}
-              </a>
-            </li>
-          ))}
-        </ul>
-      </div>
-      <div className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3">
-        <p className="text-sm font-semibold text-slate-900">Related tools on Civic Lifeline</p>
-        <div className="mt-2 flex flex-wrap gap-3 text-sm">
-          {guide.relatedLinks.map((link) => (
-            <Link key={link.href} href={link.href} className="font-semibold text-brand-primary underline-offset-4 hover:underline">
-              {link.label}
-            </Link>
-          ))}
+              </Link>
+            ))}
+          </div>
         </div>
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -527,7 +531,6 @@ export default function BenefitsClient() {
       "Food, money, health, and housing help in one place.",
       "Short guides explain what to bring and what to expect.",
       "Local offices, hotlines, and trusted links to finish applications.",
-      "Mobile-friendly layout so you can read or search on any device.",
     ],
     [],
   );
@@ -552,7 +555,7 @@ export default function BenefitsClient() {
   }, []);
 
   return (
-    <div className="space-y-12 bg-neutral-bg pb-16">
+    <div className="space-y-10 bg-neutral-bg pb-16">
       <style
         dangerouslySetInnerHTML={{
           __html: `@media print {
@@ -581,46 +584,39 @@ export default function BenefitsClient() {
       />
       <section className="mt-4 overflow-hidden rounded-[2.5rem] border border-slate-200 bg-white shadow-lg shadow-slate-400/10">
         <div className="grid gap-10 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1fr)] lg:items-stretch">
-          <div className="flex flex-col justify-between px-6 py-8 sm:px-10 sm:py-12">
+          <div className="flex flex-col justify-between px-6 py-6 sm:px-9 sm:py-8">
             <div className="space-y-5">
               <span className="inline-flex w-fit items-center gap-2 rounded-full border border-brand-primary/20 bg-brand-primary/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.32em] text-brand-primary">
                 BENEFITS
               </span>
-              <div className="space-y-4">
-                <h1 className="text-3xl font-semibold leading-tight text-slate-900 sm:text-[2.5rem]">
+              <div className="space-y-3">
+                <h1 className="text-3xl font-bold leading-tight text-slate-900 sm:text-[2.5rem]">
                   Benefits help in plain language.
                 </h1>
                 <p className="max-w-2xl text-base leading-relaxed text-slate-600 sm:text-lg">
-                  {"Read simple guides for food, money, health coverage, housing, and disability help. Share your city or ZIP to see nearby programs, or scroll to learn what each benefit does."}
+                  Read quick guides for food, money, health coverage, housing, and disability help, then add your city or ZIP to see trusted next steps.
                 </p>
               </div>
-            </div>
-            <div className="mt-8 rounded-3xl border border-brand-primary/20 bg-brand-primary/5 px-6 py-4 text-sm text-brand-primary sm:text-base">
-              {"Need more help? Email "}
-              <a href="mailto:help@civiclifeline.org" className="underline hover:opacity-90">
-                help@civiclifeline.org
-              </a>{" "}
-              {"and we will help you find the right office."}
             </div>
           </div>
           <div className="relative">
             <div className="absolute inset-0 bg-info-tint" aria-hidden />
-            <div className="relative flex h-full flex-col justify-between gap-6 rounded-t-3xl bg-info-tint px-6 py-8 text-slate-900 sm:px-10 lg:rounded-none">
-              <div className="space-y-4">
-                <p className="text-sm font-semibold uppercase tracking-[0.3em] text-slate-600">Why this helps</p>
-                <ul className="space-y-3 text-base text-slate-700 sm:text-lg">
+            <div className="relative flex h-full flex-col justify-between gap-4 rounded-t-3xl bg-info-tint px-6 py-6 text-slate-900 sm:px-9 lg:rounded-none">
+              <div className="space-y-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-600">Why this helps</p>
+                <ul className="space-y-2 text-sm text-slate-700 sm:text-base">
                   {heroHighlights.map((highlight) => (
                     <li key={highlight} className="flex items-start gap-3">
-                      <span className="mt-2 h-2 w-2 rounded-full bg-brand-accent" aria-hidden />
+                      <span className="mt-1.5 h-2 w-2 rounded-full bg-brand-accent" aria-hidden />
                       <span>{highlight}</span>
                     </li>
                   ))}
                 </ul>
               </div>
-              <div className="rounded-2xl border border-brand-accent/30 bg-white/80 p-5 text-base leading-relaxed text-slate-800 shadow-inner shadow-brand-accent/10">
-                <p className="font-semibold text-slate-800">What to expect</p>
-                <p className="mt-2 text-slate-700">
-                  {"Each section explains who the program helps, what paperwork to bring, and where to go next."}
+              <div className="rounded-2xl border border-brand-accent/30 bg-white/80 p-4 text-sm leading-relaxed text-slate-800 shadow-inner shadow-brand-accent/10">
+                <p className="text-base font-semibold text-slate-800">What to expect</p>
+                <p className="mt-1.5 text-slate-700">
+                  Each section explains who the program helps, which papers to bring, and where to go next.
                 </p>
               </div>
             </div>
@@ -628,26 +624,38 @@ export default function BenefitsClient() {
         </div>
       </section>
 
-      <section className="rounded-[1.5rem] border border-slate-200 bg-white px-6 py-6 shadow-lg shadow-slate-400/10 sm:px-8 cl-benefits-hide-on-print">
-        <h2 className="text-xl font-semibold text-slate-900">What this page can help you with</h2>
-        <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-slate-600 sm:text-base">
-          {SUMMARY_POINTS.map((point) => (
-            <li key={point}>{point}</li>
-          ))}
-        </ul>
+      <section className="rounded-2xl border border-slate-200 bg-white px-5 py-5 shadow-lg shadow-slate-400/10 sm:px-7 sm:py-6 cl-benefits-hide-on-print">
+        <div className="space-y-3">
+          <h2 className="text-xl font-semibold text-slate-900">What this page can help you with</h2>
+          <ul className="list-disc space-y-1 pl-5 text-sm text-slate-600 sm:text-base">
+            {SUMMARY_POINTS.map((point) => (
+              <li key={point}>{point}</li>
+            ))}
+          </ul>
+        </div>
         <p className="mt-3 text-sm text-slate-500">
           You do not apply for benefits on this page. We help you understand your options and find the right places to go.
         </p>
-        <button
-          type="button"
-          className="mt-3 text-sm font-semibold text-brand-primary underline-offset-4 hover:underline"
-          onClick={() => setIsDisclaimerOpen(true)}
-        >
-          Important notes about this page
-        </button>
+        <div className="mt-2 flex justify-end">
+          <button
+            type="button"
+            className="text-sm font-semibold text-brand-primary underline-offset-4 hover:underline"
+            onClick={() => setIsDisclaimerOpen(true)}
+          >
+            Important notes about this page
+          </button>
+        </div>
       </section>
+      <p className="cl-benefits-hide-on-print text-xs text-slate-500">
+        Need more help? Email{" "}
+        <a href="mailto:help@civiclifeline.org" className="font-semibold text-brand-primary underline-offset-4 hover:underline">
+          help@civiclifeline.org
+        </a>{" "}
+        for one-on-one support.
+      </p>
 
-      <div className="cl-benefits-hide-on-print flex flex-col gap-3 rounded-[1.5rem] border border-slate-200 bg-white px-4 py-4 shadow-sm">
+      <section className="cl-benefits-hide-on-print space-y-3 rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm">
+        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Step 1: Pick a benefit area</p>
         <nav aria-label="Quick benefits navigation" className="flex flex-wrap gap-2">
           {JUMP_NAV_ITEMS.map((item) => {
             const isActive = activeSection === item.id;
@@ -667,20 +675,20 @@ export default function BenefitsClient() {
         </nav>
         <button
           type="button"
-          className="self-start text-sm font-semibold text-brand-primary underline-offset-4 hover:underline"
+          className="self-start text-xs font-medium text-slate-500 underline-offset-4 hover:text-slate-700"
           onClick={handlePrintSection}
         >
           Print this section
         </button>
-      </div>
+      </section>
 
       <section
         ref={locationCardRef}
-        className="cl-benefits-hide-on-print rounded-[2.5rem] border border-slate-200 bg-white px-6 py-8 shadow-lg shadow-slate-400/10 sm:px-10"
+        className="cl-benefits-hide-on-print rounded-2xl border border-slate-200 bg-white px-5 py-6 shadow-lg shadow-slate-400/10 sm:px-7 sm:py-7"
       >
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-slate-600">Your location</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Step 2: Add your city or ZIP</p>
+        <div className="mt-3 space-y-4">
+          <div className="space-y-1.5">
             <h2 className="text-2xl font-semibold text-slate-900">Add your city or ZIP one time.</h2>
             <p className="text-sm text-slate-600 sm:text-base">
               We use this to show nearby programs and state stats. We do not save your full address.
@@ -724,22 +732,22 @@ export default function BenefitsClient() {
         </div>
       </section>
 
-      <section className="rounded-[2.5rem] border border-slate-200 bg-white px-6 py-8 shadow-lg shadow-slate-400/10 sm:px-10">
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-slate-600">About this guide</p>
+      <section className="rounded-2xl border border-slate-200 bg-white px-5 py-6 shadow-lg shadow-slate-400/10 sm:px-7">
+        <div className="space-y-3">
+          <div className="space-y-1.5">
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">About this guide</p>
             <h2 className="text-2xl font-semibold text-slate-900">See what each program covers.</h2>
-            <p className="text-sm text-slate-600 sm:text-base">
+            <p className="text-sm text-slate-600">
               Skim every section to learn what the benefit pays for, the papers you may need, and the next steps.
             </p>
           </div>
-          <ul className="list-disc space-y-1 pl-5 text-sm text-slate-600 sm:text-base">
+          <ul className="list-disc space-y-1 pl-5 text-sm text-slate-600">
             {BENEFIT_AREAS.map((area) => (
               <li key={area}>{area}</li>
             ))}
           </ul>
           <p className="text-sm text-slate-500">
-            Civic Lifeline shares trusted links. When you are ready, you will apply on an official state or federal site or at a local office.
+            Civic Lifeline shares trusted links. When you are ready, you will apply on an official site or at a local office.
           </p>
         </div>
       </section>
@@ -805,7 +813,7 @@ export default function BenefitsClient() {
           </div>
         </aside>
 
-        <div className="space-y-6">
+        <div className="space-y-5">
           {BENEFIT_SECTIONS.map((section) => (
             <BenefitPanel
               key={section.id}
@@ -886,12 +894,12 @@ function BenefitPanel({ section, isOpen, onToggle, isActive, renderHelpers }: Be
         <div
           ref={contentRef}
           tabIndex={-1}
-          className="space-y-6 border-t border-slate-200 px-6 pb-6 pt-5 focus:outline-none"
+          className="space-y-5 border-t border-slate-200 px-5 pb-5 pt-4 focus:outline-none sm:px-6"
         >
           <span className="inline-flex items-center rounded-full border border-orange-200 bg-orange-100 px-3 py-0.5 text-sm font-medium text-orange-700">
             {section.pillText}
           </span>
-          <div className="space-y-6">{content}</div>
+          <div className="space-y-5">{content}</div>
         </div>
       </div>
     </section>
@@ -902,13 +910,22 @@ interface BenefitCardProps {
   title: string;
   description?: ReactNode;
   children?: ReactNode;
+  variant?: "action" | "info";
+  headingLevel?: "h3" | "h4";
 }
 
-function BenefitCard({ title, description, children }: BenefitCardProps) {
+function BenefitCard({ title, description, children, variant = "action", headingLevel = "h3" }: BenefitCardProps) {
+  const HeadingTag = headingLevel;
+  const baseClasses = "space-y-4 rounded-2xl p-5";
+  const variantClasses =
+    variant === "action"
+      ? "border border-slate-200 bg-white shadow-lg shadow-slate-200/60"
+      : "border border-slate-200 bg-slate-50/80 text-slate-700";
+
   return (
-    <article className="space-y-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <article className={`${baseClasses} ${variantClasses}`}>
       <div className="space-y-1.5">
-        <h3 className="text-lg font-semibold text-slate-900">{title}</h3>
+        <HeadingTag className="text-base font-semibold text-slate-900">{title}</HeadingTag>
         {description ? <p className="text-sm leading-relaxed text-slate-600">{description}</p> : null}
       </div>
       {children}
@@ -948,23 +965,23 @@ function LearnMoreLinks({ sectionId }: { sectionId: BenefitSection["id"] }) {
   const links = LEARN_MORE_LINKS[sectionId] ?? [];
   if (links.length === 0) return null;
   return (
-    <div>
-      <h3 className="mt-4 text-base font-semibold text-slate-900">Learn more (official sites)</h3>
-      <ul className="mt-2 space-y-1 text-sm text-slate-700">
+    <section className="mt-4 space-y-2">
+      <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-600">Learn more (official sites)</h3>
+      <ul className="space-y-1 text-sm text-slate-700 underline-offset-4">
         {links.map((link) => (
           <li key={link.href}>
             <a
               href={link.href}
               target="_blank"
               rel="noreferrer"
-              className="font-semibold text-brand-primary underline underline-offset-2 hover:opacity-80"
+              className="font-semibold text-brand-primary underline hover:text-brand-primary/80"
             >
               {link.label}
             </a>
           </li>
         ))}
       </ul>
-    </div>
+    </section>
   );
 }
 
@@ -1082,9 +1099,15 @@ function FoodAndMoneyPanel({ location, promptForLocation }: BenefitPanelHelpers)
     ? `Showing ${activeCategory.label.toLowerCase()} near ${location.displayLabel}.`
     : "Add your city or ZIP to search near you.";
 
+  const foodBasicsSummary = (
+    <ul className="list-disc pl-5 text-sm text-slate-600">
+      <li>SNAP gives monthly grocery money on an EBT card.</li>
+      <li>WIC supports pregnant people, babies, and young kids.</li>
+    </ul>
+  );
+
   return (
-    <div className="space-y-6">
-      <PanelGuidance guide={PANEL_GUIDANCE["food-money"]} />
+    <div className="space-y-5">
       <BenefitCard title="Local food, WIC, and cash helpers" description="Pick what you need help with and we will show nearby offices.">
         {!location ? (
           <p id={locationAlertId} className="text-sm text-amber-700">
@@ -1129,7 +1152,7 @@ function FoodAndMoneyPanel({ location, promptForLocation }: BenefitPanelHelpers)
             {location ? "Change location" : "Set my location"}
           </button>
         </div>
-        <div className="mt-5 space-y-3">
+        <div className="mt-5 space-y-3 text-sm text-slate-600">
           <p className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600">
             {locationSummary}
           </p>
@@ -1144,44 +1167,49 @@ function FoodAndMoneyPanel({ location, promptForLocation }: BenefitPanelHelpers)
           <AmericanJobCenterHint />
         </div>
       </BenefitCard>
+      <CollapsibleGuideSection id="food-program-basics" title="Program basics" summary={foodBasicsSummary}>
+        <div className="space-y-4">
+          <PanelGuidance guide={PANEL_GUIDANCE["food-money"]} />
+          <BenefitCard title="SNAP and WIC basics" variant="info">
+            <p className="text-sm text-slate-600">Use the local search above or visit an office to ask about these programs.</p>
+            <ul className="mt-3 space-y-2 text-sm text-slate-600">
+              <li className="flex gap-2">
+                <span aria-hidden className="text-brand-primary">•</span>
+                SNAP gives monthly grocery money on an EBT card.
+              </li>
+              <li className="flex gap-2">
+                <span aria-hidden className="text-brand-primary">•</span>
+                WIC gives food and formula for pregnant people, babies, and kids under 5.
+              </li>
+              <li className="flex gap-2">
+                <span aria-hidden className="text-brand-primary">•</span>
+                Bring ID, proof of address, and income info when you visit an office.
+              </li>
+            </ul>
+          </BenefitCard>
 
-      <BenefitCard title="SNAP and WIC basics">
-        <p className="text-sm text-slate-600">Use the local search above or visit an office to ask about these programs.</p>
-        <ul className="mt-3 space-y-2 text-sm text-slate-600">
-          <li className="flex gap-2">
-            <span aria-hidden className="text-brand-primary">•</span>
-            SNAP gives monthly grocery money on an EBT card.
-          </li>
-          <li className="flex gap-2">
-            <span aria-hidden className="text-brand-primary">•</span>
-            WIC gives food and formula for pregnant people, babies, and kids under 5.
-          </li>
-          <li className="flex gap-2">
-            <span aria-hidden className="text-brand-primary">•</span>
-            Bring ID, proof of address, and income info when you visit an office.
-          </li>
-        </ul>
-      </BenefitCard>
-
-      <BenefitCard
-        title="Cash help for bills"
-        description="Some states offer TANF or other cash aid for rent, utilities, and daily needs. Use the search above and ask about:"
-      >
-        <ul className="space-y-2 text-sm text-slate-600">
-          <li className="flex gap-2">
-            <span aria-hidden className="text-brand-primary">•</span>
-            Emergency cash or vouchers for rent, utilities, diapers, or gas.
-          </li>
-          <li className="flex gap-2">
-            <span aria-hidden className="text-brand-primary">•</span>
-            TANF (Temporary Assistance for Needy Families) and other state cash programs.
-          </li>
-          <li className="flex gap-2">
-            <span aria-hidden className="text-brand-primary">•</span>
-            What to bring: photo ID, proof of address, and recent pay stubs or benefit letters.
-          </li>
-        </ul>
-      </BenefitCard>
+          <BenefitCard
+            title="Cash help for bills"
+            description="Some states offer TANF or other cash aid for rent, utilities, and daily needs. Use the search above and ask about:"
+            variant="info"
+          >
+            <ul className="space-y-2 text-sm text-slate-600">
+              <li className="flex gap-2">
+                <span aria-hidden className="text-brand-primary">•</span>
+                Emergency cash or vouchers for rent, utilities, diapers, or gas.
+              </li>
+              <li className="flex gap-2">
+                <span aria-hidden className="text-brand-primary">•</span>
+                TANF (Temporary Assistance for Needy Families) and other state cash programs.
+              </li>
+              <li className="flex gap-2">
+                <span aria-hidden className="text-brand-primary">•</span>
+                What to bring: photo ID, proof of address, and recent pay stubs or benefit letters.
+              </li>
+            </ul>
+          </BenefitCard>
+        </div>
+      </CollapsibleGuideSection>
       <LearnMoreLinks sectionId="food-money" />
     </div>
   );
@@ -1403,9 +1431,15 @@ function HealthCoveragePanel({ location, promptForLocation }: BenefitPanelHelper
     ? "We had trouble loading local helpers. Please try again or contact a local American Job Center."
     : undefined;
 
+  const healthBasicsSummary = (
+    <ul className="list-disc pl-5 text-sm text-slate-600">
+      <li>Medicaid or CHIP can give low-cost or free care.</li>
+      <li>Marketplace plans may lower what you pay each month.</li>
+    </ul>
+  );
+
   return (
-    <div className="space-y-6">
-      <PanelGuidance guide={PANEL_GUIDANCE["health-coverage"]} />
+    <div className="space-y-5">
       <HealthCoverageMetricsPanel location={location} promptForLocation={promptForLocation} />
       <BenefitCard title="Check health coverage options">
         <form onSubmit={handleCheckOptions} className="space-y-3">
@@ -1499,20 +1533,6 @@ function HealthCoveragePanel({ location, promptForLocation }: BenefitPanelHelper
           </p>
         ) : null}
       </BenefitCard>
-
-      <BenefitCard
-        title="Affordable Care Act (Marketplace) plans"
-        description="We will show example Marketplace plans, monthly costs, and savings once the data connection is live."
-      >
-        <button
-          type="button"
-          className={buttonVariants.secondary}
-          onClick={() => placeholderLog("TODO: Marketplace example plans preview")}
-        >
-          See example plans (coming soon)
-        </button>
-      </BenefitCard>
-
       <BenefitCard
         title="Get help applying for health coverage"
         description="Find local people who can help you sign up for Medicaid, CHIP, or Marketplace health plans."
@@ -1545,6 +1565,22 @@ function HealthCoveragePanel({ location, promptForLocation }: BenefitPanelHelper
           <LocalHelpDisclaimer />
           <AmericanJobCenterHint />
         </div>
+      </BenefitCard>
+      <CollapsibleGuideSection id="health-program-basics" title="Program basics" summary={healthBasicsSummary}>
+        <PanelGuidance guide={PANEL_GUIDANCE["health-coverage"]} />
+      </CollapsibleGuideSection>
+      <BenefitCard
+        title="Affordable Care Act (Marketplace) plans"
+        description="We will show example Marketplace plans, monthly costs, and savings once the data connection is live."
+        variant="info"
+      >
+        <button
+          type="button"
+          className={buttonVariants.secondary}
+          onClick={() => placeholderLog("TODO: Marketplace example plans preview")}
+        >
+          See example plans (coming soon)
+        </button>
       </BenefitCard>
       <LearnMoreLinks sectionId="health-coverage" />
     </div>
@@ -1649,9 +1685,15 @@ function BillsHousingPanel({ location, promptForLocation }: BenefitPanelHelpers)
     [ensureLocation, localHelpMutation, location],
   );
 
+  const dailySupportSummary = (
+    <ul className="list-disc pl-5 text-sm text-slate-600">
+      <li>Rent and utility help can cover emergency bills.</li>
+      <li>Childcare, school meals, and daily basics show up here.</li>
+    </ul>
+  );
+
   return (
-    <div className="space-y-6">
-      <PanelGuidance guide={PANEL_GUIDANCE["daily-support"]} />
+    <div className="space-y-5">
       <BenefitCard title="Rent and housing help" description="Search for rental aid, shelter referrals, and tenant support.">
         <ul className="space-y-2 text-sm text-slate-600">
           <li className="flex gap-2">
@@ -1747,6 +1789,9 @@ function BillsHousingPanel({ location, promptForLocation }: BenefitPanelHelpers)
         <LocalHelpDisclaimer />
         <AmericanJobCenterHint />
       </div>
+      <CollapsibleGuideSection id="daily-support-program-basics" title="Program basics" summary={dailySupportSummary}>
+        <PanelGuidance guide={PANEL_GUIDANCE["daily-support"]} />
+      </CollapsibleGuideSection>
       <LearnMoreLinks sectionId="daily-support" />
     </div>
   );
@@ -1844,10 +1889,15 @@ function SecurityDisabilityPanel({ location, promptForLocation }: BenefitPanelHe
     [ensureLocation, localHelpMutation, location],
   );
 
+  const securitySummary = (
+    <ul className="list-disc pl-5 text-sm text-slate-600">
+      <li>Monthly checks cover retired, disabled, and some surviving family.</li>
+      <li>The Social Security Administration makes the final decision.</li>
+    </ul>
+  );
+
   return (
-    <div className="space-y-6">
-      <PanelGuidance guide={PANEL_GUIDANCE["security-disability"]} />
-      <SocialSecurityOfficesPanel location={location} promptForLocation={promptForLocation} />
+    <div className="space-y-5">
       <BenefitCard
         title="Social Security and disability checks"
         description="Covers retirement, disability (SSDI), survivors, and family benefits."
@@ -1873,6 +1923,19 @@ function SecurityDisabilityPanel({ location, promptForLocation }: BenefitPanelHe
           {localHelpMutation.isPending ? "Searching…" : "Find help with Social Security"}
         </button>
       </BenefitCard>
+      <SocialSecurityOfficesPanel location={location} promptForLocation={promptForLocation} />
+      <div className="space-y-2">
+        <h3 className="text-base font-semibold text-slate-900">Other helpers near you</h3>
+        <BenefitLocalHelpList
+          items={localHelpMutation.data?.items ?? []}
+          isLoading={localHelpMutation.isPending}
+          errorMessage={remoteError}
+          hasSearched={hasSearched}
+          source={localHelpMutation.data?.source}
+        />
+        <LocalHelpDisclaimer />
+        <AmericanJobCenterHint />
+      </div>
 
       <BenefitCard
         title="SSI vs SSDI – what’s the difference?"
@@ -1903,19 +1966,9 @@ function SecurityDisabilityPanel({ location, promptForLocation }: BenefitPanelHe
           {localHelpMutation.isPending ? "Searching…" : "Find veterans or legal help"}
         </button>
       </BenefitCard>
-
-      <div className="space-y-2">
-        <h3 className="text-base font-semibold text-slate-900">Other helpers near you</h3>
-        <BenefitLocalHelpList
-          items={localHelpMutation.data?.items ?? []}
-          isLoading={localHelpMutation.isPending}
-          errorMessage={remoteError}
-          hasSearched={hasSearched}
-          source={localHelpMutation.data?.source}
-        />
-        <LocalHelpDisclaimer />
-        <AmericanJobCenterHint />
-      </div>
+      <CollapsibleGuideSection id="security-program-basics" title="Program basics" summary={securitySummary}>
+        <PanelGuidance guide={PANEL_GUIDANCE["security-disability"]} />
+      </CollapsibleGuideSection>
       <LearnMoreLinks sectionId="security-disability" />
     </div>
   );

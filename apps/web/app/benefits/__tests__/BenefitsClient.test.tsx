@@ -31,6 +31,11 @@ function renderBenefitsPage() {
   );
 }
 
+function expectBefore(first: HTMLElement, second: HTMLElement) {
+  const position = first.compareDocumentPosition(second);
+  expect(position & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+}
+
 describe("BenefitsClient", () => {
   beforeAll(() => {
     vi.stubGlobal("IntersectionObserver", MockObserver);
@@ -85,10 +90,24 @@ describe("BenefitsClient", () => {
     vi.restoreAllMocks();
   });
 
-  it("renders the guidance headings", async () => {
+  it("reveals guidance headings after expanding a program basics section", async () => {
     renderBenefitsPage();
-    const headings = await screen.findAllByText(/What this can help with/i);
-    expect(headings.length).toBeGreaterThan(0);
+    const user = userEvent.setup();
+    const panel = document.getElementById("benefit-section-food-money");
+    expect(panel).toBeTruthy();
+    const toggle = within(panel!).getByRole("button", { name: /Show details/i });
+    expect(document.getElementById("food-program-basics")).toHaveAttribute("aria-hidden", "true");
+    await user.click(toggle);
+    expect(document.getElementById("food-program-basics")).toHaveAttribute("aria-hidden", "false");
+    expect(within(panel!).getByText(/What this can help with/i)).toBeInTheDocument();
+  });
+
+  it("renders a single page heading and four section headings", () => {
+    renderBenefitsPage();
+    const h1 = screen.getByRole("heading", { level: 1, name: /Benefits help in plain language/i });
+    expect(h1).toBeTruthy();
+    const h2Headings = screen.getAllByRole("heading", { level: 2 });
+    expect(h2Headings).toHaveLength(4);
   });
 
   it("shows the summary box with key points", () => {
@@ -99,6 +118,15 @@ describe("BenefitsClient", () => {
     expect(
       screen.getByText("You do not apply for benefits on this page. We help you understand your options and find the right places to go."),
     ).toBeTruthy();
+  });
+
+  it("orders the summary, pills, and location prompt", () => {
+    renderBenefitsPage();
+    const summaryHeading = screen.getByRole("heading", { name: /What this page can help you with/i });
+    const stepOne = screen.getByText(/Step 1: Pick a benefit area/i);
+    const stepTwo = screen.getByText(/Step 2: Add your city or ZIP/i);
+    expectBefore(summaryHeading, stepOne);
+    expectBefore(stepOne, stepTwo);
   });
 
   it("renders the jump nav for all sections", () => {
@@ -168,5 +196,57 @@ describe("BenefitsClient", () => {
     expect(screen.getByText(/You do not apply here/i)).toBeTruthy();
     await user.click(screen.getByRole("button", { name: /Close/i }));
     expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("has program basics sections collapsed by default and shows details when toggled", async () => {
+    renderBenefitsPage();
+    const ids = [
+      { panelId: "food-money", contentId: "food-program-basics" },
+      { panelId: "health-coverage", contentId: "health-program-basics" },
+      { panelId: "daily-support", contentId: "daily-support-program-basics" },
+      { panelId: "security-disability", contentId: "security-program-basics" },
+    ];
+    const user = userEvent.setup();
+    for (const { panelId, contentId } of ids) {
+      const panel = document.getElementById(`benefit-section-${panelId}`);
+      expect(panel).toBeTruthy();
+      const details = document.getElementById(contentId);
+      expect(details).toHaveAttribute("aria-hidden", "true");
+      const button = within(panel!).getByRole("button", { name: /Show details/i });
+      await user.click(button);
+      expect(document.getElementById(contentId)).toHaveAttribute("aria-hidden", "false");
+      await user.click(button);
+      expect(document.getElementById(contentId)).toHaveAttribute("aria-hidden", "true");
+    }
+  });
+
+  it("shows local metrics before program basics inside each panel", async () => {
+    renderBenefitsPage();
+    const user = userEvent.setup();
+    const assertPanelOrder = async (panelId: string, helperHeading: RegExp, contentId: string) => {
+      const panel = document.getElementById(`benefit-section-${panelId}`);
+      expect(panel).toBeTruthy();
+      const helper = within(panel!).getByRole("heading", { name: helperHeading });
+      const toggle = within(panel!).getByRole("button", { name: /Show details/i });
+      if (document.getElementById(contentId)?.getAttribute("aria-hidden") === "true") {
+        await user.click(toggle);
+      }
+      const basics = within(panel!).getAllByText(/What this can help with/i)[0]!;
+      expectBefore(helper, basics);
+    };
+
+    await assertPanelOrder("food-money", /Local food, WIC, and cash helpers/i, "food-program-basics");
+    await assertPanelOrder("health-coverage", /Health coverage in your area/i, "health-program-basics");
+    await assertPanelOrder("daily-support", /Rent and housing help/i, "daily-support-program-basics");
+    await assertPanelOrder("security-disability", /Social Security and disability checks/i, "security-program-basics");
+  });
+
+  it("keeps program basics toggles accessible", () => {
+    renderBenefitsPage();
+    const buttons = screen.getAllByRole("button", { name: /Show details/i });
+    buttons.forEach((button) => {
+      expect(button.getAttribute("aria-expanded")).toBe("false");
+      expect(button.getAttribute("aria-controls")).toBeTruthy();
+    });
   });
 });
