@@ -148,7 +148,7 @@ export async function POST(req: NextRequest) {
 
   const request = payload.data;
   const config = getAjcConfig();
-  log.info("local-help search", { kind: request.kind, ajcConfigured: config.enabled });
+  log.info("local-help search", { kind: request.kind, ajcConfigured: config.enabled, locationText: request.locationText });
 
   if (!config.enabled) {
     return respondWithSample(request.kind);
@@ -163,6 +163,12 @@ export async function POST(req: NextRequest) {
       signal: controller.signal,
     }).finally(() => clearTimeout(timeout));
 
+    log.info("local-help response", {
+      kind: request.kind,
+      locationText: request.locationText,
+      itemCount: items.length,
+    });
+
     const response = zBenefitsLocalHelpResponse.parse({
       items,
       source: "career-onestop-ajc",
@@ -171,7 +177,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(response, { headers: CACHE_HEADERS });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
-    log.warn("ajc local-help error", { kind: request.kind, message });
+    log.warn("ajc local-help error", { kind: request.kind, locationText: request.locationText, message });
     return respondWithSample(request.kind);
   }
 }
