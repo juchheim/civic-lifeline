@@ -52,10 +52,10 @@ Add the following env vars (see `.env.example`):
 CAREERONESTOP_API_BASE=https://api.careeronestop.org
 CAREERONESTOP_API_TOKEN=
 CAREERONESTOP_USER_ID=
-CAREERONESTOP_AJC_RADIUS_MILES=25
+CAREERONESTOP_AJC_RADIUS_MILES=50
 ```
 
-Register for a CareerOneStop Web API key to receive your `token` and `userId`. We consider the integration “enabled” when both `CAREERONESTOP_API_TOKEN` and `CAREERONESTOP_USER_ID` are present. `CAREERONESTOP_API_BASE` and the radius default can be left untouched unless you need to override them.
+Register for a CareerOneStop Web API key to receive your `token` and `userId`. We consider the integration “enabled” when both `CAREERONESTOP_API_TOKEN` and `CAREERONESTOP_USER_ID` are present. `CAREERONESTOP_API_BASE` and the radius default (now 50 miles) can be left untouched unless you need to override them.
 
 ### Error handling
 
