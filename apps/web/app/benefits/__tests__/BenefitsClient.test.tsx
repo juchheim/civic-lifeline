@@ -110,21 +110,28 @@ describe("BenefitsClient", () => {
     expect(h2Headings).toHaveLength(4);
   });
 
-  it("shows the summary box with key points", () => {
+  it("shows the new hero explainer content and disclaimer link", () => {
     renderBenefitsPage();
-    const headings = screen.getAllByText(/What this page can help you with/i);
-    expect(headings.length).toBeGreaterThan(0);
-    expect(screen.getByText("See how many people near you have health coverage or get Social Security.")).toBeTruthy();
-    expect(
-      screen.getByText("You do not apply for benefits on this page. We help you understand your options and find the right places to go."),
-    ).toBeTruthy();
+    expect(screen.getByText(/On this page/i)).toBeInTheDocument();
+    expect(screen.getByText(/quick facts about health coverage/i)).toBeInTheDocument();
+    expect(screen.getByText(/Important to know/i)).toBeInTheDocument();
+    expect(screen.getByText(/You do not apply for benefits on this page/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Important notes about this page/i })).toBeInTheDocument();
   });
 
-  it("orders the summary and location prompt", () => {
+  it("places the hero above the location step", () => {
     renderBenefitsPage();
-    const summaryHeading = screen.getByRole("heading", { name: /What this page can help you with/i });
-    const newStepOne = screen.getByText(/Step 1: Add your city or ZIP/i);
-    expectBefore(summaryHeading, newStepOne);
+    const heroLabel = screen.getByText(/On this page/i);
+    const locationLabel = screen.getByText(/Step 1: Add your city or ZIP/i);
+    expectBefore(heroLabel, locationLabel);
+  });
+
+  it("renders hero, location card, and first benefit section", () => {
+    renderBenefitsPage();
+    expect(screen.getByRole("heading", { level: 1, name: /Benefits help in plain language/i })).toBeInTheDocument();
+    expect(screen.getByText(/On this page/i)).toBeInTheDocument();
+    expect(screen.getByText(/Add your city or ZIP one time/i)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /Food and Money Help/i })).toBeInTheDocument();
   });
 
   it("renders learn more links with external targets", () => {

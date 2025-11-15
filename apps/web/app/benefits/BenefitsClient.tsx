@@ -192,20 +192,6 @@ const PANEL_GUIDANCE: Record<BenefitSection["id"], PanelGuide> = {
   },
 };
 
-const BENEFIT_AREAS = [
-  "Food and money help",
-  "Health coverage options",
-  "Housing, bills, and daily support",
-  "Social Security and disability help",
-];
-
-const SUMMARY_POINTS = [
-  "See how many people near you have health coverage or get Social Security.",
-  "Check which benefits you might qualify for based on your income and family size.",
-  "Find offices and centers near you that can help with food, housing, bills, and more.",
-  "Get links to official websites where you can learn more or apply.",
-];
-
 const LEARN_MORE_LINKS: Record<BenefitSection["id"], Array<{ label: string; href: string }>> = {
   "food-money": [
     {
@@ -519,15 +505,6 @@ export default function BenefitsClient() {
     [location, promptForLocation],
   );
 
-  const heroHighlights = useMemo(
-    () => [
-      "Food, money, health, and housing help in one place.",
-      "Short guides explain what to bring and what to expect.",
-      "Local offices, hotlines, and trusted links to finish applications.",
-    ],
-    [],
-  );
-
   useEffect(() => {
     if (!isDisclaimerOpen) return;
     const handleEsc = (event: KeyboardEvent) => {
@@ -542,7 +519,7 @@ export default function BenefitsClient() {
   }, [isDisclaimerOpen]);
 
   return (
-    <div className="space-y-10 bg-neutral-bg pb-16">
+    <div className="space-y-8 bg-neutral-bg pb-14 md:space-y-6 md:pb-12">
       <style
         dangerouslySetInnerHTML={{
           __html: `@media print {
@@ -569,9 +546,9 @@ export default function BenefitsClient() {
           }`,
         }}
       />
-      <section className="mt-4 overflow-hidden rounded-[2.5rem] border border-slate-200 bg-white shadow-lg shadow-slate-400/10">
-        <div className="grid gap-10 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1fr)] lg:items-stretch">
-          <div className="flex flex-col justify-between px-6 py-6 sm:px-9 sm:py-8">
+      <section className="mt-3 overflow-hidden rounded-[2.5rem] border border-slate-200 bg-white shadow-lg shadow-slate-400/10">
+        <div className="grid gap-6 md:gap-8 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1fr)] lg:items-stretch">
+          <div className="flex flex-col justify-between px-6 py-5 sm:px-9 sm:py-6 md:py-7">
             <div className="space-y-5">
               <span className="inline-flex w-fit items-center gap-2 rounded-full border border-brand-primary/20 bg-brand-primary/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.32em] text-brand-primary">
                 BENEFITS
@@ -588,60 +565,53 @@ export default function BenefitsClient() {
           </div>
           <div className="relative">
             <div className="absolute inset-0 bg-info-tint" aria-hidden />
-            <div className="relative flex h-full flex-col justify-between gap-4 rounded-t-3xl bg-info-tint px-6 py-6 text-slate-900 sm:px-9 lg:rounded-none">
-              <div className="space-y-3">
-                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-600">Why this helps</p>
-                <ul className="space-y-2 text-sm text-slate-700 sm:text-base">
-                  {heroHighlights.map((highlight) => (
-                    <li key={highlight} className="flex items-start gap-3">
-                      <span className="mt-1.5 h-2 w-2 rounded-full bg-brand-accent" aria-hidden />
-                      <span>{highlight}</span>
-                    </li>
-                  ))}
+            <div className="relative flex h-full flex-col justify-between gap-3 rounded-t-3xl bg-info-tint px-6 py-5 text-slate-900 sm:px-8 md:px-9 md:py-6 lg:rounded-none">
+              <div className="space-y-2.5">
+                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-600">On this page</p>
+                <ul className="space-y-2 text-sm text-slate-700">
+                  <li className="flex items-start gap-3">
+                    <span className="mt-1.5 h-2 w-2 rounded-full bg-brand-accent" aria-hidden />
+                    <span>See quick facts about health coverage, Social Security, and other benefits in your area.</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <span className="mt-1.5 h-2 w-2 rounded-full bg-brand-accent" aria-hidden />
+                    <span>Check which programs you may qualify for based on your income and family size.</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <span className="mt-1.5 h-2 w-2 rounded-full bg-brand-accent" aria-hidden />
+                    <span>Find local offices and hotlines that can help with food, housing, bills, and more.</span>
+                  </li>
                 </ul>
               </div>
-              <div className="rounded-2xl border border-brand-accent/30 bg-white/80 p-4 text-sm leading-relaxed text-slate-800 shadow-inner shadow-brand-accent/10">
-                <p className="text-base font-semibold text-slate-800">What to expect</p>
-                <p className="mt-1.5 text-slate-700">
-                  Each section explains who the program helps, which papers to bring, and where to go next.
+              <div className="rounded-2xl border border-brand-accent/30 bg-white/80 p-3 text-sm leading-relaxed text-slate-800 shadow-inner shadow-brand-accent/10 sm:p-4">
+                <p className="text-base font-semibold text-slate-800">Important to know</p>
+                <p className="mt-1 text-sm text-slate-700">
+                  You do not apply for benefits on this page. Civic Lifeline explains programs in plain language and sends you to trusted government or local
+                  sites to apply.
+                </p>
+                <p className="mt-2 text-sm">
+                  <button
+                    type="button"
+                    className="font-semibold text-brand-primary underline underline-offset-2 hover:text-brand-primary/80"
+                    onClick={() => setIsDisclaimerOpen(true)}
+                  >
+                    Important notes about this page
+                  </button>
                 </p>
               </div>
             </div>
           </div>
         </div>
       </section>
-
-      <section className="rounded-2xl border border-slate-200 bg-white px-5 py-5 shadow-lg shadow-slate-400/10 sm:px-7 sm:py-6 cl-benefits-hide-on-print">
-        <div className="space-y-3">
-          <h2 className="text-xl font-semibold text-slate-900">What this page can help you with</h2>
-          <ul className="list-disc space-y-1 pl-5 text-sm text-slate-600 sm:text-base">
-            {SUMMARY_POINTS.map((point) => (
-              <li key={point}>{point}</li>
-            ))}
-          </ul>
-        </div>
-        <p className="mt-3 text-sm text-slate-500">
-          You do not apply for benefits on this page. We help you understand your options and find the right places to go.
-        </p>
-        <div className="mt-2 flex justify-end">
-          <button
-            type="button"
-            className="text-sm font-semibold text-brand-primary underline-offset-4 hover:underline"
-            onClick={() => setIsDisclaimerOpen(true)}
-          >
-            Important notes about this page
-          </button>
-        </div>
-      </section>
       <section
         ref={locationCardRef}
-        className="cl-benefits-hide-on-print rounded-2xl border border-slate-200 bg-white px-5 py-6 shadow-lg shadow-slate-400/10 sm:px-7 sm:py-7"
+        className="cl-benefits-hide-on-print rounded-2xl border border-slate-200 bg-white px-5 py-5 shadow-lg shadow-slate-400/10 sm:px-6 sm:py-6"
       >
         <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Step 1: Add your city or ZIP</p>
-        <div className="mt-3 space-y-4">
+        <div className="mt-2.5 space-y-3">
           <div className="space-y-1.5">
-            <h2 className="text-2xl font-semibold text-slate-900">Add your city or ZIP one time.</h2>
-            <p className="text-sm text-slate-600 sm:text-base">
+            <h2 className="text-xl font-semibold text-slate-900 sm:text-2xl">Add your city or ZIP one time.</h2>
+            <p className="text-sm text-slate-600">
               We use this to show nearby programs and state stats. We do not save your full address.
             </p>
           </div>
@@ -683,28 +653,8 @@ export default function BenefitsClient() {
         </div>
       </section>
 
-      <section className="rounded-2xl border border-slate-200 bg-white px-5 py-6 shadow-lg shadow-slate-400/10 sm:px-7">
-        <div className="space-y-3">
-          <div className="space-y-1.5">
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">About this guide</p>
-            <h2 className="text-2xl font-semibold text-slate-900">See what each program covers.</h2>
-            <p className="text-sm text-slate-600">
-              Skim every section to learn what the benefit pays for, the papers you may need, and the next steps.
-            </p>
-          </div>
-          <ul className="list-disc space-y-1 pl-5 text-sm text-slate-600">
-            {BENEFIT_AREAS.map((area) => (
-              <li key={area}>{area}</li>
-            ))}
-          </ul>
-          <p className="text-sm text-slate-500">
-            Civic Lifeline shares trusted links. When you are ready, you will apply on an official site or at a local office.
-          </p>
-        </div>
-      </section>
-
-      <section className="grid gap-6 lg:grid-cols-[minmax(260px,0.38fr)_minmax(0,1fr)] cl-benefits-print-area">
-        <aside className="cl-benefits-hide-on-print self-start rounded-3xl border border-slate-200 bg-white p-6 shadow-lg shadow-slate-400/10 lg:sticky lg:top-6">
+      <section className="grid gap-5 md:gap-5 lg:grid-cols-[minmax(260px,0.38fr)_minmax(0,1fr)] cl-benefits-print-area">
+        <aside className="cl-benefits-hide-on-print self-start rounded-3xl border border-slate-200 bg-white p-6 shadow-lg shadow-slate-400/10 lg:sticky lg:top-5">
           <div className="flex flex-col gap-5">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
@@ -820,7 +770,7 @@ function BenefitPanel({ section, isOpen, onToggle, isActive, renderHelpers }: Be
         id={buttonId}
         type="button"
         onClick={() => onToggle(section.id)}
-        className="flex w-full items-center justify-between gap-4 px-6 py-5 text-left transition hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2"
+        className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left transition hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2 sm:px-6"
         aria-expanded={isOpen}
         aria-controls={panelId}
       >
