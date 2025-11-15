@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { zBenefitUninsuredStatsResponse, zCounty, zState, type BenefitUninsuredStatsResponse, type County, type State } from "@cl/types";
+import { resolveStateCode } from "@/lib/location/stateCodes";
 import type { BenefitsLocation } from "./useBenefitsLocation";
 
 const DEFAULT_SAHIE_YEAR = "2022";
@@ -99,7 +100,7 @@ interface UseUninsuredCoverageStatsResult {
 }
 
 export function useUninsuredCoverageStats(location: BenefitsLocation | null): UseUninsuredCoverageStatsResult {
-  const stateCode = location?.stateCode?.toUpperCase() ?? null;
+  const stateCode = resolveStateCode(location?.stateCode);
   const countyName = location?.countyName ?? null;
 
   const statesQuery = useQuery({

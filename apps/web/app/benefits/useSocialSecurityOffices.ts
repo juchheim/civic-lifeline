@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { zSocialSecurityOfficesResponse, type SocialSecurityFieldOffice, type SocialSecurityOfficesResponse } from "@cl/types";
+import { resolveStateCode } from "@/lib/location/stateCodes";
 import type { BenefitsLocation } from "./useBenefitsLocation";
 
 async function requestSocialSecurityOffices(location: BenefitsLocation): Promise<SocialSecurityOfficesResponse> {
@@ -40,11 +41,16 @@ export interface UseSocialSecurityOfficesResult {
 }
 
 export function useSocialSecurityOffices(location: BenefitsLocation | null): UseSocialSecurityOfficesResult {
-  const hasValidLocation = Boolean(location?.latitude && location?.longitude && location?.stateCode);
+  const normalizedStateCode = resolveStateCode(location?.stateCode);
+  const hasValidLocation = Boolean(location?.latitude && location?.longitude && normalizedStateCode);
 
   const query = useQuery({
-    queryKey: ["benefits", "social-security-offices", location?.latitude ?? null, location?.longitude ?? null],
-    queryFn: () => requestSocialSecurityOffices(location!),
+    queryKey: ["benefits", "social-security-offices", location?.latitude ?? null, location?.longitude ?? null, normalizedStateCode ?? null],
+    queryFn: () =>
+      requestSocialSecurityOffices({
+        ...location!,
+        stateCode: normalizedStateCode!,
+      }),
     enabled: hasValidLocation,
     staleTime: 1000 * 60 * 10,
   });

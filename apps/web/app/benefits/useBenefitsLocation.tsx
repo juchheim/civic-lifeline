@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
 import type { LocationSelection } from "@/types/location";
+import { resolveStateCode } from "@/lib/location/stateCodes";
 
 export interface BenefitsLocation {
   displayLabel: string;
@@ -23,13 +24,14 @@ interface BenefitsLocationContextValue {
 const BenefitsLocationContext = createContext<BenefitsLocationContextValue | undefined>(undefined);
 
 function mapSelectionToBenefitsLocation(selection: LocationSelection): BenefitsLocation {
+  const normalizedStateCode = resolveStateCode(selection.stateCode) ?? resolveStateCode(selection.state);
   return {
     displayLabel: selection.label,
     latitude: selection.lat,
     longitude: selection.lon,
     countyName: selection.county ?? null,
     countyFips: null,
-    stateCode: selection.stateCode ? selection.stateCode.toUpperCase() : selection.state ?? null,
+    stateCode: normalizedStateCode,
     stateName: selection.state ?? null,
     zip: selection.postalCode ?? null,
   };

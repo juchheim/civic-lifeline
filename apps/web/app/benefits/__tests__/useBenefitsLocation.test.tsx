@@ -24,6 +24,15 @@ describe("useBenefitsLocation", () => {
     expect(mapped.zip).toBe("39194");
   });
 
+  it("derives state codes from full state names when needed", () => {
+    const mapped = mapSelectionToBenefitsLocation({
+      ...sampleSelection,
+      stateCode: undefined,
+      state: "Mississippi",
+    });
+    expect(mapped.stateCode).toBe("MS");
+  });
+
   it("stores and clears the selected location", () => {
     const { result } = renderHook(() => useBenefitsLocation(), { wrapper });
     act(() => {

@@ -26,6 +26,7 @@ import { useBenefitsLocation, type BenefitsLocation } from "./useBenefitsLocatio
 import { useUninsuredCoverageStats } from "./useUninsuredCoverageStats";
 import type { LucideIcon } from "lucide-react";
 import { ChevronDown, HeartPulse, Home, ShieldCheck, Utensils } from "lucide-react";
+import { resolveStateCode } from "@/lib/location/stateCodes";
 
 interface BenefitPanelHelpers {
   location: BenefitsLocation | null;
@@ -1268,6 +1269,8 @@ function HealthCoveragePanel({ location, promptForLocation }: BenefitPanelHelper
     }
   }, [location?.displayLabel, locationTextInput]);
 
+  const normalizedStateCode = resolveStateCode(location?.stateCode);
+
   const handleCheckOptions = useCallback(
     (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault();
@@ -1288,10 +1291,10 @@ function HealthCoveragePanel({ location, promptForLocation }: BenefitPanelHelper
         householdSize: Number(trimmedHousehold),
         monthlyIncome: Number(trimmedIncome),
         age: age ? Number(age) : undefined,
-        stateCode: location?.stateCode ?? undefined,
+        stateCode: normalizedStateCode ?? undefined,
       });
     },
-    [locationTextInput, householdSize, income, age, healthCheckMutation, location?.stateCode],
+    [locationTextInput, householdSize, income, age, healthCheckMutation, normalizedStateCode],
   );
 
   const locationAlertId = useId();
@@ -1673,8 +1676,9 @@ function SecurityDisabilityPanel({ location, promptForLocation }: BenefitPanelHe
     : undefined;
   const locationAlertId = useId();
 
-  const stateCodeForStats = location?.stateCode?.toUpperCase() || "MS";
-  const isExampleState = !location?.stateCode;
+  const normalizedStateCode = resolveStateCode(location?.stateCode);
+  const stateCodeForStats = normalizedStateCode ?? "MS";
+  const isExampleState = !normalizedStateCode;
 
   const socialStatsQuery = useQuery({
     queryKey: ["benefits-social-security-stats", stateCodeForStats],
