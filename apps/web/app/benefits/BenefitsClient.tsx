@@ -206,13 +206,6 @@ const SUMMARY_POINTS = [
   "Get links to official websites where you can learn more or apply.",
 ];
 
-const JUMP_NAV_ITEMS: Array<{ id: BenefitSection["id"]; label: string }> = [
-  { id: "food-money", label: "Food & Money" },
-  { id: "health-coverage", label: "Health" },
-  { id: "daily-support", label: "Bills & Housing" },
-  { id: "security-disability", label: "Social Security" },
-];
-
 const LEARN_MORE_LINKS: Record<BenefitSection["id"], Array<{ label: string; href: string }>> = {
   "food-money": [
     {
@@ -548,12 +541,6 @@ export default function BenefitsClient() {
     };
   }, [isDisclaimerOpen]);
 
-  const handlePrintSection = useCallback(() => {
-    if (typeof window !== "undefined" && typeof window.print === "function") {
-      window.print();
-    }
-  }, []);
-
   return (
     <div className="space-y-10 bg-neutral-bg pb-16">
       <style
@@ -646,41 +633,6 @@ export default function BenefitsClient() {
           </button>
         </div>
       </section>
-      <p className="cl-benefits-hide-on-print text-xs text-slate-500">
-        Need more help? Email{" "}
-        <a href="mailto:help@civiclifeline.org" className="font-semibold text-brand-primary underline-offset-4 hover:underline">
-          help@civiclifeline.org
-        </a>{" "}
-        for one-on-one support.
-      </p>
-
-      <section className="cl-benefits-hide-on-print space-y-3 rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm">
-        <nav aria-label="Quick benefits navigation" className="flex flex-wrap gap-2">
-          {JUMP_NAV_ITEMS.map((item) => {
-            const isActive = activeSection === item.id;
-            return (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => handleNavClick(item.id)}
-                className={`rounded-full px-4 py-1.5 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2 ${
-                  isActive ? "bg-brand-primary text-white" : "border border-slate-300 bg-white text-slate-700 hover:bg-brand-primary/10"
-                }`}
-              >
-                {item.label}
-              </button>
-            );
-          })}
-        </nav>
-        <button
-          type="button"
-          className="self-start text-xs font-medium text-slate-500 underline-offset-4 hover:text-slate-700"
-          onClick={handlePrintSection}
-        >
-          Print this section
-        </button>
-      </section>
-
       <section
         ref={locationCardRef}
         className="cl-benefits-hide-on-print rounded-2xl border border-slate-200 bg-white px-5 py-6 shadow-lg shadow-slate-400/10 sm:px-7 sm:py-7"

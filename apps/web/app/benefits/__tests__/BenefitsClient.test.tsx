@@ -120,23 +120,11 @@ describe("BenefitsClient", () => {
     ).toBeTruthy();
   });
 
-  it("orders the summary, pills, and location prompt", () => {
+  it("orders the summary and location prompt", () => {
     renderBenefitsPage();
     const summaryHeading = screen.getByRole("heading", { name: /What this page can help you with/i });
-    const nav = screen.getAllByLabelText(/Quick benefits navigation/i)[0]!;
-    const firstPill = within(nav).getAllByRole("button")[0]!;
     const newStepOne = screen.getByText(/Step 1: Add your city or ZIP/i);
-    expectBefore(summaryHeading, firstPill);
-    expectBefore(firstPill, newStepOne);
-  });
-
-  it("renders the jump nav for all sections", () => {
-    renderBenefitsPage();
-    const nav = screen.getAllByLabelText(/Quick benefits navigation/i)[0]!;
-    const buttons = within(nav).getAllByRole("button");
-    expect(buttons).toHaveLength(4);
-    const labels = buttons.map((button) => button.textContent?.trim());
-    expect(labels).toEqual(["Food & Money", "Health", "Bills & Housing", "Social Security"]);
+    expectBefore(summaryHeading, newStepOne);
   });
 
   it("renders learn more links with external targets", () => {
@@ -159,24 +147,6 @@ describe("BenefitsClient", () => {
     expect(screen.getByRole("button", { name: /SNAP food help/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /WIC for moms/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Cash help for bills/i })).toBeInTheDocument();
-  });
-
-  it("allows jumping to other sections via the quick nav", async () => {
-    renderBenefitsPage();
-    const user = userEvent.setup();
-    const jumpNav = screen.getAllByLabelText(/Quick benefits navigation/i)[0]!;
-    const jumpButton = within(jumpNav).getAllByRole("button", { name: /^Health$/i })[0]!;
-    await user.click(jumpButton);
-    const healthPanelButton = document.getElementById("benefit-trigger-health-coverage");
-    expect(healthPanelButton?.getAttribute("aria-expanded")).toBe("true");
-  });
-
-  it("calls window.print when using the print button", async () => {
-    renderBenefitsPage();
-    const user = userEvent.setup();
-    const [printButton] = screen.getAllByRole("button", { name: /Print this section/i });
-    await user.click(printButton);
-    expect(window.print).toHaveBeenCalled();
   });
 
   it("renders American Job Center links", async () => {
