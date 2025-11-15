@@ -157,7 +157,7 @@ export async function POST(req: NextRequest) {
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 15_000);
-    const items = await fetchAjcCentersForLocation({
+    const { items, rawCount, areaValidationErr } = await fetchAjcCentersForLocation({
       locationText: request.locationText,
       radiusMiles: config.radiusMiles,
       signal: controller.signal,
@@ -167,6 +167,8 @@ export async function POST(req: NextRequest) {
       kind: request.kind,
       locationText: request.locationText,
       itemCount: items.length,
+      rawCount,
+      areaValidationErr,
     });
 
     const response = zBenefitsLocalHelpResponse.parse({

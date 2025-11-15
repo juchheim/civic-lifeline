@@ -60,7 +60,13 @@ interface FetchAjcCentersParams {
   signal?: AbortSignal;
 }
 
-export async function fetchAjcCentersForLocation(params: FetchAjcCentersParams): Promise<BenefitsLocalHelpResult[]> {
+export interface AjcFetchResult {
+  items: BenefitsLocalHelpResult[];
+  rawCount: number;
+  areaValidationErr: string | null;
+}
+
+export async function fetchAjcCentersForLocation(params: FetchAjcCentersParams): Promise<AjcFetchResult> {
   const config = getAjcConfig();
   if (!config.enabled) {
     throw new AjcNotConfiguredError();
@@ -98,33 +104,40 @@ export async function fetchAjcCentersForLocation(params: FetchAjcCentersParams):
   const json = await res.json();
   const parsed = zAjcResponse.parse(json);
 
-  return (parsed.OneStopCenterList ?? [])
-    .filter((center) => (center.Name ?? "").trim().length > 0)
-    .map((center, index): BenefitsLocalHelpResult => {
-      const id =
-        typeof center.ID === "number"
-          ? String(center.ID)
-          : typeof center.ID === "string" && center.ID.trim().length > 0
-            ? center.ID
-            : undefined;
-      const name = (center.Name ?? "").trim() || "American Job Center";
-      const address = [center.Address1, center.Address2].filter((line) => (line ?? "").trim().length > 0).join(", ");
-      const phone = (center.Phone ?? "").trim();
-      const website = (center.WebSiteUrl ?? center.WebsiteUrl ?? "").trim();
+  const mappedItems =
+    (parsed.OneStopCenterList ?? [])
+      .filter((center) => (center.Name ?? "").trim().length > 0)
+      .map((center, index): BenefitsLocalHelpResult => {
+        const id =
+          typeof center.ID === "number"
+            ? String(center.ID)
+            : typeof center.ID === "string" && center.ID.trim().length > 0
+              ? center.ID
+              : undefined;
+        const name = (center.Name ?? "").trim() || "American Job Center";
+        const address = [center.Address1, center.Address2].filter((line) => (line ?? "").trim().length > 0).join(", ");
+        const phone = (center.Phone ?? "").trim();
+        const website = (center.WebSiteUrl ?? center.WebsiteUrl ?? "").trim();
 
-      return {
-        id: id ?? `ajc-${index}`,
-        name,
-        address: address || undefined,
-        city: center.City ?? undefined,
-        state: center.StateAbbr ?? undefined,
-        postalCode: center.Zip ?? undefined,
-        phone: phone || undefined,
-        website: website || undefined,
-        distanceMiles: parseDistance(center.Distance ?? center.Miles),
-        source: "career-onestop-ajc",
-      };
-    });
+        return {
+          id: id ?? `ajc-${index}`,
+          name,
+          address: address || undefined,
+          city: center.City ?? undefined,
+          state: center.StateAbbr ?? undefined,
+          postalCode: center.Zip ?? undefined,
+          phone: phone || undefined,
+          website: website || undefined,
+          distanceMiles: parseDistance(center.Distance ?? center.Miles),
+          source: "career-onestop-ajc",
+        };
+      }) ?? [];
+
+  return {
+    items: mappedItems,
+    rawCount: parsed.RecordCount ?? mappedItems.length,
+    areaValidationErr: parsed.AreaValidationErr ?? null,
+  };
 }
 
 function parseDistance(value: unknown): number | undefined {
