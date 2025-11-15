@@ -123,10 +123,11 @@ describe("BenefitsClient", () => {
   it("orders the summary, pills, and location prompt", () => {
     renderBenefitsPage();
     const summaryHeading = screen.getByRole("heading", { name: /What this page can help you with/i });
-    const stepOne = screen.getByText(/Step 1: Pick a benefit area/i);
-    const stepTwo = screen.getByText(/Step 2: Add your city or ZIP/i);
-    expectBefore(summaryHeading, stepOne);
-    expectBefore(stepOne, stepTwo);
+    const nav = screen.getAllByLabelText(/Quick benefits navigation/i)[0]!;
+    const firstPill = within(nav).getAllByRole("button")[0]!;
+    const newStepOne = screen.getByText(/Step 1: Add your city or ZIP/i);
+    expectBefore(summaryHeading, firstPill);
+    expectBefore(firstPill, newStepOne);
   });
 
   it("renders the jump nav for all sections", () => {

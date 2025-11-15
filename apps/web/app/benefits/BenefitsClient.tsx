@@ -655,7 +655,6 @@ export default function BenefitsClient() {
       </p>
 
       <section className="cl-benefits-hide-on-print space-y-3 rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm">
-        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Step 1: Pick a benefit area</p>
         <nav aria-label="Quick benefits navigation" className="flex flex-wrap gap-2">
           {JUMP_NAV_ITEMS.map((item) => {
             const isActive = activeSection === item.id;
@@ -686,7 +685,7 @@ export default function BenefitsClient() {
         ref={locationCardRef}
         className="cl-benefits-hide-on-print rounded-2xl border border-slate-200 bg-white px-5 py-6 shadow-lg shadow-slate-400/10 sm:px-7 sm:py-7"
       >
-        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Step 2: Add your city or ZIP</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Step 1: Add your city or ZIP</p>
         <div className="mt-3 space-y-4">
           <div className="space-y-1.5">
             <h2 className="text-2xl font-semibold text-slate-900">Add your city or ZIP one time.</h2>
