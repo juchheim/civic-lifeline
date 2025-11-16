@@ -26,7 +26,7 @@ import type { LocationSelection } from "@/types/location";
 import { useBenefitsLocation, type BenefitsLocation } from "./useBenefitsLocation";
 import { useUninsuredCoverageStats } from "./useUninsuredCoverageStats";
 import type { LucideIcon } from "lucide-react";
-import { ChevronDown, HeartPulse, Home, ShieldCheck, Utensils } from "lucide-react";
+import { ChevronDown, HeartPulse, Home, Info, ShieldCheck, Utensils } from "lucide-react";
 import { resolveStateCode } from "@/lib/location/stateCodes";
 
 interface BenefitPanelHelpers {
@@ -305,6 +305,18 @@ function PanelGuidance({ guide, title = "Program basics" }: { guide: PanelGuide;
   );
 }
 
+type StepChipProps = { children: ReactNode; className?: string };
+
+function StepChip({ children, className }: StepChipProps) {
+  return (
+    <span
+      className={`inline-flex w-fit items-center gap-2 rounded-full border border-civic-blue/30 bg-civic-blue/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.32em] text-civic-blue benefits-step-chip ${className ?? ""}`}
+    >
+      {children}
+    </span>
+  );
+}
+
 export { HealthCoveragePanel };
 
 type LocalHelpRequestPayload = BenefitsLocalHelpRequest;
@@ -431,23 +443,6 @@ export default function BenefitsClient() {
     return () => observer.disconnect();
   }, []);
 
-  const expandAll = useCallback(() => {
-    setOpenSections(SECTION_IDS);
-  }, []);
-
-  const collapseToPrimary = useCallback(() => {
-    setOpenSections([PRIMARY_SECTION_ID]);
-    setActiveSection(PRIMARY_SECTION_ID);
-    const section = document.getElementById(`benefit-section-${PRIMARY_SECTION_ID}`);
-    if (section) {
-      isManualNavigationRef.current = true;
-      section.scrollIntoView({ behavior: "smooth", block: "start" });
-      setTimeout(() => {
-        isManualNavigationRef.current = false;
-      }, 600);
-    }
-  }, []);
-
   const handleToggle = useCallback((id: string) => {
     setOpenSections((prev) => {
       const isOpen = prev.includes(id);
@@ -547,52 +542,81 @@ export default function BenefitsClient() {
         }}
       />
       <section className="mt-3 overflow-hidden rounded-[2.5rem] border border-slate-200 bg-white shadow-lg shadow-slate-400/10">
-        <div className="grid gap-6 md:gap-8 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1fr)] lg:items-stretch">
-          <div className="flex flex-col justify-between px-6 py-5 sm:px-9 sm:py-6 md:py-7">
-            <div className="space-y-5">
-              <span className="inline-flex w-fit items-center gap-2 rounded-full border border-brand-primary/20 bg-brand-primary/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.32em] text-brand-primary">
-                BENEFITS
-              </span>
-              <div className="space-y-3">
-                <h1 className="text-3xl font-bold leading-tight text-slate-900 sm:text-[2.5rem]">
-                  Benefits help in plain language.
-                </h1>
-                <p className="max-w-2xl text-base leading-relaxed text-slate-600 sm:text-lg">
-                  Read quick guides for food, money, health coverage, housing, and disability help, then add your city or ZIP to see trusted next steps.
-                </p>
-              </div>
+        <div className="px-6 py-5 sm:px-9 sm:py-6 md:py-7">
+          <div className="space-y-4">
+            <span className="inline-flex w-fit items-center gap-2 rounded-full border border-civic-blue/30 bg-civic-blue/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.32em] text-civic-blue">
+              BENEFITS
+            </span>
+            <div className="space-y-2">
+              <h1 className="text-3xl font-bold leading-tight text-slate-900 sm:text-[2.5rem]">
+                Benefits help all in one place.
+              </h1>
+              <p className="max-w-2xl text-base leading-relaxed text-slate-600 sm:text-lg">
+                Read quick guides for food, money, health coverage, housing, and disability help, then add your city or ZIP to see trusted next steps.
+              </p>
             </div>
-          </div>
-          <div className="relative">
-            <div className="absolute inset-0 bg-info-tint" aria-hidden />
-            <div className="relative flex h-full flex-col justify-between gap-3 rounded-t-3xl bg-info-tint px-6 py-5 text-slate-900 sm:px-8 md:px-9 md:py-6 lg:rounded-none">
-              <div className="space-y-2.5">
-                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-600">On this page</p>
-                <ul className="space-y-2 text-sm text-slate-700">
-                  <li className="flex items-start gap-3">
-                    <span className="mt-1.5 h-2 w-2 rounded-full bg-brand-accent" aria-hidden />
-                    <span>See quick facts about health coverage, Social Security, and other benefits in your area.</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <span className="mt-1.5 h-2 w-2 rounded-full bg-brand-accent" aria-hidden />
-                    <span>Check which programs you may qualify for based on your income and family size.</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <span className="mt-1.5 h-2 w-2 rounded-full bg-brand-accent" aria-hidden />
-                    <span>Find local offices and hotlines that can help with food, housing, bills, and more.</span>
-                  </li>
-                </ul>
-              </div>
+            <div className="grid gap-6 md:gap-8 lg:grid-cols-[minmax(0,0.6fr)_minmax(0,0.4fr)]">
+              <section
+                ref={locationCardRef}
+                className="cl-benefits-hide-on-print rounded-2xl border border-slate-200 bg-slate-50 px-5 py-5 shadow-lg shadow-slate-400/10 sm:px-6 sm:py-6"
+              >
+                <StepChip className="benefits-step-chip">Step 1: Add your city or ZIP</StepChip>
+                <div className="mt-3 space-y-3">
+                  <div className="space-y-1.5">
+                    <h2 className="text-xl font-semibold text-slate-900 sm:text-2xl">Add your city or ZIP one time.</h2>
+                    <p className="text-sm text-slate-600">
+                      We use this to show nearby programs and stats. We do not save your address.
+                    </p>
+                  </div>
+                  <LocationInputWithGeocode
+                    ref={locationInputRef}
+                    placeholder="E.g. 39194 or 123 Main St"
+                    value={locationInputValue}
+                    onChange={(value) => {
+                      setLocationInputValue(value);
+                      setLocationError(null);
+                    }}
+                    onLocationSelect={handleLocationSelect}
+                    onGeocodeError={(message) => setLocationError(message)}
+                    helperText="City, county, or ZIP all work."
+                    size="lg"
+                  />
+                  {locationError ? <p className="text-sm text-red-600">{locationError}</p> : null}
+                  {location ? (
+                    <div className="flex flex-col gap-2 rounded-2xl border border-slate-200 bg-slate-50/80 p-4 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <p className="font-semibold text-slate-800">Using:</p>
+                        <p className="text-slate-700">
+                          {location.displayLabel}
+                          {location.countyName ? ` (${location.countyName})` : ""}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleClearLocation}
+                        className="self-start rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2"
+                      >
+                        Clear location
+                      </button>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-slate-500">No location yet. Add one to unlock local search results.</p>
+                  )}
+                </div>
+              </section>
               <div className="rounded-2xl border border-brand-accent/30 bg-white/80 p-3 text-sm leading-relaxed text-slate-800 shadow-inner shadow-brand-accent/10 sm:p-4">
-                <p className="text-base font-semibold text-slate-800">Important to know</p>
+                <div className="flex items-center gap-2">
+                  <Info className="h-4 w-4 text-brand-accent/70" aria-hidden="true" />
+                  <p className="text-base font-semibold text-slate-800">Important to know</p>
+                </div>
                 <p className="mt-1 text-sm text-slate-700">
                   You do not apply for benefits on this page. Civic Lifeline explains programs in plain language and sends you to trusted government or local
                   sites to apply.
                 </p>
-                <p className="mt-2 text-sm">
+                <p className="mt-2 text-xs">
                   <button
                     type="button"
-                    className="font-semibold text-brand-primary underline underline-offset-2 hover:text-brand-primary/80"
+                    className="text-brand-primary underline underline-offset-2 hover:text-brand-primary/80"
                     onClick={() => setIsDisclaimerOpen(true)}
                   >
                     Important notes about this page
@@ -604,80 +628,13 @@ export default function BenefitsClient() {
         </div>
       </section>
       <section
-        ref={locationCardRef}
-        className="cl-benefits-hide-on-print rounded-2xl border border-slate-200 bg-white px-5 py-5 shadow-lg shadow-slate-400/10 sm:px-6 sm:py-6"
+        id="benefits-jump-nav"
+        className="grid gap-x-5 gap-y-4 md:grid-cols-[minmax(0,280px)_minmax(0,1fr)] md:grid-rows-[auto_1fr] md:items-start lg:grid-cols-[minmax(260px,0.38fr)_minmax(0,1fr)]"
       >
-        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Step 1: Add your city or ZIP</p>
-        <div className="mt-2.5 space-y-3">
-          <div className="space-y-1.5">
-            <h2 className="text-xl font-semibold text-slate-900 sm:text-2xl">Add your city or ZIP one time.</h2>
-            <p className="text-sm text-slate-600">
-              We use this to show nearby programs and state stats. We do not save your full address.
-            </p>
-          </div>
-          <LocationInputWithGeocode
-            ref={locationInputRef}
-            label="Address or ZIP code"
-            placeholder="E.g. 39194 or 123 Main St"
-            value={locationInputValue}
-            onChange={(value) => {
-              setLocationInputValue(value);
-              setLocationError(null);
-            }}
-            onLocationSelect={handleLocationSelect}
-            onGeocodeError={(message) => setLocationError(message)}
-            helperText="City, county, or ZIP all work."
-            size="lg"
-          />
-          {locationError ? <p className="text-sm text-red-600">{locationError}</p> : null}
-          {location ? (
-            <div className="flex flex-col gap-2 rounded-2xl border border-slate-200 bg-slate-50/80 p-4 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="font-semibold text-slate-800">Using:</p>
-                <p className="text-slate-700">
-                  {location.displayLabel}
-                  {location.countyName ? ` (${location.countyName})` : ""}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={handleClearLocation}
-                className="self-start rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2"
-              >
-                Clear location
-              </button>
-            </div>
-          ) : (
-            <p className="text-sm text-slate-500">No location yet. Add one to unlock local search results.</p>
-          )}
-        </div>
-      </section>
-
-      <section className="grid gap-5 md:gap-5 lg:grid-cols-[minmax(260px,0.38fr)_minmax(0,1fr)] cl-benefits-print-area">
-        <aside className="cl-benefits-hide-on-print self-start rounded-3xl border border-slate-200 bg-white p-6 shadow-lg shadow-slate-400/10 lg:sticky lg:top-5">
+        <StepChip className="benefits-step-chip md:col-start-1 md:row-start-1">Step 2: Pick a service</StepChip>
+        <aside className="cl-benefits-hide-on-print self-start rounded-3xl border border-slate-200 bg-white p-6 shadow-lg shadow-slate-400/10 lg:sticky lg:top-5 md:col-start-1 md:row-start-2">
           <div className="flex flex-col gap-5">
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">Jump to a service</p>
-                <p className="text-sm text-slate-500">Pick a benefit area to explore.</p>
-              </div>
-              <div className="flex gap-2 text-xs font-semibold text-brand-primary">
-                <button
-                  type="button"
-                  onClick={expandAll}
-                  className="rounded-full border border-brand-primary/30 px-3 py-1 transition hover:bg-brand-primary/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2"
-                >
-                  Expand all
-                </button>
-                <button
-                  type="button"
-                  onClick={collapseToPrimary}
-                  className="rounded-full border border-brand-primary/30 px-3 py-1 transition hover:bg-brand-primary/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2"
-                >
-                  Collapse
-                </button>
-              </div>
-            </div>
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">Jump to a service</p>
             <nav aria-label="Benefits sections" className="flex flex-col gap-2">
               {BENEFIT_SECTIONS.map((section) => {
                 const Icon = section.icon;
@@ -714,7 +671,8 @@ export default function BenefitsClient() {
           </div>
         </aside>
 
-        <div className="space-y-5">
+        <StepChip className="benefits-step-chip md:col-start-2 md:row-start-1">Step 3: Use the tools &amp; links</StepChip>
+        <div className="space-y-5 md:col-start-2 md:row-start-2">
           {BENEFIT_SECTIONS.map((section) => (
             <BenefitPanel
               key={section.id}
@@ -743,7 +701,7 @@ interface BenefitPanelProps {
 function BenefitPanel({ section, isOpen, onToggle, isActive, renderHelpers }: BenefitPanelProps) {
   const Icon = section.icon;
   const contentRef = useRef<HTMLDivElement | null>(null);
-  const previousOpen = useRef(isOpen);
+    const previousOpen = useRef(isOpen);
   const panelId = `benefit-panel-${section.id}`;
   const buttonId = `benefit-trigger-${section.id}`;
 

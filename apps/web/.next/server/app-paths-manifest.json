@@ -1,6 +1,5 @@
 {
   "/_not-found/page": "app/_not-found/page.js",
   "/benefits/page": "app/benefits/page.js",
-  "/manifest.webmanifest/route": "app/manifest.webmanifest/route.js",
-  "/api/benefits/state-social-security/route": "app/api/benefits/state-social-security/route.js"
+  "/manifest.webmanifest/route": "app/manifest.webmanifest/route.js"
 }

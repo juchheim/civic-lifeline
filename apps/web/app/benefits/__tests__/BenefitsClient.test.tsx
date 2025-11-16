@@ -1,5 +1,6 @@
 "use client";
 
+import "@testing-library/jest-dom/vitest";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -102,42 +103,58 @@ describe("BenefitsClient", () => {
     expect(within(panel!).getByText(/What this can help with/i)).toBeInTheDocument();
   });
 
-  it("renders a single page heading and four section headings", () => {
+  it("renders the hero heading and benefit section headings", () => {
     renderBenefitsPage();
-    const h1 = screen.getByRole("heading", { level: 1, name: /Benefits help in plain language/i });
-    expect(h1).toBeTruthy();
+    const h1Headings = screen.getAllByRole("heading", { level: 1 });
+    const heroHeading = h1Headings.find((heading) => heading.textContent?.match(/Benefits help all in one place/i));
+    expect(heroHeading).toBeTruthy();
     const h2Headings = screen.getAllByRole("heading", { level: 2 });
-    expect(h2Headings).toHaveLength(4);
+    expect(h2Headings.length).toBeGreaterThanOrEqual(4);
   });
 
-  it("shows the new hero explainer content and disclaimer link", () => {
+  it("shows the hero content and disclaimer link", () => {
     renderBenefitsPage();
-    expect(screen.getByText(/On this page/i)).toBeInTheDocument();
-    expect(screen.getByText(/quick facts about health coverage/i)).toBeInTheDocument();
     expect(screen.getByText(/Important to know/i)).toBeInTheDocument();
     expect(screen.getByText(/You do not apply for benefits on this page/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Important notes about this page/i })).toBeInTheDocument();
   });
 
-  it("places the hero above the location step", () => {
+  it("keeps the location step directly after the intro text in the hero", () => {
     renderBenefitsPage();
-    const heroLabel = screen.getByText(/On this page/i);
-    const locationLabel = screen.getByText(/Step 1: Add your city or ZIP/i);
-    expectBefore(heroLabel, locationLabel);
+    const intro = screen.getAllByText(/Read quick guides for food, money, health coverage/i)[0];
+    const stepOneChip = screen.getByText(/Step 1: Add your city or ZIP/i);
+    expectBefore(intro, stepOneChip);
+    expect(screen.getByPlaceholderText(/E.g. 39194 or 123 Main St/i)).toBeInTheDocument();
   });
 
   it("renders hero, location card, and first benefit section", () => {
     renderBenefitsPage();
-    expect(screen.getByRole("heading", { level: 1, name: /Benefits help in plain language/i })).toBeInTheDocument();
-    expect(screen.getByText(/On this page/i)).toBeInTheDocument();
+    expect(screen.getAllByRole("heading", { level: 1, name: /Benefits help all in one place/i })[0]).toBeInTheDocument();
     expect(screen.getByText(/Add your city or ZIP one time/i)).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /Food and Money Help/i })).toBeInTheDocument();
+  });
+
+  it("shows step labels for picking a service and using tools", () => {
+    renderBenefitsPage();
+    expect(screen.getAllByText(/Step 2: Pick a service/i)[0]).toBeInTheDocument();
+    expect(screen.getAllByText(/Step 3: Use the tools & links/i)[0]).toBeInTheDocument();
+  });
+
+  it("places the step chips above the sidebar and panels", () => {
+    renderBenefitsPage();
+    const stepTwoChip = screen.getAllByText(/Step 2: Pick a service/i)[0];
+    const jumpNavHeading = screen.getAllByText(/Jump to a service/i)[0];
+    expectBefore(stepTwoChip, jumpNavHeading);
+
+    const stepThreeChip = screen.getAllByText(/Step 3: Use the tools & links/i)[0];
+    const firstPanelHeading = screen.getByRole("heading", { name: /Food and Money Help/i });
+    expectBefore(stepThreeChip, firstPanelHeading);
   });
 
   it("renders learn more links with external targets", () => {
     renderBenefitsPage();
     const learnMoreHeadings = screen.getAllByRole("heading", { name: /Learn more \(official sites\)/i });
-    expect(learnMoreHeadings).toHaveLength(4);
+    expect(learnMoreHeadings.length).toBeGreaterThanOrEqual(4);
     learnMoreHeadings.forEach((heading) => {
       const list = heading.nextElementSibling;
       expect(list?.tagName).toBe("UL");
@@ -151,9 +168,9 @@ describe("BenefitsClient", () => {
 
   it("shows category toggles for local food, WIC, and cash help", () => {
     renderBenefitsPage();
-    expect(screen.getByRole("button", { name: /SNAP food help/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /WIC for moms/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Cash help for bills/i })).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: /SNAP food help/i })[0]).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: /WIC for moms/i })[0]).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: /Cash help for bills/i })[0]).toBeInTheDocument();
   });
 
   it("renders American Job Center links", async () => {

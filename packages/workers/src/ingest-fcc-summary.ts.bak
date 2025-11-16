@@ -1,0 +1,251 @@
+#!/usr/bin/env tsx
+import { createReadStream } from "node:fs";
+import { resolve } from "node:path";
+import { parse } from "csv-parse";
+import { getFccBroadbandCollection } from "@cl/db";
+import { createLogger } from "@cl/utils";
+
+const log = createLogger("worker:fcc-summary");
+
+interface Args {
+  file: string;
+  asOf: string;
+}
+
+function parseArgs(): Args {
+  const args = process.argv.slice(2);
+  const out: Partial<Args> = {};
+  for (const arg of args) {
+    const match = arg.match(/^--([^=]+)=(.+)$/);
+    if (!match) continue;
+    const [, key, value] = match;
+    if (key === "file") out.file = value;
+    else if (key === "asOf") out.asOf = value;
+  }
+
+  if (!out.file) {
+    const envFile = process.env.FCC_SUMMARY_CSV_PATH;
+    if (envFile) out.file = envFile;
+  }
+
+  if (!out.file) throw new Error("Missing required --file=/path/to/csv argument (or set FCC_SUMMARY_CSV_PATH).");
+  if (!out.asOf) throw new Error("Missing required --asOf=YYYY-MM-DD argument.");
+  return out as Args;
+}
+
+function toPercent(value: string | number | undefined): number | null {
+  if (value == null) return null;
+  const num = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(num)) return null;
+  return Number((num * 100).toFixed(1));
+}
+
+type BizKey = "residential" | "business";
+function bizKey(bizRes: string): BizKey {
+  return bizRes === "B" ? "business" : "residential";
+}
+
+interface TechnologyEntry {
+  name: string;
+  coverage: number;
+}
+
+interface CountyRecord {
+  fips: string;
+  stateFips: string;
+  countyName?: string;
+  stateName?: string;
+  totalUnits: Partial<Record<BizKey, number>>;
+  coverage: Partial<
+    Record<
+      BizKey,
+      {
+        "25_3": number | null;
+        "100_20": number | null;
+        "1000_100": number | null;
+      }
+    >
+  >;
+  technologies: Partial<Record<BizKey, Map<string, number>>>;
+}
+
+function ensureCounty(map: Map<string, CountyRecord>, fips: string): CountyRecord {
+  let entry = map.get(fips);
+  if (!entry) {
+    entry = {
+      fips,
+      stateFips: fips.slice(0, 2),
+      totalUnits: {},
+      coverage: {},
+      technologies: {},
+    };
+    map.set(fips, entry);
+  }
+  return entry;
+}
+
+async function main() {
+  const args = parseArgs();
+  const absolutePath = resolve(args.file);
+  const startTime = Date.now();
+  log.info("loading csv", { file: absolutePath, asOf: args.asOf });
+
+  const counties = new Map<string, CountyRecord>();
+  let rows = 0;
+  let processed = 0;
+
+  // Set up periodic status logging every 30 seconds
+  const statusInterval = setInterval(() => {
+    const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+    const rowsPerSec = rows > 0 ? (rows / ((Date.now() - startTime) / 1000)).toFixed(0) : "0";
+    log.info("progress", {
+      rows,
+      processed,
+      counties: counties.size,
+      elapsedSeconds: elapsed,
+      rowsPerSecond: rowsPerSec,
+    });
+  }, 30000);
+
+  const stream = createReadStream(absolutePath).pipe(
+    parse({
+      columns: true,
+      skip_empty_lines: true,
+      bom: true,
+      trim: true,
+    }),
+  );
+
+  for await (const record of stream as AsyncIterable<Record<string, string>>) {
+    rows += 1;
+    const geographyType = record.geography_type;
+    if (geographyType !== "County") continue;
+
+    const fips = record.geography_id?.padStart(5, "0");
+    if (!fips || !/^\d{5}$/.test(fips)) continue;
+
+    const biz = bizKey(record.biz_res);
+    const techName = record.technology;
+    const countyName = record.geography_desc ?? undefined;
+    const countyFull = record.geography_desc_full ?? undefined;
+
+    const county = ensureCounty(counties, fips);
+    if (countyName && !county.countyName) county.countyName = countyName;
+    if (countyFull && !county.stateName) {
+      const parts = countyFull.split(",").map((s) => s.trim());
+      if (parts.length > 1) county.stateName = parts[parts.length - 1];
+    }
+
+    if (techName === "Any Technology") {
+      const totalUnits = Number(record.total_units ?? 0);
+      if (Number.isFinite(totalUnits)) county.totalUnits[biz] = totalUnits;
+      county.coverage[biz] = {
+        "25_3": toPercent(record.speed_25_3),
+        "100_20": toPercent(record.speed_100_20),
+        "1000_100": toPercent(record.speed_1000_100),
+      };
+      processed += 1;
+      continue;
+    }
+    if (techName && techName.includes("Satellite")) continue;
+    if (techName && techName.includes("Satellite")) continue;
+
+    const techCoverage = toPercent(record.speed_25_3 ?? record.speed_10_1 ?? record.speed_02_02);
+    if (techCoverage == null) continue;
+    if (!county.technologies[biz]) county.technologies[biz] = new Map<string, number>();
+
+    const techMap = county.technologies[biz]!;
+    // Keep highest coverage if tech appears multiple times (shouldn't happen but defensive).
+    const previous = techMap.get(techName) ?? 0;
+    if (techCoverage > previous) techMap.set(techName, techCoverage);
+  }
+
+  clearInterval(statusInterval);
+  const parseElapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+  log.info("parsed csv", { rows, counties: counties.size, elapsedSeconds: parseElapsed });
+
+  const collection = await getFccBroadbandCollection();
+  const now = new Date().toISOString();
+  let upserts = 0;
+  const dbStartTime = Date.now();
+
+  // Set up periodic status logging for database phase
+  const dbStatusInterval = setInterval(() => {
+    const elapsed = ((Date.now() - dbStartTime) / 1000).toFixed(1);
+    const remaining = counties.size - upserts;
+    log.info("db progress", {
+      upserts,
+      total: counties.size,
+      remaining,
+      elapsedSeconds: elapsed,
+    });
+  }, 30000);
+
+  for (const county of counties.values()) {
+    const docId = `${county.fips}:${args.asOf}`;
+    const residentialCoverage = county.coverage.residential ?? null;
+    const businessCoverage = county.coverage.business ?? null;
+
+    const technologies: {
+      residential?: TechnologyEntry[];
+      business?: TechnologyEntry[];
+    } = {};
+
+    if (county.technologies.residential) {
+      const entries = Array.from(county.technologies.residential.entries())
+        .filter(([, coverage]) => coverage > 0)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 6)
+        .map(([name, coverage]) => ({ name, coverage }));
+      if (entries.length > 0) technologies.residential = entries;
+    }
+
+    if (county.technologies.business) {
+      const entries = Array.from(county.technologies.business.entries())
+        .filter(([, coverage]) => coverage > 0)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 6)
+        .map(([name, coverage]) => ({ name, coverage }));
+      if (entries.length > 0) technologies.business = entries;
+    }
+
+    const doc = {
+      _id: docId,
+      geoType: "county" as const,
+      fips: county.fips,
+      stateFips: county.fips.slice(0, 2),
+      asOf: args.asOf,
+      countyName: county.countyName,
+      stateName: county.stateName,
+      totalUnits: county.totalUnits,
+      coverage: {
+        residential: residentialCoverage,
+        business: businessCoverage,
+      },
+      technologies,
+      source: "FCC NBM Summary CSV" as const,
+      sourceUrl: "https://broadbandmap.fcc.gov/data-download",
+      fetchedAt: now,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    await collection.updateOne({ _id: doc._id }, { $set: doc }, { upsert: true });
+    upserts += 1;
+  }
+
+  clearInterval(dbStatusInterval);
+  const totalElapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+  const dbElapsed = ((Date.now() - dbStartTime) / 1000).toFixed(1);
+  log.info("ingest complete", {
+    counties: counties.size,
+    upserts,
+    totalElapsedSeconds: totalElapsed,
+    dbElapsedSeconds: dbElapsed,
+  });
+}
+
+main().catch((err) => {
+  console.error("ingest-fcc-summary failed", err);
+  process.exit(1);
+});
