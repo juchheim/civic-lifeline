@@ -1,12 +1,7 @@
 {
   "/_not-found/page": "app/_not-found/page.js",
-  "/manifest.webmanifest/route": "app/manifest.webmanifest/route.js",
   "/benefits/page": "app/benefits/page.js",
   "/api/benefits/state-social-security/route": "app/api/benefits/state-social-security/route.js",
-  "/api/states/route": "app/api/states/route.js",
-  "/api/counties/route": "app/api/counties/route.js",
-  "/api/benefits/social-security-offices/route": "app/api/benefits/social-security-offices/route.js",
-  "/api/geocode/suggest/route": "app/api/geocode/suggest/route.js",
-  "/api/benefits/local-help/route": "app/api/benefits/local-help/route.js",
-  "/api/stats/uninsured/route": "app/api/stats/uninsured/route.js"
+  "/manifest.webmanifest/route": "app/manifest.webmanifest/route.js",
+  "/api/benefits/local-help/route": "app/api/benefits/local-help/route.js"
 }

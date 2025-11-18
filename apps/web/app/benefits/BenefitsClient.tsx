@@ -1206,15 +1206,17 @@ function HealthCoveragePanel({ location, promptForLocation }: BenefitPanelHelper
 
   const locationAlertId = useId();
 
-  // Auto-search when location is set
+  // Auto-search when location is set or changes
   useEffect(() => {
-    if (location && !localHelpMutation.isSuccess && !localHelpMutation.isPending && !localHelpMutation.isError) {
+    if (location) {
       localHelpMutation.mutate({
         locationText: formatLocalHelpLocation(location),
         latitude: location.latitude,
         longitude: location.longitude,
         kind: "health",
       });
+    } else {
+      localHelpMutation.reset();
     }
   }, [location?.displayLabel]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -1443,23 +1445,23 @@ function HealthCheckResultCard({ result }: { result: BenefitsHealthCheckResponse
 
 function BillsHousingPanel({ location, promptForLocation }: BenefitPanelHelpers) {
   const localHelpMutation = useLocalHelpSearch();
-  const [currentSearchKind, setCurrentSearchKind] = useState<BenefitLocalHelpKind | null>(null);
   const hasSearched = localHelpMutation.isSuccess || localHelpMutation.isError;
   const remoteError = localHelpMutation.isError
     ? "We had trouble loading local programs. Please try again or contact a local American Job Center."
     : undefined;
   const locationAlertId = useId();
 
-  // Auto-search for housing help when location is set
+  // Auto-search for housing help when location is set or changes
   useEffect(() => {
-    if (location && !currentSearchKind) {
-      setCurrentSearchKind("housing");
+    if (location) {
       localHelpMutation.mutate({
         locationText: formatLocalHelpLocation(location),
         latitude: location.latitude,
         longitude: location.longitude,
         kind: "housing",
       });
+    } else {
+      localHelpMutation.reset();
     }
   }, [location?.displayLabel]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -1469,7 +1471,6 @@ function BillsHousingPanel({ location, promptForLocation }: BenefitPanelHelpers)
         promptForLocation();
         return;
       }
-      setCurrentSearchKind(kind);
       localHelpMutation.mutate({
         locationText: formatLocalHelpLocation(location),
         latitude: location.latitude,
@@ -1565,7 +1566,6 @@ function BillsHousingPanel({ location, promptForLocation }: BenefitPanelHelpers)
 
 function SecurityDisabilityPanel({ location, promptForLocation }: BenefitPanelHelpers) {
   const localHelpMutation = useLocalHelpSearch();
-  const [currentSearchKind, setCurrentSearchKind] = useState<BenefitLocalHelpKind | null>(null);
   const hasSearched = localHelpMutation.isSuccess || localHelpMutation.isError;
   const remoteError = localHelpMutation.isError
     ? "We had trouble loading local programs. Please try again or contact a local American Job Center."
@@ -1583,16 +1583,17 @@ function SecurityDisabilityPanel({ location, promptForLocation }: BenefitPanelHe
     enabled: Boolean(stateCodeForStats),
   });
 
-  // Auto-search for social security help when location is set
+  // Auto-search for social security help when location is set or changes
   useEffect(() => {
-    if (location && !currentSearchKind) {
-      setCurrentSearchKind("social-security");
+    if (location) {
       localHelpMutation.mutate({
         locationText: formatLocalHelpLocation(location),
         latitude: location.latitude,
         longitude: location.longitude,
         kind: "social-security",
       });
+    } else {
+      localHelpMutation.reset();
     }
   }, [location?.displayLabel]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -1653,7 +1654,6 @@ function SecurityDisabilityPanel({ location, promptForLocation }: BenefitPanelHe
         promptForLocation();
         return;
       }
-      setCurrentSearchKind(kind);
       localHelpMutation.mutate({
         locationText: formatLocalHelpLocation(location),
         latitude: location.latitude,
