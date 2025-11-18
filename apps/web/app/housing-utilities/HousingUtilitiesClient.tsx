@@ -111,7 +111,9 @@ function HousingUtilitiesContent() {
       }
       return {
         ...config,
-        render: () => <UtilitiesExperienceComponent location={location} promptForLocation={promptForLocation} />,
+        render: () => (
+          <UtilitiesExperienceComponent location={location as SharedLocation | null} promptForLocation={promptForLocation} />
+        ),
       };
     });
   }, [location, promptForLocation]);
