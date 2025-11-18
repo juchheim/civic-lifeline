@@ -1,19 +1,19 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
-import type { FormEvent } from "react";
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { zBroadbandSummaryResponse } from "@cl/types";
 import SourceChip from "@/components/SourceChip";
 import SuccessAlert from "@/components/SuccessAlert";
-import LocationInput, { type LocationInputHandle } from "@/components/LocationInput";
-
-const DEFAULT_QUERY = "";
+import { mapStoredLocationToSelection } from "@/lib/location/locationMappers";
+import type { SharedLocation } from "@/components/location/SharedLocationContext";
 
 interface BroadbandExperienceProps {
   showIntro?: boolean;
   wrapperClassName?: string;
   id?: string;
+  location?: SharedLocation | null;
+  promptForLocation?: () => void;
 }
 
 async function fetchBroadband(query: string) {
@@ -38,34 +38,27 @@ async function fetchBroadband(query: string) {
   return zBroadbandSummaryResponse.parse(json);
 }
 
-export default function BroadbandExperience({ showIntro = true, wrapperClassName, id }: BroadbandExperienceProps) {
-  const [locationInput, setLocationInput] = useState(DEFAULT_QUERY);
-  const [searchQuery, setSearchQuery] = useState(DEFAULT_QUERY);
-  const [suppressSuggestions, setSuppressSuggestions] = useState(false);
-  const [locationError, setLocationError] = useState<string | null>(null);
-  const locationInputHandleRef = useRef<LocationInputHandle | null>(null);
+export default function BroadbandExperience({
+  showIntro = true,
+  wrapperClassName,
+  id,
+  location = null,
+  promptForLocation = () => {},
+}: BroadbandExperienceProps) {
+  const resolvedSelection = useMemo(() => (location ? mapStoredLocationToSelection(location) : null), [location]);
+  const searchQuery = useMemo(() => {
+    if (!resolvedSelection) return "";
+    return resolvedSelection.postalCode ?? resolvedSelection.label;
+  }, [resolvedSelection]);
 
   const { data, isLoading, isFetching, isError, error } = useQuery({
     queryKey: ["broadband", searchQuery],
     queryFn: () => fetchBroadband(searchQuery),
-    enabled: !!searchQuery.trim(),
+    enabled: Boolean(searchQuery),
     staleTime: 300_000,
   });
 
   const coverage = data?.coverage ?? null;
-
-  const executeSearch = useCallback(() => {
-    const trimmed = locationInput.trim();
-    if (!trimmed) {
-      setLocationError("Enter an address, city, or ZIP code.");
-      return;
-    }
-    locationInputHandleRef.current?.reset();
-    setLocationError(null);
-    setSearchQuery(trimmed);
-    setLocationInput(trimmed);
-    setSuppressSuggestions(true);
-  }, [locationInput]);
 
   const speedLabels = useMemo(
     () => [
@@ -76,30 +69,28 @@ export default function BroadbandExperience({ showIntro = true, wrapperClassName
     [],
   );
 
-  const handleSubmit = useCallback(
-    (event: FormEvent<HTMLFormElement>) => {
-      event.preventDefault();
-      executeSearch();
-    },
-    [executeSearch],
-  );
-
   const queryLabel = useMemo(() => {
+    if (!searchQuery) return "";
     const params = new URLSearchParams();
     params.set("geo", "county");
-    if (searchQuery.trim()) params.set("q", searchQuery.trim());
+    params.set("q", searchQuery);
     return params.toString();
   }, [searchQuery]);
 
   const resolvedDisplay = useMemo(() => {
-    if (!data) return searchQuery;
+    if (data) {
+      const parts: string[] = [];
+      const name = data.resolvedLocation?.name?.trim();
+      const postal = data.resolvedLocation?.postalCode?.trim();
+      if (name) parts.push(name);
+      if (postal && (!name || !name.includes(postal))) parts.push(postal);
+      if (parts.length > 0) return parts.join(" · ");
+    }
+    if (resolvedSelection) return resolvedSelection.label;
     const parts: string[] = [];
-    const name = data.resolvedLocation?.name?.trim();
-    const postal = data.resolvedLocation?.postalCode?.trim();
-    if (name) parts.push(name);
-    if (postal && (!name || !name.includes(postal))) parts.push(postal);
-    return parts.length > 0 ? parts.join(" · ") : searchQuery;
-  }, [data, searchQuery]);
+    if (searchQuery) parts.push(searchQuery);
+    return parts.length > 0 ? parts.join(" · ") : "";
+  }, [data, resolvedSelection, searchQuery]);
 
   function formatCoverage(value: number | null | undefined): string {
     if (value == null || !Number.isFinite(value)) return "No data";
@@ -116,7 +107,7 @@ export default function BroadbandExperience({ showIntro = true, wrapperClassName
             <div>
               <h1 className="text-2xl font-semibold text-slate-900">Broadband Coverage</h1>
               <p className="text-sm text-slate-600">
-                Fetch the FCC National Broadband Map summary for a county. Enter an address or ZIP code to locate it automatically.
+                We use your saved location to fetch the FCC National Broadband Map summary for that county.
               </p>
             </div>
           )}
@@ -125,44 +116,25 @@ export default function BroadbandExperience({ showIntro = true, wrapperClassName
       )}
 
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-        <form className="space-y-4" onSubmit={handleSubmit}>
-          <div className="space-y-2">
-            <LocationInput
-              ref={locationInputHandleRef}
-              id="broadband-location"
-              label="Address or ZIP code"
-              value={locationInput}
-              onChange={(next) => {
-                setLocationInput(next);
-                setLocationError(null);
-                setSuppressSuggestions(false);
-              }}
-              placeholder="Yazoo County, MS or 39194"
-              suppressSuggestions={suppressSuggestions}
-              onSuggestionSelect={(suggestion) => {
-                setLocationInput(suggestion.name);
-                setSearchQuery(suggestion.name);
-                setSuppressSuggestions(true);
-                setLocationError(null);
-              }}
-              onSubmit={executeSearch}
-            />
-            {locationError && (
-              <div className="rounded-xl border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">{locationError}</div>
-            )}
-          </div>
-
+        <div className="space-y-3">
           <div className="flex flex-wrap items-center gap-3">
+            <p className="text-sm text-slate-600">
+              {searchQuery
+                ? `Showing broadband coverage for ${resolvedDisplay || "your saved location"}.`
+                : "Add your city or ZIP above to see broadband coverage."}
+            </p>
             <button
-              type="submit"
-              className="inline-flex items-center justify-center rounded-full bg-brand-primary px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-brand-primary/50"
-              disabled={isFetching}
+              type="button"
+              onClick={promptForLocation}
+              className="inline-flex items-center justify-center rounded-full border border-brand-primary/30 px-4 py-2 text-sm font-semibold text-brand-primary shadow-sm transition hover:bg-brand-primary/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2"
             >
-              {isLoading || isFetching ? "Searching…" : "Search broadband data"}
+              {searchQuery ? "Change location" : "Set location"}
             </button>
-            <span className="text-xs text-slate-500">Using `/api/broadband/summary?{queryLabel}`</span>
           </div>
-        </form>
+          {searchQuery ? (
+            <span className="text-xs text-slate-500">Using `/api/broadband/summary?{queryLabel}`</span>
+          ) : null}
+        </div>
         {data && (
           <div className="mt-4">
             <SuccessAlert message="Location found – data loaded successfully" />
@@ -175,11 +147,14 @@ export default function BroadbandExperience({ showIntro = true, wrapperClassName
               {(error as Error)?.message || "Something went wrong."}
             </div>
           )}
-          {!isError && !data && !isLoading && (
+          {!isError && !searchQuery && !isLoading && (
             <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
-              Enter an address or ZIP code to see broadband coverage details.
+              Set your location above to see broadband coverage details.
             </div>
           )}
+          {searchQuery && (isLoading || isFetching) && !data ? (
+            <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">Loading broadband data…</div>
+          ) : null}
           {data && (
             <div className="space-y-4">
               {resolvedDisplay && (

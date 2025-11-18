@@ -1,1 +1,36 @@
-{}
+{
+  "app/food/page.tsx -> @/components/MapView": {
+    "id": "app/food/page.tsx -> @/components/MapView",
+    "files": [
+      "static/chunks/_app-pages-browser_components_MapView_tsx.js"
+    ]
+  },
+  "app/housing-utilities/HousingUtilitiesClient.tsx -> ../broadband/BroadbandExperience": {
+    "id": "app/housing-utilities/HousingUtilitiesClient.tsx -> ../broadband/BroadbandExperience",
+    "files": [
+      "static/chunks/_app-pages-browser_app_broadband_BroadbandExperience_tsx.js"
+    ]
+  },
+  "app/housing-utilities/HousingUtilitiesClient.tsx -> ../housing/HousingExperience": {
+    "id": "app/housing-utilities/HousingUtilitiesClient.tsx -> ../housing/HousingExperience",
+    "files": [
+      "static/chunks/_app-pages-browser_app_housing_HousingExperience_tsx.js"
+    ]
+  },
+  "app/housing-utilities/HousingUtilitiesClient.tsx -> ./UtilitiesExperience": {
+    "id": "app/housing-utilities/HousingUtilitiesClient.tsx -> ./UtilitiesExperience",
+    "files": [
+      "static/chunks/_app-pages-browser_app_housing-utilities_UtilitiesExperience_tsx.js"
+    ]
+  },
+  "app/stats/page.tsx -> @/components/TimeSeriesChart": {
+    "id": "app/stats/page.tsx -> @/components/TimeSeriesChart",
+    "files": [
+      "static/chunks/_app-pages-browser_components_TimeSeriesChart_tsx.js"
+    ]
+  },
+  "components/MapView.tsx -> leaflet": {
+    "id": "components/MapView.tsx -> leaflet",
+    "files": []
+  }
+}

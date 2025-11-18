@@ -1,13 +1,13 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { zCounselorsResponse, zFmrResponse } from "@cl/types";
 import SourceChip from "@/components/SourceChip";
 import SuccessAlert from "@/components/SuccessAlert";
-import LocationInputWithGeocode, { type LocationInputWithGeocodeHandle } from "@/components/LocationInputWithGeocode";
 import { locationCopy } from "@/config/locationCopy";
-import type { LocationSelection } from "@/types/location";
+import { mapStoredLocationToSelection } from "@/lib/location/locationMappers";
+import type { SharedLocation } from "@/components/location/SharedLocationContext";
 
 interface CounselorSearchParams {
   radius: string;
@@ -28,6 +28,8 @@ interface HousingExperienceProps {
   showIntro?: boolean;
   wrapperClassName?: string;
   id?: string;
+  location?: SharedLocation | null;
+  promptForLocation?: () => void;
 }
 
 const DEFAULT_RADIUS = "100";
@@ -78,143 +80,80 @@ async function fetchFmr(params: FmrSearchParams) {
   return zFmrResponse.parse(json);
 }
 
-export default function HousingExperience({ showIntro = true, wrapperClassName, id }: HousingExperienceProps) {
-  const [locationInput, setLocationInput] = useState("");
-  const [selectedLocation, setSelectedLocation] = useState<LocationSelection | null>(null);
-  const [locationError, setLocationError] = useState<string | null>(null);
-  const [isResolving, setIsResolving] = useState(false);
+export default function HousingExperience({
+  showIntro = true,
+  wrapperClassName,
+  id,
+  location = null,
+  promptForLocation = () => {},
+}: HousingExperienceProps) {
   const [advancedOpen, setAdvancedOpen] = useState(false);
-  const [isGeolocating, setIsGeolocating] = useState(false);
-  const [suppressSuggestions, setSuppressSuggestions] = useState(false);
   const [advanced, setAdvanced] = useState({ radius: DEFAULT_RADIUS, lat: "", lon: "", fips: "", year: DEFAULT_FMR_YEAR });
-  const locationInputHandleRef = useRef<LocationInputWithGeocodeHandle | null>(null);
-
   const [counselorSearch, setCounselorSearch] = useState<CounselorSearchParams | null>(null);
   const [fmrSearch, setFmrSearch] = useState<FmrSearchParams | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
 
-  const runSearch = useCallback(
-    async (selectionOverride?: LocationSelection) => {
-      const trimmedQuery = locationInput.trim();
-      const manualLat = advanced.lat.trim();
-      const manualLon = advanced.lon.trim();
-      const manualFips = advanced.fips.trim();
-      const manualYear = advanced.year.trim() || DEFAULT_FMR_YEAR;
-      const radius = advanced.radius.trim() || DEFAULT_RADIUS;
+  const resolvedLocation = useMemo(() => (location ? mapStoredLocationToSelection(location) : null), [location]);
 
-      const hasPartialCoords = (manualLat && !manualLon) || (!manualLat && manualLon);
-      if (hasPartialCoords) {
-        setLocationError("Provide both latitude and longitude to use manual coordinates.");
-        return;
-      }
+  const runSearch = useCallback(() => {
+    const manualLat = advanced.lat.trim();
+    const manualLon = advanced.lon.trim();
+    const manualFips = advanced.fips.trim();
+    const manualYear = advanced.year.trim() || DEFAULT_FMR_YEAR;
+    const radius = advanced.radius.trim() || DEFAULT_RADIUS;
 
-      setLocationError(null);
-
-      const needsLocation = !manualLat && !manualLon;
-      let location = selectionOverride ?? selectedLocation;
-
-      if (selectionOverride) {
-        setSelectedLocation(selectionOverride);
-        setLocationInput(selectionOverride.label);
-      }
-
-      if (needsLocation && !location) {
-        if (!trimmedQuery) {
-          setLocationError(locationCopy.enterLocationOrProvideCoords);
-          return;
-        }
-        const selection = await locationInputHandleRef.current?.geocode();
-        if (!selection) {
-          return;
-        }
-        location = selection;
-        setSelectedLocation(selection);
-        setLocationInput(selection.label);
-      }
-
-      const counselorParams: CounselorSearchParams = { radius };
-      if (manualLat && manualLon) {
-        counselorParams.lat = manualLat;
-        counselorParams.lon = manualLon;
-    } else if (location) {
-      counselorParams.lat = location.lat.toFixed(6);
-      counselorParams.lon = location.lon.toFixed(6);
-    } else if (trimmedQuery) {
-      counselorParams.q = trimmedQuery;
-    } else {
-      setLocationError(locationCopy.enterLocationOrProvideCoords);
+    const hasPartialCoords = (manualLat && !manualLon) || (!manualLat && manualLon);
+    if (hasPartialCoords) {
+      setFormError("Provide both latitude and longitude to use manual coordinates.");
       return;
+    }
+
+    const hasManualCoords = Boolean(manualLat && manualLon);
+    const activeLocation = resolvedLocation;
+
+    if (!hasManualCoords && !activeLocation && !manualFips) {
+      setFormError(locationCopy.enterLocationOrProvideCoords);
+      return;
+    }
+
+    setFormError(null);
+
+    const counselorParams: CounselorSearchParams = { radius };
+    if (hasManualCoords) {
+      counselorParams.lat = manualLat;
+      counselorParams.lon = manualLon;
+    } else if (activeLocation) {
+      counselorParams.lat = activeLocation.lat.toFixed(6);
+      counselorParams.lon = activeLocation.lon.toFixed(6);
     }
 
     const fmrParams: FmrSearchParams = { year: manualYear };
     if (manualFips) {
       fmrParams.fips = manualFips;
-    } else if (manualLat && manualLon) {
+    } else if (hasManualCoords) {
       fmrParams.lat = manualLat;
       fmrParams.lon = manualLon;
-    } else if (location) {
-      fmrParams.lat = location.lat.toFixed(6);
-      fmrParams.lon = location.lon.toFixed(6);
-    } else if (trimmedQuery) {
-      fmrParams.q = trimmedQuery;
+    } else if (activeLocation) {
+      fmrParams.lat = activeLocation.lat.toFixed(6);
+      fmrParams.lon = activeLocation.lon.toFixed(6);
     } else {
-      setLocationError(locationCopy.provideCountyFipsOrLocation);
+      setFormError(locationCopy.provideCountyFipsOrLocation);
       return;
     }
 
-      setCounselorSearch(counselorParams);
-      setFmrSearch(fmrParams);
-    },
-    [advanced, locationInput, selectedLocation]
-  );
+    setCounselorSearch(counselorParams);
+    setFmrSearch(fmrParams);
+  }, [advanced, resolvedLocation]);
 
-  const handleUseCurrentLocation = useCallback(() => {
-    setLocationError(null);
-    if (typeof navigator === "undefined" || !navigator.geolocation) {
-      setLocationError(locationCopy.browserNoGeolocation);
+  useEffect(() => {
+    const manualLat = advanced.lat.trim();
+    const manualLon = advanced.lon.trim();
+    const manualFips = advanced.fips.trim();
+    if (!resolvedLocation || manualLat || manualLon || manualFips) {
       return;
     }
-    setIsGeolocating(true);
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setIsGeolocating(false);
-        const { latitude, longitude } = position.coords;
-        const label = "Current location";
-        setSelectedLocation({ label, lat: latitude, lon: longitude });
-        setLocationInput(label);
-        locationInputHandleRef.current?.reset();
-        setSuppressSuggestions(true);
-        setAdvanced((prev) => ({
-          ...prev,
-          lat: "",
-          lon: "",
-          fips: prev.fips,
-        }));
-
-        const radiusValue = advanced.radius.trim() || DEFAULT_RADIUS;
-        setCounselorSearch({
-          lat: latitude.toFixed(6),
-          lon: longitude.toFixed(6),
-          radius: radiusValue,
-        });
-
-        const manualYear = advanced.year.trim() || DEFAULT_FMR_YEAR;
-        const manualFips = advanced.fips.trim();
-        if (manualFips) {
-          setFmrSearch({ year: manualYear, fips: manualFips });
-        } else {
-          setFmrSearch({
-            year: manualYear,
-            lat: latitude.toFixed(6),
-            lon: longitude.toFixed(6),
-          });
-        }
-      },
-      () => {
-        setIsGeolocating(false);
-        setLocationError("We couldn't access your current location. Please allow access or enter it manually.");
-      }
-    );
-  }, [advanced, setCounselorSearch, setFmrSearch]);
+    runSearch();
+  }, [advanced.lat, advanced.lon, advanced.fips, resolvedLocation, runSearch]);
 
   const counselorsQuery = useQuery({
     queryKey: [
@@ -243,15 +182,20 @@ export default function HousingExperience({ showIntro = true, wrapperClassName, 
     staleTime: 300_000,
   });
 
-  const isSearching = isResolving || counselorsQuery.isFetching || fmrQuery.isFetching || isGeolocating;
+  const isSearching = counselorsQuery.isFetching || fmrQuery.isFetching;
 
   const searchSummary = useMemo(() => {
-    if (advanced.lat.trim() && advanced.lon.trim()) {
-      return `Manual coordinates (${advanced.lat.trim()}, ${advanced.lon.trim()})`;
+    const manualLat = advanced.lat.trim();
+    const manualLon = advanced.lon.trim();
+    const manualFips = advanced.fips.trim();
+
+    if (manualLat && manualLon) {
+      return `Manual coordinates (${manualLat}, ${manualLon})`;
     }
-    if (selectedLocation) return selectedLocation.label;
-    const trimmed = locationInput.trim();
-    if (trimmed) return trimmed;
+    if (manualFips) {
+      return `FIPS ${manualFips}`;
+    }
+    if (resolvedLocation) return resolvedLocation.label;
     if (counselorSearch?.lat && counselorSearch?.lon) {
       return `Lat ${counselorSearch.lat}, Lon ${counselorSearch.lon}`;
     }
@@ -259,7 +203,11 @@ export default function HousingExperience({ showIntro = true, wrapperClassName, 
       return `Lat ${fmrSearch.lat}, Lon ${fmrSearch.lon}`;
     }
     return "No location selected";
-  }, [advanced.lat, advanced.lon, counselorSearch, fmrSearch, locationInput, selectedLocation]);
+  }, [advanced.fips, advanced.lat, advanced.lon, counselorSearch, fmrSearch, resolvedLocation]);
+
+  const hasManualCoords = Boolean(advanced.lat.trim() && advanced.lon.trim());
+  const hasManualOverrides = hasManualCoords || Boolean(advanced.fips.trim());
+  const canSearch = Boolean(resolvedLocation) || hasManualOverrides;
 
   const containerClassName = ["space-y-6", wrapperClassName].filter(Boolean).join(" ");
 
@@ -275,60 +223,36 @@ export default function HousingExperience({ showIntro = true, wrapperClassName, 
       )}
 
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-        <form
-          className="space-y-4"
-          onSubmit={(event) => {
-            event.preventDefault();
-            void runSearch();
-          }}
-        >
-          <div className="space-y-2">
-            <LocationInputWithGeocode
-              ref={locationInputHandleRef}
-              id="housing-location"
-              label="Address or ZIP code"
-              value={locationInput}
-              onChange={(next) => {
-                setLocationInput(next);
-                setLocationError(null);
-                setSuppressSuggestions(false);
-              }}
-              placeholder="E.g. 39194 or 123 Main St, Greenville, MS"
-              suppressSuggestions={suppressSuggestions}
-              onLocationSelect={(selection) => {
-                setSelectedLocation(selection);
-                setLocationInput(selection.label);
-                setLocationError(null);
-                setSuppressSuggestions(false);
-                void runSearch(selection);
-              }}
-              onGeocodeStateChange={setIsResolving}
-              onGeocodeError={(message) => setLocationError(message)}
-            />
+        <div className="space-y-4">
+          <div className="space-y-1">
             <div className="text-xs text-slate-500">
               Selected location: <span className="font-medium text-slate-700">{searchSummary}</span>
-              {counselorSearch?.radius ? ` • Radius ${counselorSearch.radius} mi` : null}
             </div>
-            {locationError && (
-              <div className="rounded-xl border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">{locationError}</div>
-            )}
+            {!canSearch ? (
+              <p className="text-sm text-slate-600">
+                Add your city or ZIP above (or use the advanced options) to search for housing data.
+              </p>
+            ) : null}
+            {formError ? (
+              <div className="rounded-xl border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">{formError}</div>
+            ) : null}
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
             <button
-              type="submit"
+              type="button"
               className="inline-flex items-center justify-center rounded-full bg-brand-primary px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-brand-primary/50"
-              disabled={isSearching}
+              onClick={runSearch}
+              disabled={isSearching || !canSearch}
             >
               {isSearching ? "Searching…" : "Search housing data"}
             </button>
             <button
               type="button"
-              onClick={handleUseCurrentLocation}
-              className="inline-flex items-center justify-center rounded-full border border-brand-primary/30 px-5 py-2 text-sm font-semibold text-brand-primary shadow-sm transition hover:bg-brand-primary/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:border-brand-primary/20 disabled:text-brand-primary/50"
-              disabled={isSearching}
+              onClick={promptForLocation}
+              className="inline-flex items-center justify-center rounded-full border border-brand-primary/30 px-5 py-2 text-sm font-semibold text-brand-primary shadow-sm transition hover:bg-brand-primary/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2"
             >
-              {isGeolocating ? "Locating…" : "Use my location"}
+              Change location
             </button>
             <button
               type="button"
@@ -411,12 +335,13 @@ export default function HousingExperience({ showIntro = true, wrapperClassName, 
               </div>
             </div>
           )}
-        </form>
-        {(counselorsQuery.data || fmrQuery.data) && (
-          <div className="mt-4">
-            <SuccessAlert message="Location found – data loaded successfully" />
-          </div>
-        )}
+
+          {(counselorsQuery.data || fmrQuery.data) && (
+            <div className="mt-4">
+              <SuccessAlert message="Location found – data loaded successfully" />
+            </div>
+          )}
+        </div>
       </section>
 
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">

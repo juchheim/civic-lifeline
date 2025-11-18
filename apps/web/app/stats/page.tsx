@@ -65,8 +65,8 @@ function StatsPageContent() {
     return counties.find((county) => county.fips === countyFips) ?? undefined;
   }, [counties, countyFips]);
 
-  const stateFips: string | undefined = selectedCounty?.stateFips != null ? selectedCounty.stateFips : undefined;
-  const countyName: string | undefined = selectedCounty?.name != null ? selectedCounty.name : undefined;
+  const stateFips: string | undefined = (selectedCounty?.stateFips ?? undefined) as string | undefined;
+  const countyName: string | undefined = (selectedCounty?.name ?? undefined) as string | undefined;
 
   useEffect(() => {
     if (!location || !location.displayLabel) {
@@ -196,19 +196,19 @@ function StatsPageContent() {
             <>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
                 <PovertyStatCard
-                  countyFips={countyFips}
-                  stateFips={stateFips}
-                  countyNameFallback={countyName}
+                  countyFips={countyFips ?? undefined}
+                  stateFips={stateFips as string | undefined}
+                  countyNameFallback={countyName as string | undefined}
                 />
                 <MedianIncomeCard
-                  countyFips={countyFips}
-                  stateFips={stateFips}
-                  countyNameFallback={countyName}
+                  countyFips={countyFips ?? undefined}
+                  stateFips={stateFips as string | undefined}
+                  countyNameFallback={countyName as string | undefined}
                 />
-                <SnapParticipationCard countyFips={countyFips} stateFips={stateFips} />
-                <EducationLevelCard countyFips={countyFips} stateFips={stateFips} />
-                <UninsuredRateCard countyFips={countyFips} stateFips={stateFips} />
-                <HousingBurdenCard countyFips={countyFips} stateFips={stateFips} />
+                <SnapParticipationCard countyFips={countyFips ?? undefined} stateFips={stateFips as string | undefined} />
+                <EducationLevelCard countyFips={countyFips ?? undefined} stateFips={stateFips as string | undefined} />
+                <UninsuredRateCard countyFips={countyFips ?? undefined} stateFips={stateFips as string | undefined} />
+                <HousingBurdenCard countyFips={countyFips ?? undefined} stateFips={stateFips as string | undefined} />
               </div>
 
               {isError && (

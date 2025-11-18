@@ -9,7 +9,6 @@ import { ChevronDown, Clock, Droplets, Home, Sparkles, Wifi } from "lucide-react
 import type { LocationInputWithGeocodeHandle } from "@/components/LocationInputWithGeocode";
 import { HeroLocationCard } from "@/components/location/HeroLocationCard";
 import { SharedLocationProvider, useSharedLocation } from "@/components/location/SharedLocationContext";
-import UtilitiesExperienceComponent from "./UtilitiesExperience";
 import type { SharedLocation } from "@/components/location/SharedLocationContext";
 
 type HousingExperienceProps = {
@@ -28,6 +27,11 @@ type BroadbandExperienceProps = {
   promptForLocation?: () => void;
 };
 
+type UtilitiesExperienceProps = {
+  location?: SharedLocation | null;
+  promptForLocation?: () => void;
+};
+
 const HousingExperience = dynamic<HousingExperienceProps>(
   () => import("../housing/HousingExperience"),
   {
@@ -36,6 +40,12 @@ const HousingExperience = dynamic<HousingExperienceProps>(
 );
 const BroadbandExperience = dynamic<BroadbandExperienceProps>(
   () => import("../broadband/BroadbandExperience"),
+  {
+    ssr: false,
+  }
+);
+const UtilitiesExperience = dynamic<UtilitiesExperienceProps>(
+  () => import("./UtilitiesExperience"),
   {
     ssr: false,
   }
@@ -111,9 +121,7 @@ function HousingUtilitiesContent() {
       }
       return {
         ...config,
-        render: () => (
-          <UtilitiesExperienceComponent location={location as SharedLocation | null} promptForLocation={promptForLocation} />
-        ),
+        render: () => <UtilitiesExperience location={location} promptForLocation={promptForLocation} />,
       };
     });
   }, [location, promptForLocation]);

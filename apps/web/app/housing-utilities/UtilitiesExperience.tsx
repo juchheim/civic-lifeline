@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   zUtilitiesCostsResponse,
@@ -10,8 +10,9 @@ import {
   type UtilitiesCostDistribution,
 } from "@cl/types";
 import SuccessAlert from "@/components/SuccessAlert";
-import LocationInputWithGeocode, { type LocationInputWithGeocodeHandle } from "@/components/LocationInputWithGeocode";
 import type { LocationSelection } from "@/types/location";
+import { mapStoredLocationToSelection } from "@/lib/location/locationMappers";
+import type { SharedLocation } from "@/components/location/SharedLocationContext";
 
 interface UtilitiesSearchParams {
   state: string;
@@ -78,13 +79,15 @@ const ASSUMPTIONS = {
   topBucketMidpoints: { electricGas: 225, waterSewerAnnual: 900 },
 };
 
-export default function UtilitiesExperience() {
-  const [locationInput, setLocationInput] = useState("");
+interface UtilitiesExperienceProps {
+  location?: SharedLocation | null;
+  promptForLocation?: () => void;
+}
+
+export default function UtilitiesExperience({ location = null, promptForLocation = () => {} }: UtilitiesExperienceProps) {
   const [locationError, setLocationError] = useState<string | null>(null);
   const [searchParams, setSearchParams] = useState<UtilitiesSearchParams | null>(null);
   const [resolvedLabel, setResolvedLabel] = useState<string | null>(null);
-  const [isGeocoding, setIsGeocoding] = useState(false);
-  const locationInputRef = useRef<LocationInputWithGeocodeHandle | null>(null);
   const [expandedCost, setExpandedCost] = useState<string | null>(null);
   const [activeProviderTab, setActiveProviderTab] = useState<(typeof providerTabs)[number]["id"]>("water");
 
@@ -126,24 +129,43 @@ export default function UtilitiesExperience() {
   }, []);
 
   const handleLocationResolved = useCallback(
-    (selection: LocationSelection) => {
+    (selection: LocationSelection | null) => {
+      if (!selection) {
+        setSearchParams(null);
+        setResolvedLabel(null);
+        setLocationError(null);
+        return;
+      }
+
       const state = resolveStateCode(selection);
       if (!state) {
+        setSearchParams(null);
+        setResolvedLabel(null);
         setLocationError("We couldn't determine the state for that location. Try another search.");
         return;
       }
       const county = resolveCountyName(selection);
       if (!county) {
+        setSearchParams(null);
+        setResolvedLabel(null);
         setLocationError("We couldn't determine the county for that location. Try another search.");
         return;
       }
       setSearchParams({ state, county });
       setResolvedLabel(`${county}, ${state}`);
       setLocationError(null);
-      setLocationInput(selection.label);
     },
     [resolveCountyName, resolveStateCode],
   );
+
+  useEffect(() => {
+    if (!location) {
+      handleLocationResolved(null);
+      return;
+    }
+    const selection = mapStoredLocationToSelection(location);
+    handleLocationResolved(selection);
+  }, [handleLocationResolved, location]);
 
   const costsQuery = useQuery({
     queryKey: ["utilities-costs", searchParams?.state ?? "", searchParams?.county ?? ""],
@@ -204,63 +226,44 @@ export default function UtilitiesExperience() {
     return waterQuery;
   })();
 
-  const isAnyLoading = Boolean(
-    (searchParams && (costsQuery.isFetching || activeProviderQuery.isFetching)) || isGeocoding,
-  );
+  const isAnyLoading = Boolean(searchParams && (costsQuery.isFetching || activeProviderQuery.isFetching));
+  const hasLocation = Boolean(searchParams);
 
   return (
     <div className="space-y-6">
       <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-        <form
-          className="space-y-4"
-          onSubmit={(event) => {
-            event.preventDefault();
-            void locationInputRef.current?.geocode();
-          }}
-        >
-          <div className="space-y-2">
-            <LocationInputWithGeocode
-              ref={locationInputRef}
-              label="Search by address or ZIP code"
-              value={locationInput}
-              onChange={(next) => {
-                setLocationInput(next);
-                setLocationError(null);
-              }}
-              placeholder="E.g. Yazoo County, MS or 39194"
-              helperText="We’ll match it to the right county automatically."
-              onLocationSelect={handleLocationResolved}
-              onGeocodeStateChange={setIsGeocoding}
-              onGeocodeError={(message) => setLocationError(message)}
-            />
-            {locationError && (
+        <div className="space-y-3">
+          <div className="space-y-1">
+            <p className="text-sm text-slate-600">
+              {resolvedLabel
+                ? `Showing utilities costs and providers near ${resolvedLabel}.`
+                : "Add your city or ZIP above to see utilities costs and providers."}
+            </p>
+            {locationError ? (
               <div className="rounded-xl border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">{locationError}</div>
-            )}
-            {statesError && (
+            ) : null}
+            {statesError ? (
               <p className="text-xs text-amber-600">
                 {statesError.message || "Unable to load state metadata."}
               </p>
-            )}
+            ) : null}
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <button
-              type="submit"
-              className="inline-flex items-center justify-center rounded-full bg-brand-primary px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-brand-primary/50"
-              disabled={isAnyLoading}
+              type="button"
+              onClick={promptForLocation}
+              className="inline-flex items-center justify-center rounded-full border border-brand-primary/30 px-5 py-2 text-sm font-semibold text-brand-primary shadow-sm transition hover:bg-brand-primary/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2"
             >
-              {isAnyLoading ? "Searching…" : "Search utilities data"}
+              {hasLocation ? "Change location" : "Set location"}
             </button>
-            {isGeocoding && <span className="text-xs text-slate-500">Resolving location…</span>}
             {isStatesLoading && <span className="text-xs text-slate-500">Loading states…</span>}
           </div>
-        </form>
-        {(costsQuery.data || activeProviderQuery.data) && (
-          <div className="mt-4">
+          {hasLocation && (costsQuery.data || activeProviderQuery.data) ? (
             <SuccessAlert
               message={resolvedLabel ? `Showing utilities data for ${resolvedLabel}` : "Location found – data loaded successfully"}
             />
-          </div>
-        )}
+          ) : null}
+        </div>
       </section>
 
       <section className="grid gap-5 lg:grid-cols-2">

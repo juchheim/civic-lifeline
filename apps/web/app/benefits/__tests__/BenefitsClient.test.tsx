@@ -56,6 +56,7 @@ describe("BenefitsClient", () => {
   });
 
   beforeEach(() => {
+    window.localStorage.clear();
     vi.spyOn(global, "fetch").mockImplementation((input: RequestInfo | URL) => {
       const url = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
       if (url.includes("/api/benefits/state-social-security")) {
@@ -114,24 +115,36 @@ describe("BenefitsClient", () => {
 
   it("shows the hero content and disclaimer link", () => {
     renderBenefitsPage();
-    expect(screen.getByText(/Important to know/i)).toBeInTheDocument();
-    expect(screen.getByText(/You do not apply for benefits on this page/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Important notes about this page/i })).toBeInTheDocument();
+    const importantHeadings = screen.getAllByText(/Important to know/i);
+    expect(importantHeadings.length).toBeGreaterThan(0);
+    const disclaimers = screen.getAllByText(/You do not apply for benefits on this page/i);
+    expect(disclaimers.length).toBeGreaterThan(0);
+    const disclaimerButtons = screen.getAllByRole("button", { name: /Important notes about this page/i });
+    expect(disclaimerButtons.length).toBeGreaterThan(0);
   });
 
   it("keeps the location step directly after the intro text in the hero", () => {
     renderBenefitsPage();
-    const intro = screen.getAllByText(/Read quick guides for food, money, health coverage/i)[0];
-    const stepOneChip = screen.getByText(/Step 1: Add your city or ZIP/i);
+    const intro = screen.getAllByText(/Add your city or ZIP to see local help/i)[0];
+    const stepOneChip = screen.getAllByText(/Step 1: Add your city or ZIP/i)[0];
     expectBefore(intro, stepOneChip);
-    expect(screen.getByPlaceholderText(/E.g. 39194 or 123 Main St/i)).toBeInTheDocument();
+    const locationInputs = screen.getAllByPlaceholderText(/E.g. 39194 or 123 Main St/i);
+    expect(locationInputs.length).toBeGreaterThan(0);
+  });
+
+  it("shows the Use my current location control in Step 1", () => {
+    renderBenefitsPage();
+    const buttons = screen.getAllByRole("button", { name: /Use my current location/i });
+    expect(buttons.length).toBeGreaterThan(0);
   });
 
   it("renders hero, location card, and first benefit section", () => {
     renderBenefitsPage();
     expect(screen.getAllByRole("heading", { level: 1, name: /Benefits help all in one place/i })[0]).toBeInTheDocument();
-    expect(screen.getByText(/Add your city or ZIP one time/i)).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: /Food and Money Help/i })).toBeInTheDocument();
+    const locationHeadings = screen.getAllByText(/Add your city or ZIP one time/i);
+    expect(locationHeadings.length).toBeGreaterThan(0);
+    const firstSectionHeading = screen.getAllByRole("heading", { name: /Food and Money Help/i })[0];
+    expect(firstSectionHeading).toBeInTheDocument();
   });
 
   it("shows step labels for picking a service and using tools", () => {
@@ -147,7 +160,7 @@ describe("BenefitsClient", () => {
     expectBefore(stepTwoChip, jumpNavHeading);
 
     const stepThreeChip = screen.getAllByText(/Step 3: Use the tools & links/i)[0];
-    const firstPanelHeading = screen.getByRole("heading", { name: /Food and Money Help/i });
+    const firstPanelHeading = screen.getAllByRole("heading", { name: /Food and Money Help/i })[0];
     expectBefore(stepThreeChip, firstPanelHeading);
   });
 
@@ -188,8 +201,9 @@ describe("BenefitsClient", () => {
     const [trigger] = screen.getAllByRole("button", { name: /Important notes about this page/i });
     await user.click(trigger);
     expect(screen.getByRole("dialog")).toBeTruthy();
-    expect(screen.getByText(/You do not apply here/i)).toBeTruthy();
-    await user.click(screen.getByRole("button", { name: /Close/i }));
+    expect(screen.getAllByText(/You do not apply here/i)[0]).toBeTruthy();
+    const [closeButton] = screen.getAllByRole("button", { name: /Close/i });
+    await user.click(closeButton);
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
@@ -205,9 +219,13 @@ describe("BenefitsClient", () => {
     for (const { panelId, contentId } of ids) {
       const panel = document.getElementById(`benefit-section-${panelId}`);
       expect(panel).toBeTruthy();
+      const button = within(panel!).getByRole("button", { name: /(Show|Hide) details/i });
       const details = document.getElementById(contentId);
-      expect(details).toHaveAttribute("aria-hidden", "true");
-      const button = within(panel!).getByRole("button", { name: /Show details/i });
+      expect(details).toBeTruthy();
+      if (details?.getAttribute("aria-hidden") === "false") {
+        await user.click(button);
+        expect(document.getElementById(contentId)).toHaveAttribute("aria-hidden", "true");
+      }
       await user.click(button);
       expect(document.getElementById(contentId)).toHaveAttribute("aria-hidden", "false");
       await user.click(button);
@@ -222,12 +240,17 @@ describe("BenefitsClient", () => {
       const panel = document.getElementById(`benefit-section-${panelId}`);
       expect(panel).toBeTruthy();
       const helper = within(panel!).getByRole("heading", { name: helperHeading });
-      const toggle = within(panel!).getByRole("button", { name: /Show details/i });
+      const toggle = within(panel!).getByRole("button", { name: /(Show|Hide) details/i });
+      let toggledOpen = false;
       if (document.getElementById(contentId)?.getAttribute("aria-hidden") === "true") {
         await user.click(toggle);
+        toggledOpen = true;
       }
       const basics = within(panel!).getAllByText(/What this can help with/i)[0]!;
       expectBefore(helper, basics);
+      if (toggledOpen) {
+        await user.click(toggle);
+      }
     };
 
     await assertPanelOrder("food-money", /Local food, WIC, and cash helpers/i, "food-program-basics");

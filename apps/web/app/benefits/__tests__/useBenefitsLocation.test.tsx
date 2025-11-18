@@ -1,5 +1,5 @@
 import { renderHook, act } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import type { LocationSelection } from "@/types/location";
 import { BenefitsLocationProvider, useBenefitsLocation, mapSelectionToBenefitsLocation } from "../useBenefitsLocation";
 
@@ -16,6 +16,10 @@ const sampleSelection: LocationSelection = {
 };
 
 describe("useBenefitsLocation", () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+  });
+
   it("maps a selection into a benefits location", () => {
     const mapped = mapSelectionToBenefitsLocation(sampleSelection);
     expect(mapped.displayLabel).toBe("Yazoo City, MS 39194");
@@ -33,15 +37,23 @@ describe("useBenefitsLocation", () => {
     expect(mapped.stateCode).toBe("MS");
   });
 
+  it("loads a stored location from localStorage", () => {
+    window.localStorage.setItem("civiclifeline.location", JSON.stringify(mapSelectionToBenefitsLocation(sampleSelection)));
+    const { result } = renderHook(() => useBenefitsLocation(), { wrapper });
+    expect(result.current.location?.displayLabel).toBe("Yazoo City, MS 39194");
+  });
+
   it("stores and clears the selected location", () => {
     const { result } = renderHook(() => useBenefitsLocation(), { wrapper });
     act(() => {
       result.current.setLocationFromResolved(sampleSelection);
     });
     expect(result.current.location?.displayLabel).toBe("Yazoo City, MS 39194");
+    expect(window.localStorage.getItem("civiclifeline.location")).toContain("Yazoo City");
     act(() => {
       result.current.clearLocation();
     });
     expect(result.current.location).toBeNull();
+    expect(window.localStorage.getItem("civiclifeline.location")).toBeNull();
   });
 });

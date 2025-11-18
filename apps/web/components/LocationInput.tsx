@@ -10,6 +10,7 @@ import {
   useRef,
   useState,
   type MutableRefObject,
+  type ReactNode,
 } from "react";
 import { useLocationSuggestions } from "@/hooks/useLocationSuggestions";
 import type { LocationSuggestion } from "@/types/location";
@@ -47,6 +48,8 @@ export interface LocationInputProps {
   emptyText?: string;
   inputRef?: React.Ref<HTMLInputElement | null>;
   getSuggestionKindLabel?: (kind?: string) => React.ReactNode;
+  leadingVisual?: ReactNode;
+  leadingVisualClassName?: string;
 }
 
 const sizeStyles: Record<Size, { label: string; input: string; listItem: string }> = {
@@ -89,6 +92,8 @@ const LocationInput = forwardRef<LocationInputHandle, LocationInputProps>(
       emptyText = locationCopy.geocodeGenericError,
       inputRef,
       getSuggestionKindLabel,
+      leadingVisual,
+      leadingVisualClassName,
     },
     ref,
   ) => {
@@ -203,9 +208,12 @@ const LocationInput = forwardRef<LocationInputHandle, LocationInputProps>(
     const containerClasses = useMemo(() => ["space-y-2", className].filter(Boolean).join(" "), [className]);
 
     const currentSize = sizeStyles[size];
+    const hasLeadingVisual = Boolean(leadingVisual);
+
     const mergedInputClass = [
       "w-full border border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/40 disabled:cursor-not-allowed disabled:opacity-60",
       currentSize.input,
+      hasLeadingVisual ? "pl-11" : "",
       inputClassName,
     ]
       .filter(Boolean)
@@ -244,6 +252,16 @@ const LocationInput = forwardRef<LocationInputHandle, LocationInputProps>(
           className="relative"
           onBlur={handleInputBlur}
         >
+          {hasLeadingVisual ? (
+            <span
+              className={["pointer-events-none absolute inset-y-0 left-3 flex items-center text-brand-primary/60", leadingVisualClassName]
+                .filter(Boolean)
+                .join(" ")}
+              aria-hidden="true"
+            >
+              {leadingVisual}
+            </span>
+          ) : null}
           <input
             id={inputId}
             ref={setInputRef}
