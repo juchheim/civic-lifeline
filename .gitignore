@@ -26,3 +26,4 @@ packages/workers/src/monitor-*.{js,py,sh}
 
 # Large data files
 bdc_*.csv
+apps/web/data/fmr/
