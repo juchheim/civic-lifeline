@@ -74,33 +74,37 @@ function toRawNumber(value: unknown): number | null {
   return Number.isFinite(num) ? num : null;
 }
 
-function safeShare(numerator: number | null, denominator: number | null): number | null {
-  if (numerator === null || denominator === null) return null;
-  if (denominator === 0) return null;
-  return numerator / denominator;
-}
-
 function mapAttributesToStats(stateCode: string, attributes: Record<string, unknown>): BenefitStateSocialSecurityStats {
   const stateName = String(attributes.State_Territory ?? stateCode);
   const totalPopulationRaw = toRawNumber(attributes.Total_Population);
-  const totalReceivingRaw = toRawNumber(attributes.Total_Population_Receiving_Bene);
+  const percentReceivingBenefits = toRawNumber(attributes.Total_Population_Receiving_Bene);
   const total65Raw = toRawNumber(attributes.Population65_Older);
-  const total65ReceivingRaw = toRawNumber(attributes.Population65_Older_Receiving_Be);
+  const percent65ReceivingBenefits = toRawNumber(attributes.Population65_Older_Receiving_Be);
 
+  // Note: The ArcGIS data provides percentages for "_Receiving_Bene" fields, not raw counts
+  // Convert percentages to decimals (divide by 100)
+  const shareReceivingBenefits = percentReceivingBenefits === null ? null : percentReceivingBenefits / 100;
+  const share65PlusReceivingBenefits = percent65ReceivingBenefits === null ? null : percent65ReceivingBenefits / 100;
+
+  // Convert population from thousands to actual count
   const totalPopulation = totalPopulationRaw === null ? null : toThousandValue(totalPopulationRaw);
-  const totalReceivingBenefits = totalReceivingRaw === null ? null : toThousandValue(totalReceivingRaw);
   const total65Plus = total65Raw === null ? null : toThousandValue(total65Raw);
-  const total65PlusReceivingBenefits = total65ReceivingRaw === null ? null : toThousandValue(total65ReceivingRaw);
+
+  // Calculate actual counts from population * percentage
+  const totalReceivingBenefits =
+    totalPopulation !== null && shareReceivingBenefits !== null ? Math.round(totalPopulation * shareReceivingBenefits) : null;
+  const total65PlusReceivingBenefits =
+    total65Plus !== null && share65PlusReceivingBenefits !== null ? Math.round(total65Plus * share65PlusReceivingBenefits) : null;
 
   return {
     stateCode,
     stateName,
     totalPopulation,
     totalReceivingBenefits,
-    shareReceivingBenefits: safeShare(totalReceivingRaw, totalPopulationRaw),
+    shareReceivingBenefits,
     total65Plus,
     total65PlusReceivingBenefits,
-    share65PlusReceivingBenefits: safeShare(total65ReceivingRaw, total65Raw),
+    share65PlusReceivingBenefits,
     year: SSA_YEAR,
   };
 }

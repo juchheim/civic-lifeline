@@ -98,10 +98,21 @@ export async function fetchAjcCentersForLocation(params: FetchAjcCentersParams):
   });
 
   if (!res.ok) {
-    throw new Error(`AJC request failed with ${res.status}`);
+    const errorText = await res.text().catch(() => "Unable to read error response");
+    throw new Error(`AJC request failed with ${res.status}: ${errorText}`);
   }
 
   const json = await res.json();
+  
+  // Log what we actually got from the API
+  console.log("CareerOneStop API Response:", {
+    url: url.toString(),
+    recordCount: json.RecordCount,
+    centersReturned: json.OneStopCenterList?.length ?? 0,
+    areaValidationErr: json.AreaValidationErr,
+    fullResponse: JSON.stringify(json).substring(0, 500), // First 500 chars
+  });
+  
   const parsed = zAjcResponse.parse(json);
 
   const mappedItems =
