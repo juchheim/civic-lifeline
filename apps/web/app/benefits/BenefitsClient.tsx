@@ -1,5 +1,11 @@
 "use client";
 
+// PLAN:
+// - Refresh hero copy and make the Step 1 input styling/icon feel primary
+// - Add a secondary “Use my current location” action with shared geolocation
+// - Persist resolved locations via shared storage for Benefits and other pages
+// - Update tests and helpers so saved locations hydrate consistently
+
 import Link from "next/link";
 import { createPortal } from "react-dom";
 import { useCallback, useEffect, useMemo, useRef, useState, useId, type FormEvent, type ReactNode } from "react";
@@ -21,8 +27,8 @@ import {
 import BenefitLocalHelpList from "@/components/benefits/BenefitLocalHelpList";
 import CollapsibleGuideSection from "@/components/benefits/CollapsibleGuideSection";
 import { SocialSecurityOfficesPanel } from "@/components/benefits/SocialSecurityOfficesPanel";
-import LocationInputWithGeocode, { type LocationInputWithGeocodeHandle } from "@/components/LocationInputWithGeocode";
-import type { LocationSelection } from "@/types/location";
+import type { LocationInputWithGeocodeHandle } from "@/components/LocationInputWithGeocode";
+import { HeroLocationCard } from "@/components/location/HeroLocationCard";
 import { useBenefitsLocation, type BenefitsLocation } from "./useBenefitsLocation";
 import { useUninsuredCoverageStats } from "./useUninsuredCoverageStats";
 import type { LucideIcon } from "lucide-react";
@@ -391,18 +397,12 @@ function formatLocalHelpLocation(location: BenefitsLocation): string {
 }
 
 export default function BenefitsClient() {
-  const { location, setLocationFromResolved, clearLocation } = useBenefitsLocation();
-  const [locationInputValue, setLocationInputValue] = useState("");
-  const [locationError, setLocationError] = useState<string | null>(null);
+  const { location } = useBenefitsLocation();
   const [openSections, setOpenSections] = useState<string[]>([PRIMARY_SECTION_ID]);
   const [activeSection, setActiveSection] = useState<string>(PRIMARY_SECTION_ID);
   const isManualNavigationRef = useRef(false);
   const locationCardRef = useRef<HTMLDivElement | null>(null);
   const locationInputRef = useRef<LocationInputWithGeocodeHandle | null>(null);
-
-  useEffect(() => {
-    setLocationInputValue(location?.displayLabel ?? "");
-  }, [location]);
 
   useEffect(() => {
     const media = window.matchMedia("(min-width: 1024px)");
@@ -468,21 +468,6 @@ export default function BenefitsClient() {
     }
   }, []);
 
-  const handleLocationSelect = useCallback(
-    (selection: LocationSelection) => {
-      setLocationFromResolved(selection);
-      setLocationInputValue(selection.label);
-      setLocationError(null);
-    },
-    [setLocationFromResolved],
-  );
-
-  const handleClearLocation = useCallback(() => {
-    clearLocation();
-    setLocationInputValue("");
-    setLocationError(null);
-  }, [clearLocation]);
-
   const promptForLocation = useCallback(() => {
     locationCardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     setTimeout(() => {
@@ -514,7 +499,7 @@ export default function BenefitsClient() {
   }, [isDisclaimerOpen]);
 
   return (
-    <div className="space-y-8 bg-neutral-bg pb-14 md:space-y-6 md:pb-12">
+    <div className="space-y-8 bg-neutral-bg pb-14 md:space-y-6 md:pb-12 -mt-2">
       <style
         dangerouslySetInnerHTML={{
           __html: `@media print {
@@ -541,69 +526,33 @@ export default function BenefitsClient() {
           }`,
         }}
       />
-      <section className="mt-3 overflow-hidden rounded-[2.5rem] border border-slate-200 bg-white shadow-lg shadow-slate-400/10">
-        <div className="px-6 py-5 sm:px-9 sm:py-6 md:py-7">
+      <section className="mt-4 overflow-hidden rounded-[2.5rem] border border-slate-200 bg-white shadow-lg shadow-slate-400/10">
+        <div className="px-6 py-6 sm:px-10 sm:py-8">
           <div className="space-y-4">
-            <span className="inline-flex w-fit items-center gap-2 rounded-full border border-civic-blue/30 bg-civic-blue/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.32em] text-civic-blue">
+            <span className="inline-flex w-fit items-center gap-2 rounded-full border border-brand-primary/20 bg-brand-primary/10 px-4 py-1.5 text-sm font-semibold uppercase tracking-[0.24em] text-brand-primary">
+              <HeartPulse className="h-4 w-4" />
               BENEFITS
             </span>
-            <div className="space-y-2">
+            <div className="space-y-4">
               <h1 className="text-3xl font-bold leading-tight text-slate-900 sm:text-[2.5rem]">
                 Benefits help all in one place.
               </h1>
               <p className="max-w-2xl text-base leading-relaxed text-slate-600 sm:text-lg">
-                Read quick guides for food, money, health coverage, housing, and disability help, then add your city or ZIP to see trusted next steps.
+                Add your city or ZIP to see local help for food, money, health coverage, housing, and disability. Then use the simple guides below for next steps.
               </p>
             </div>
             <div className="grid gap-6 md:gap-8 lg:grid-cols-[minmax(0,0.6fr)_minmax(0,0.4fr)]">
-              <section
-                ref={locationCardRef}
-                className="cl-benefits-hide-on-print rounded-2xl border border-slate-200 bg-slate-50 px-5 py-5 shadow-lg shadow-slate-400/10 sm:px-6 sm:py-6"
-              >
-                <StepChip className="benefits-step-chip">Step 1: Add your city or ZIP</StepChip>
-                <div className="mt-3 space-y-3">
-                  <div className="space-y-1.5">
-                    <h2 className="text-xl font-semibold text-slate-900 sm:text-2xl">Add your city or ZIP one time.</h2>
-                    <p className="text-sm text-slate-600">
-                      We use this to show nearby programs and stats. We do not save your address.
-                    </p>
-                  </div>
-                  <LocationInputWithGeocode
-                    ref={locationInputRef}
-                    placeholder="E.g. 39194 or 123 Main St"
-                    value={locationInputValue}
-                    onChange={(value) => {
-                      setLocationInputValue(value);
-                      setLocationError(null);
-                    }}
-                    onLocationSelect={handleLocationSelect}
-                    onGeocodeError={(message) => setLocationError(message)}
-                    helperText="City, county, or ZIP all work."
-                    size="lg"
-                  />
-                  {locationError ? <p className="text-sm text-red-600">{locationError}</p> : null}
-                  {location ? (
-                    <div className="flex flex-col gap-2 rounded-2xl border border-slate-200 bg-slate-50/80 p-4 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between">
-                      <div>
-                        <p className="font-semibold text-slate-800">Using:</p>
-                        <p className="text-slate-700">
-                          {location.displayLabel}
-                          {location.countyName ? ` (${location.countyName})` : ""}
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={handleClearLocation}
-                        className="self-start rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2"
-                      >
-                        Clear location
-                      </button>
-                    </div>
-                  ) : (
-                    <p className="text-sm text-slate-500">No location yet. Add one to unlock local search results.</p>
-                  )}
-                </div>
-              </section>
+              <HeroLocationCard
+                stepLabel="STEP 1: ADD YOUR CITY OR ZIP"
+                stepChipClassName="benefits-step-chip"
+                title="Add your city or ZIP one time."
+                description="We use this to show nearby programs and stats. We do not save your address."
+                emptyStatusText="No location yet. Add one to unlock local search results."
+                className="cl-benefits-hide-on-print"
+                cardRef={locationCardRef}
+                inputHandleRef={locationInputRef}
+                statusFormatter={(label) => (location?.countyName ? `${label} (${location.countyName})` : label)}
+              />
               <div className="rounded-2xl border border-brand-accent/30 bg-white/80 p-3 text-sm leading-relaxed text-slate-800 shadow-inner shadow-brand-accent/10 sm:p-4">
                 <div className="flex items-center gap-2">
                   <Info className="h-4 w-4 text-brand-accent/70" aria-hidden="true" />

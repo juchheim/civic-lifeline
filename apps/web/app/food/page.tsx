@@ -1,14 +1,14 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
-import { Check, Crosshair, Loader2, Sparkles } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Check, Crosshair, Utensils } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { zSnapResponse, type SnapResponse, type SnapItem } from "@cl/types";
 import { bboxToQueryParam } from "@cl/utils";
 import EmptyState from "@/components/EmptyState";
-import LocationInputWithGeocode, { type LocationInputWithGeocodeHandle } from "@/components/LocationInputWithGeocode";
-import { locationCopy } from "@/config/locationCopy";
+import { HeroLocationCard } from "@/components/location/HeroLocationCard";
+import { SharedLocationProvider, useSharedLocation } from "@/components/location/SharedLocationContext";
 import StoreCard from "@/components/StoreCard";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 
@@ -16,23 +16,54 @@ const MapView = dynamic(() => import("@/components/MapView"), { ssr: false });
 
 type Bbox = [number, number, number, number];
 
-export default function FoodPage() {
-  // const log = useMemo(() => createLogger("ui/food"), []);
+function FoodPageContent() {
+  const { location } = useSharedLocation();
   const [bbox, setBbox] = useState<Bbox | null>(null);
   const [selectedTypes, setSelectedTypes] = useState<Set<string>>(new Set());
   const [initialCenter, setInitialCenter] = useState<[number, number] | null>(null);
-  const [isGeolocating, setIsGeolocating] = useState(false);
-  const [isGeocoding, setIsGeocoding] = useState(false);
-  const [manualQuery, setManualQuery] = useState("");
-  const [locationError, setLocationError] = useState<string | null>(null);
-  const [isManualOpen, setIsManualOpen] = useState(false);
-  const [isLocationBlocked, setIsLocationBlocked] = useState(false);
   const [overlayState, setOverlayState] = useState<"awaiting" | "confirming" | "hidden">("awaiting");
   const debouncedBbox = useDebouncedValue(bbox, 400);
-  const manualInputHandleRef = useRef<LocationInputWithGeocodeHandle | null>(null);
-  const manualInputRef = useRef<HTMLInputElement | null>(null);
+  const [focusedItem, setFocusedItem] = useState<SnapItem | null>(null);
   const overlayTimerRef = useRef<number | null>(null);
   const mapSectionRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!location) {
+      setInitialCenter(null);
+      setBbox(null);
+      setFocusedItem(null);
+      if (overlayTimerRef.current) {
+        clearTimeout(overlayTimerRef.current);
+        overlayTimerRef.current = null;
+      }
+      setOverlayState("awaiting");
+      return;
+    }
+
+    const center: [number, number] = [location.latitude, location.longitude];
+    setInitialCenter(center);
+    setBbox(null);
+    setFocusedItem(null);
+    setOverlayState("confirming");
+
+    if (overlayTimerRef.current) {
+      clearTimeout(overlayTimerRef.current);
+      overlayTimerRef.current = null;
+    }
+
+    overlayTimerRef.current = window.setTimeout(() => {
+      setOverlayState("hidden");
+      overlayTimerRef.current = null;
+    }, 1500);
+
+    const focusTimer = window.setTimeout(() => {
+      mapSectionRef.current?.focus({ preventScroll: false });
+    }, 120);
+
+    return () => {
+      window.clearTimeout(focusTimer);
+    };
+  }, [location]);
 
   const typesParam = useMemo(() => (selectedTypes.size ? Array.from(selectedTypes).sort().join(",") : undefined), [selectedTypes]);
   const bboxParam = useMemo(() => (debouncedBbox ? bboxToQueryParam(debouncedBbox) : undefined), [debouncedBbox]);
@@ -60,7 +91,6 @@ export default function FoodPage() {
   });
 
   const items = useMemo(() => data?.items ?? [], [data]);
-  const [focusedItem, setFocusedItem] = useState<SnapItem | null>(null);
 
   const availableTypes = useMemo(() => {
     const s = new Set<string>();
@@ -117,194 +147,36 @@ export default function FoodPage() {
     }
   }, [initialCenter]);
 
-  const handleLocationSelected = useCallback(
-    (lat: number, lon: number) => {
-      setInitialCenter([lat, lon]);
-      setBbox(null);
-      setFocusedItem(null);
-      setLocationError(null);
-      setManualQuery("");
-      setIsLocationBlocked(false);
-      if (overlayTimerRef.current) {
-        clearTimeout(overlayTimerRef.current);
-        overlayTimerRef.current = null;
-      }
-      setOverlayState("confirming");
-      overlayTimerRef.current = window.setTimeout(() => {
-        setOverlayState("hidden");
-        overlayTimerRef.current = null;
-      }, 1500);
-    },
-    [setFocusedItem]
-  );
-
-  const handleManualSubmit = useCallback(
-    (event: FormEvent<HTMLFormElement>) => {
-      event.preventDefault();
-      void manualInputHandleRef.current?.geocode();
-    },
-    []
-  );
-
-  const handleUseCurrentLocation = useCallback(() => {
-    setLocationError(null);
-    setIsLocationBlocked(false);
-        if (!navigator.geolocation) {
-      setLocationError(locationCopy.browserNoGeolocation);
-        return;
-      }
-    setIsGeolocating(true);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setIsGeolocating(false);
-        setIsLocationBlocked(false);
-        handleLocationSelected(pos.coords.latitude, pos.coords.longitude);
-        setTimeout(() => {
-          mapSectionRef.current?.focus({ preventScroll: false });
-        }, 50);
-      },
-      (err) => {
-        setIsGeolocating(false);
-        const blocked =
-          typeof err?.code === "number" &&
-          typeof err?.PERMISSION_DENIED === "number" &&
-          err.code === err.PERMISSION_DENIED;
-        if (blocked) {
-          setIsLocationBlocked(true);
-          setIsManualOpen(true);
-          setTimeout(() => {
-            manualInputRef.current?.focus();
-          }, 16);
-          setLocationError(locationCopy.locationBlocked);
-          return;
-        }
-        setLocationError("We couldn't access your current location. Please allow access or enter it manually.");
-      },
-      { enableHighAccuracy: true }
-    );
-  }, [handleLocationSelected]);
-
   const mapReady = !!initialCenter;
   const isMapInteractive = mapReady && overlayState === "hidden";
 
   return (
     <main className={`space-y-12 bg-neutral-bg ${!mapReady ? "pb-28" : "pb-16"}`}>
-      <section className="mt-4 overflow-hidden rounded-[2.25rem] border border-slate-200 bg-white shadow-md shadow-slate-400/5">
+      <section className="mt-4 overflow-hidden rounded-[2.5rem] border border-slate-200 bg-white shadow-md shadow-slate-400/5">
         <div className="grid gap-8 lg:grid-cols-[minmax(0,0.55fr)_minmax(0,1.45fr)] lg:items-stretch">
           <div className="flex flex-col px-6 py-6 sm:px-10 sm:py-8">
             <div className="w-full max-w-[480px] space-y-4">
               <span className="inline-flex w-fit items-center gap-2 rounded-full border border-brand-primary/20 bg-brand-primary/10 px-4 py-1.5 text-sm font-semibold uppercase tracking-[0.24em] text-brand-primary">
-                <Sparkles className="h-4 w-4" />
+                <Utensils className="h-4 w-4" />
                 Food Help
               </span>
               <div className="space-y-4">
                 <h1 className="text-3xl font-semibold leading-[1.1] text-slate-900 sm:text-[2.5rem]">
                   Find food retailers who accept SNAP.
                 </h1>
-                <div className="space-y-2">
-                  {isLocationBlocked ? (
-                    <p className="max-w-xl text-base font-medium leading-snug text-rose-600 sm:text-lg">
-                      Location is blocked. Type an address instead.
-                    </p>
-                  ) : (
-                    <>
-                      <p className="max-w-xl text-base leading-normal text-slate-600 sm:text-lg">
-                        Tap <strong>Use my current location</strong> to see stores that accept EBT.
-                      </p>
-                      <p className="text-xs font-medium text-slate-500">We don&apos;t save your location.</p>
-                    </>
-                  )}
-                </div>
+                <p className="max-w-xl text-base leading-normal text-slate-600 sm:text-lg">
+                  Tap <strong>Use my current location</strong> to see stores that accept EBT.
+                </p>
               </div>
             </div>
-            <div className="mt-3 w-full max-w-[480px]">
-              <div>
-                <button
-                  type="button"
-                  onClick={handleUseCurrentLocation}
-                  disabled={isGeolocating || isGeocoding}
-                  className="inline-flex w-full items-center justify-center gap-3 rounded-2xl bg-brand-primary px-6 py-4 text-lg font-semibold text-white shadow-lg shadow-brand-primary/30 transition hover:bg-brand-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {isGeolocating ? (
-                    <>
-                      <Loader2 className="h-6 w-6 animate-spin" aria-hidden />
-                      <span>Finding your location…</span>
-                    </>
-                  ) : (
-                    <>
-                      <Crosshair className="h-6 w-6" aria-hidden />
-                      <span>Use my current location</span>
-                    </>
-                  )}
-                </button>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setIsManualOpen((prev) => !prev)}
-                aria-expanded={isManualOpen}
-                aria-controls={isManualOpen ? "manual-location-form" : undefined}
-                className="mt-2 inline-flex text-sm font-semibold text-brand-primary underline decoration-brand-primary/20 underline-offset-4 transition hover:text-brand-primary/80"
-              >
-                {isManualOpen ? "Hide address form" : "Type an address instead"}
-              </button>
-
-              {isManualOpen && (
-                <form
-                  id="manual-location-form"
-                  className="mt-4 space-y-4 rounded-2xl border border-slate-200/80 bg-white/70 p-4 shadow-inner shadow-slate-200/70"
-                  onSubmit={handleManualSubmit}
-                >
-                  <LocationInputWithGeocode
-                    ref={manualInputHandleRef}
-                    inputRef={manualInputRef}
-                    id="manual-location"
-                    label="Search another location"
-                    value={manualQuery}
-                    onChange={(next) => {
-                      setManualQuery(next);
-                      setLocationError(null);
-                    }}
-                    placeholder="123 Main St, Jackson MS"
-                    helperText="Enter address, city & state, or ZIP code."
-                    disabled={isGeocoding || isGeolocating}
-                    size="lg"
-                    onLocationSelect={(selection) => {
-                      setLocationError(null);
-                      handleLocationSelected(selection.lat, selection.lon);
-                    }}
-                    onGeocodeStateChange={setIsGeocoding}
-                    onGeocodeError={(message) => setLocationError(message)}
-                    inputClassName="bg-white text-slate-900"
-                    listClassName="shadow-xl shadow-slate-500/10"
-                    getSuggestionKindLabel={(kind) =>
-                        kind ? kind.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase()) : null
-                      }
-                  />
-                  <div className="flex items-center gap-3">
-                    <button
-                      type="submit"
-                      disabled={isGeocoding || isGeolocating}
-                      className="inline-flex flex-1 items-center justify-center rounded-2xl bg-brand-primary px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-brand-primary/30 transition hover:opacity-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {isGeocoding ? "Searching…" : "Search"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setManualQuery("");
-                        setLocationError(null);
-                        manualInputHandleRef.current?.reset();
-                      }}
-                      className="rounded-2xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2"
-                    >
-                      Clear
-                    </button>
-                  </div>
-                </form>
-              )}
-
-                      {locationError && <p className="text-sm font-medium text-rose-600">{locationError}</p>}
+            <div className="mt-3 w-full max-w-[480px] space-y-3">
+              <HeroLocationCard
+                stepLabel="STEP 1: ADD YOUR CITY OR ZIP"
+                title="Add your city or ZIP one time."
+                helperText="City, county, or ZIP all work."
+                emptyStatusText="No location yet. Add one to unlock local results."
+              />
+              <p className="text-xs font-medium text-slate-500">We don&apos;t save your location.</p>
             </div>
           </div>
           <div className="relative">
@@ -356,7 +228,7 @@ export default function FoodPage() {
                 <div
                   role="status"
                   aria-live="polite"
-                  className={`absolute inset-0 z-10 flex items-center justify-center rounded-[2.25rem] border border-slate-200 bg-slate-100 px-6 text-center text-base font-medium text-slate-700 transition-opacity duration-500 ${
+                  className={`absolute inset-0 z-10 flex items-center justify-center rounded-[2.5rem] border border-slate-200 bg-slate-100 px-6 text-center text-base font-medium text-slate-700 transition-opacity duration-500 ${
                     overlayState === "hidden" ? "pointer-events-none opacity-0" : "opacity-100"
                   }`}
                 >
@@ -444,28 +316,14 @@ export default function FoodPage() {
           USDA data is temporarily unavailable; showing last good results if available.
         </div>
       )}
-      {!mapReady && (
-        <div className="fixed inset-x-0 bottom-0 z-20 border-t border-slate-200 bg-white/95 px-4 py-3 shadow-[0_-8px_24px_rgba(15,23,42,0.12)] sm:hidden">
-          <button
-            type="button"
-            onClick={handleUseCurrentLocation}
-            disabled={isGeolocating || isGeocoding}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-brand-primary px-4 py-3 text-base font-semibold text-white shadow-md shadow-brand-primary/40 transition hover:bg-brand-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {isGeolocating ? (
-              <>
-                <Loader2 className="h-5 w-5 animate-spin" aria-hidden />
-                <span>Finding your location…</span>
-              </>
-            ) : (
-              <>
-                <Crosshair className="h-6 w-6" aria-hidden />
-                <span>Use my current location</span>
-              </>
-            )}
-          </button>
-        </div>
-      )}
     </main>
+  );
+}
+
+export default function FoodPage() {
+  return (
+    <SharedLocationProvider>
+      <FoodPageContent />
+    </SharedLocationProvider>
   );
 }

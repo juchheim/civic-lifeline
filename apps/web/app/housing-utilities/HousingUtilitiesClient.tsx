@@ -6,6 +6,9 @@ import type { ReactNode } from "react";
 import { createPortal } from "react-dom";
 import type { LucideIcon } from "lucide-react";
 import { ChevronDown, Clock, Droplets, Home, Sparkles, Wifi } from "lucide-react";
+import type { LocationInputWithGeocodeHandle } from "@/components/LocationInputWithGeocode";
+import { HeroLocationCard } from "@/components/location/HeroLocationCard";
+import { SharedLocationProvider, useSharedLocation } from "@/components/location/SharedLocationContext";
 import UtilitiesExperience from "./UtilitiesExperience";
 
 const HousingExperience = dynamic(() => import("../housing/HousingExperience"), {
@@ -15,43 +18,42 @@ const BroadbandExperience = dynamic(() => import("../broadband/BroadbandExperien
   ssr: false,
 });
 
-interface ServiceConfig {
+type BaseServiceConfig = {
   id: string;
   label: string;
   pillText: string;
   icon: LucideIcon;
-  render: () => ReactNode;
   status?: "new" | "coming-soon";
-}
+};
 
-const SERVICE_CONFIGS: ServiceConfig[] = [
+type ServiceConfig = BaseServiceConfig & {
+  render: () => ReactNode;
+};
+
+const BASE_SERVICE_CONFIGS: BaseServiceConfig[] = [
   {
     id: "housing",
     label: "Housing Support",
     pillText: "Find rent limits and counselors",
     icon: Home,
-    render: () => <HousingExperience showIntro={false} />,
   },
   {
     id: "internet",
     label: "Internet & Broadband",
     pillText: "Find coverage and speeds",
     icon: Wifi,
-    render: () => <BroadbandExperience showIntro={false} />,
   },
   {
     id: "utilities",
     label: "Utilities Assistance",
     pillText: "Find costs and providers",
     icon: Droplets,
-    render: () => <UtilitiesExperience />,
   },
 ];
 
-const SERVICE_IDS = SERVICE_CONFIGS.map((service) => service.id);
-const PRIMARY_SERVICE_ID = SERVICE_IDS[0] ?? "housing";
+const PRIMARY_SERVICE_ID = BASE_SERVICE_CONFIGS[0]?.id ?? "housing";
 
-export default function HousingUtilitiesClient() {
+function HousingUtilitiesContent() {
   const [openSections, setOpenSections] = useState<string[]>([PRIMARY_SERVICE_ID]);
   const [activeSection, setActiveSection] = useState<string>(PRIMARY_SERVICE_ID);
   const [jumpMenuOpen, setJumpMenuOpen] = useState(false);
@@ -59,6 +61,39 @@ export default function HousingUtilitiesClient() {
   const jumpButtonRef = useRef<HTMLButtonElement | null>(null);
   const jumpMenuRef = useRef<HTMLDivElement | null>(null);
   const isManualNavigationRef = useRef<boolean>(false);
+  const { location } = useSharedLocation();
+  const locationCardRef = useRef<HTMLDivElement | null>(null);
+  const locationInputRef = useRef<LocationInputWithGeocodeHandle | null>(null);
+
+  const promptForLocation = useCallback(() => {
+    locationCardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    setTimeout(() => {
+      locationInputRef.current?.focusInput();
+    }, 200);
+  }, []);
+
+  const serviceConfigs = useMemo<ServiceConfig[]>(() => {
+    return BASE_SERVICE_CONFIGS.map((config) => {
+      if (config.id === "housing") {
+        return {
+          ...config,
+          render: () => <HousingExperience showIntro={false} location={location} promptForLocation={promptForLocation} />,
+        };
+      }
+      if (config.id === "internet") {
+        return {
+          ...config,
+          render: () => <BroadbandExperience showIntro={false} location={location} promptForLocation={promptForLocation} />,
+        };
+      }
+      return {
+        ...config,
+        render: () => <UtilitiesExperience location={location} promptForLocation={promptForLocation} />,
+      };
+    });
+  }, [location, promptForLocation]);
+
+  const serviceIds = useMemo(() => serviceConfigs.map((service) => service.id), [serviceConfigs]);
 
   const updateMenuPosition = useCallback(() => {
     if (!jumpButtonRef.current) return;
@@ -69,10 +104,10 @@ export default function HousingUtilitiesClient() {
   useEffect(() => {
     const media = window.matchMedia("(min-width: 1024px)");
     if (media.matches) {
-      setOpenSections(SERVICE_IDS);
+      setOpenSections(serviceIds);
     }
     const listener = (event: MediaQueryListEvent) => {
-      setOpenSections(event.matches ? SERVICE_IDS : [PRIMARY_SERVICE_ID]);
+      setOpenSections(event.matches ? serviceIds : [PRIMARY_SERVICE_ID]);
     };
     if (typeof media.addEventListener === "function") {
       media.addEventListener("change", listener);
@@ -83,10 +118,10 @@ export default function HousingUtilitiesClient() {
       return () => media.removeListener(listener);
     }
     return undefined;
-  }, []);
+  }, [serviceIds]);
 
   useEffect(() => {
-    const sections = SERVICE_CONFIGS.map((service) => document.getElementById(`service-${service.id}`)).filter(
+    const sections = serviceConfigs.map((service) => document.getElementById(`service-${service.id}`)).filter(
       (node): node is HTMLElement => Boolean(node),
     );
     if (sections.length === 0) return;
@@ -107,7 +142,7 @@ export default function HousingUtilitiesClient() {
 
     sections.forEach((section) => observer.observe(section));
     return () => observer.disconnect();
-  }, []);
+  }, [serviceConfigs]);
 
   useEffect(() => {
     if (!jumpMenuOpen) {
@@ -139,8 +174,8 @@ export default function HousingUtilitiesClient() {
   }, [jumpMenuOpen, updateMenuPosition]);
 
   const expandAll = useCallback(() => {
-    setOpenSections(SERVICE_IDS);
-  }, []);
+    setOpenSections(serviceIds);
+  }, [serviceIds]);
 
   const collapseToPrimary = useCallback(() => {
     setOpenSections([PRIMARY_SERVICE_ID]);
@@ -202,7 +237,7 @@ export default function HousingUtilitiesClient() {
           <div className="flex flex-col justify-between px-6 py-8 sm:px-10 sm:pt-8 sm:pb-12">
             <div className="space-y-4">
               <span className="inline-flex w-fit items-center gap-2 rounded-full border border-brand-primary/20 bg-brand-primary/10 px-4 py-1.5 text-sm font-semibold uppercase tracking-[0.24em] text-brand-primary">
-                <Sparkles className="h-4 w-4" />
+                <Home className="h-4 w-4" />
                 Housing & Utilities
               </span>
               <h1 className="text-3xl font-semibold leading-[1.1] text-slate-900 sm:text-[2.5rem]">
@@ -211,6 +246,14 @@ export default function HousingUtilitiesClient() {
               <p className="max-w-xl text-base leading-normal text-slate-600 sm:text-lg">
                 Choose a service, enter your location and see local data.
               </p>
+              <HeroLocationCard
+                stepLabel="STEP 1: ADD YOUR CITY OR ZIP"
+                className="mt-6"
+                cardRef={locationCardRef}
+                inputHandleRef={locationInputRef}
+                description="We use this to show nearby programs and stats. We do not save your address."
+                statusFormatter={(label) => (location?.countyName ? `${label} (${location.countyName})` : label)}
+              />
             </div>
             <div className="relative z-10 mt-8 w-full max-w-xs">
               <button
@@ -240,7 +283,7 @@ export default function HousingUtilitiesClient() {
                       width: menuPosition.width,
                     }}
                   >
-                    {SERVICE_CONFIGS.map((service) => {
+                    {serviceConfigs.map((service) => {
                       const Icon = service.icon;
                       return (
                         <button
@@ -294,7 +337,7 @@ export default function HousingUtilitiesClient() {
           <div className="lg:hidden">
             <p className="text-sm font-semibold text-slate-700">Pick a service</p>
             <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
-              {SERVICE_CONFIGS.map((service) => {
+              {serviceConfigs.map((service) => {
                 const Icon = service.icon;
                 const isActive = activeSection === service.id;
                 return (
@@ -359,7 +402,7 @@ export default function HousingUtilitiesClient() {
                 </div>
               </div>
               <nav aria-label="Housing and utilities sections" className="flex flex-col gap-2">
-                {SERVICE_CONFIGS.map((service) => {
+                {serviceConfigs.map((service) => {
                   const Icon = service.icon;
                   const isActive = activeSection === service.id;
                   return (
@@ -398,7 +441,7 @@ export default function HousingUtilitiesClient() {
         </div>
 
         <div className="flex flex-col gap-6">
-          {SERVICE_CONFIGS.map((service) => (
+          {serviceConfigs.map((service) => (
             <ServicePanel
               key={service.id}
               service={service}
@@ -502,5 +545,13 @@ function ServicePanel({ service, isOpen, onToggle, isActive }: ServicePanelProps
         </div>
       </div>
     </section>
+  );
+}
+
+export default function HousingUtilitiesClient() {
+  return (
+    <SharedLocationProvider>
+      <HousingUtilitiesContent />
+    </SharedLocationProvider>
   );
 }

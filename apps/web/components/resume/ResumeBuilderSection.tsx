@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useId, useState, useTransition } from 'react';
-import { Sparkles, ShieldCheck, ChevronDown, ChevronUp, ArrowRightCircle, Eye } from 'lucide-react';
+import { FileText, ShieldCheck, ChevronDown, ChevronUp, ArrowRightCircle, Eye } from 'lucide-react';
 import type { TemplateName } from '@/resume/shared/templates';
 import { useResumeBuilderState } from './useResumeBuilderState';
 import { WIZARD_STEPS, EXPERIENCE_LIMIT, EDUCATION_LIMIT, MAX_SKILLS } from './constants';
@@ -401,10 +401,10 @@ useEffect(() => {
       className="mt-4 overflow-hidden rounded-[2.5rem] border border-slate-200 bg-white shadow-lg shadow-slate-400/10"
     >
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1.65fr)_minmax(0,0.6fr)]">
-        <div className="flex flex-col gap-8 px-6 py-8 sm:px-10 sm:py-10">
-          <header className="space-y-3 sm:space-y-4">
-            <span className="inline-flex w-fit items-center gap-2 rounded-full border border-brand-primary/25 bg-brand-primary/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.28em] text-brand-primary">
-              <Sparkles className="h-4 w-4" />
+        <div className="flex flex-col gap-8 px-6 py-6 sm:px-10 sm:py-8">
+          <header className="space-y-4">
+            <span className="inline-flex w-fit items-center gap-2 rounded-full border border-brand-primary/20 bg-brand-primary/10 px-4 py-1.5 text-sm font-semibold uppercase tracking-[0.24em] text-brand-primary">
+              <FileText className="h-4 w-4" />
               Resume Builder
             </span>
             <div className="text-slate-900">
