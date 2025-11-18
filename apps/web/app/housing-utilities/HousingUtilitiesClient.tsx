@@ -28,11 +28,6 @@ type BroadbandExperienceProps = {
   promptForLocation?: () => void;
 };
 
-type UtilitiesExperienceProps = {
-  location?: SharedLocation | null;
-  promptForLocation?: () => void;
-};
-
 const HousingExperience = dynamic<HousingExperienceProps>(
   () => import("../housing/HousingExperience"),
   {
