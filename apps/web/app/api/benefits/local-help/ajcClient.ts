@@ -22,12 +22,30 @@ export function getAjcConfig(): AjcConfig {
   const radiusSetting = Number(process.env.CAREERONESTOP_AJC_RADIUS_MILES ?? "25");
   const radiusMiles = Number.isFinite(radiusSetting) && radiusSetting > 0 ? radiusSetting : 25;
 
+  const enabled = Boolean(token && userId);
+  
+  // Debug logging to see what's happening with env vars
+  console.log("CareerOneStop Config:", {
+    baseUrl,
+    hasToken: Boolean(token),
+    tokenLength: token?.length ?? 0,
+    hasUserId: Boolean(userId),
+    userIdLength: userId?.length ?? 0,
+    userId: userId ? `${userId.substring(0, 3)}...${userId.substring(userId.length - 3)}` : "undefined",
+    radiusMiles,
+    enabled,
+    envVars: {
+      CAREERONESTOP_API_TOKEN: process.env.CAREERONESTOP_API_TOKEN ? "SET" : "NOT SET",
+      CAREERONESTOP_USER_ID: process.env.CAREERONESTOP_USER_ID ? "SET" : "NOT SET",
+    }
+  });
+
   return {
     baseUrl,
     token,
     userId,
     radiusMiles,
-    enabled: Boolean(token && userId),
+    enabled,
   };
 }
 
