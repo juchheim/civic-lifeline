@@ -1,51 +1,158 @@
 # Housing & Utilities Experience
 
 ## Purpose
-- Combine the existing Housing and Broadband tools into one sandbox page that experiments with the future “Housing & Utilities” vertical.
-- Keep the legacy `/housing` and `/broadband` routes live until the consolidated page covers all use cases.
-- Document the information architecture so additional services (e.g. Utilities, Internet, Rental Aid) can slot in without redesign.
+- Consolidated page combining Housing, Broadband, and Utilities tools into one unified experience.
+- Three service sections: Housing Support, Internet & Broadband, and Utilities Assistance.
+- Shared location input across all services for consistent user experience.
+- Accordion-style panels with expand/collapse functionality.
 
-## Audience & Principles
-- People with limited digital literacy using a phone first.
-- < 5 second task recognition: clear labels, icon support, minimal jargon.
-- Progressive disclosure: show only what is needed, expand for details.
-- Consistent flow across tools: “Get Started” (form) → “Results & Next Steps”.
+## Current Implementation
 
-## Layout Strategy
-1. **Hero overview**
-   - Brief explanation, reassurance, and a “Jump to a service” skip link.
-   - On mobile, hero cards stack; on desktop a two-column split keeps copy short.
-2. **Sticky quick nav**
-   - Horizontal pill selector on mobile, vertical rail on desktop.
-   - Scroll spy highlights the active service; “Collapse all” resets the view.
-3. **Service sections**
-   - Accordion-like panels with smooth expand/collapse.
-   - Each panel contains a headline, subcopy, and icon to aid recognition.
-   - Inside, two consistent blocks:
-     - `Get Started`: existing search form (identical controls for muscle memory).
-     - `Results & Next Steps`: render current data modules (counselors + FMR, or broadband coverage cards).
-   - Empty or loading states reuse current visual treatments.
-4. **Future-proofing**
-   - Section metadata driven by a config array. Adding “Utilities” later is data-only.
-   - Optional `status` token (e.g. “Coming soon”) surfaces experimental modules.
+### Page Structure
+**Location**: `apps/web/app/housing-utilities/page.tsx` and `HousingUtilitiesClient.tsx`
 
-## Implementation Notes
-- Extract reusable `HousingExperience` and `BroadbandExperience` components for embedding.
-- Build a `ServiceAccordion` component that manages expand/collapse and focus order.
-- Ensure the consolidated page is fully client-side to reuse existing hooks and React Query logic.
-- Update the main navigation and footer links to surface “Housing & Utilities”.
-- Retain per-route metadata so sharing `/housing-utilities` is descriptive.
+### Three Service Sections
+1. **Housing Support** (`id: "housing"`)
+   - Label: "Housing Support"
+   - Pill text: "Find rent limits and counselors"
+   - Icon: Home
+   - Component: `HousingExperience` (dynamically imported)
+   - Features: HUD counselors, Fair Market Rent data
 
-## Accessibility Checklist
-- Accordion buttons: `<button>` with `aria-expanded`, `aria-controls`.
-- Maintain focus when panels toggle; move focus to first heading when expanded.
-- Ensure sticky nav is keyboard navigable and has visible focus.
-- Provide skip links for screen reader users to reach each service quickly.
+2. **Internet & Broadband** (`id: "internet"`)
+   - Label: "Internet & Broadband"
+   - Pill text: "Find coverage and speeds"
+   - Icon: Wifi
+   - Component: `BroadbandExperience` (dynamically imported)
+   - Features: FCC broadband coverage statistics
 
-## QA Plan
-- Manual smoke test on mobile widths (320px, 375px, 414px).
-- Verify search, suggestion, and geolocation flows still function.
-- Confirm React Query caches remain isolated per section to avoid stale data bleed.
-- Test accordion with keyboard only and VoiceOver to confirm announcements.
-- Monitor layout with long error messages and zero-result states.
+3. **Utilities Assistance** (`id: "utilities"`)
+   - Label: "Utilities Assistance"
+   - Pill text: "Find costs and providers"
+   - Icon: Droplets
+   - Component: `UtilitiesExperience` (dynamically imported)
+   - Features: Electric, gas, and water provider directories and cost estimates
+
+### Layout Components
+
+#### 1. Hero Section
+- Two-column grid layout (desktop) / stacked (mobile)
+- Left column:
+  - Brand badge ("Housing & Utilities")
+  - Page title: "Everything you need to know before renting or buying."
+  - Description text
+  - `HeroLocationCard` component for location input
+  - "Jump to a service" button with dropdown menu
+- Right column:
+  - "Why it matters" section with highlight points
+  - Info card: "Simple help in one place"
+
+#### 2. Navigation
+**Desktop (≥1024px)**:
+- Sticky sidebar navigation (left column, ~32% width)
+- Vertical list of service buttons
+- Active section highlighted with brand-primary background
+- "Expand all" and "Collapse to housing" controls
+- Scroll spy automatically highlights active section
+
+**Mobile (<1024px)**:
+- Horizontal pill selector above content
+- Scrollable row of service buttons
+- "Expand all" and "Collapse to housing" controls below pills
+
+#### 3. Service Panels
+- Accordion-style panels with smooth expand/collapse
+- Each panel:
+  - Header button with icon, label, and chevron
+  - Optional status chip ("New layout", "Coming soon")
+  - Collapsible content area
+  - Focus management: moves focus to content when expanded
+- Active panel highlighted with ring border
+
+#### 4. Jump Menu
+- Button in hero section: "Jump to a service"
+- Dropdown menu (portal) with all three services
+- Clicking a service:
+  - Expands that section if collapsed
+  - Scrolls to section smoothly
+  - Sets as active section
+- Menu closes on outside click or Escape key
+
+### State Management
+
+#### Open Sections
+- Default: Only primary section (Housing) open on mobile
+- Desktop: All sections open by default
+- Users can toggle individual sections
+- "Expand all" opens all sections
+- "Collapse to housing" closes all except Housing
+
+#### Active Section
+- Tracks which section is currently in view
+- Updated via scroll spy (IntersectionObserver)
+- Manual navigation temporarily disables scroll spy
+- Active section highlighted in navigation and panel
+
+#### Location Sharing
+- Uses `SharedLocationProvider` context
+- Location input in hero shared across all three services
+- Each service component receives `location` and `promptForLocation` props
+- Location persists across service switches
+
+### Scroll Spy Implementation
+- Uses `IntersectionObserver` API
+- Observes all service section elements
+- Root margin: `-25% 0px -55% 0px`
+- Thresholds: `[0, 0.2, 0.4, 0.6]`
+- Finds most visible section and sets as active
+- Disabled during manual navigation (1 second cooldown)
+
+### Responsive Behavior
+- **Mobile (<1024px)**:
+  - Single column layout
+  - Horizontal navigation pills
+  - Only primary section open by default
+  - Jump menu in hero
+  
+- **Desktop (≥1024px)**:
+  - Two-column layout (nav sidebar + content)
+  - Vertical navigation sidebar
+  - All sections open by default
+  - Sticky navigation sidebar
+
+## Accessibility Features
+- Accordion buttons: `<button>` with `aria-expanded`, `aria-controls`
+- Focus management: moves to content when panel expands
+- Keyboard navigation: full keyboard support for all controls
+- Skip links: jump menu provides quick navigation
+- Screen reader announcements: proper ARIA labels and live regions
+- Visible focus indicators on all interactive elements
+
+## Component Architecture
+
+### Main Components
+- `HousingUtilitiesClient`: Main page component with state management
+- `ServicePanel`: Reusable accordion panel component
+- `HousingExperience`: Housing-specific content (imported from `/housing`)
+- `BroadbandExperience`: Broadband-specific content (imported from `/broadband`)
+- `UtilitiesExperience`: Utilities-specific content
+
+### Shared Components
+- `HeroLocationCard`: Location input with geocoding
+- `SharedLocationProvider`: Context for location state
+- `LocationInputWithGeocode`: Geocoding input component
+
+## Data Flow
+1. User enters location in hero section
+2. Location stored in `SharedLocationContext`
+3. All three service components receive location via props
+4. Each service component fetches its own data using location
+5. React Query caches data per service independently
+6. Location changes trigger refetch in all services
+
+## Future Enhancements
+- Additional service sections can be added via `BASE_SERVICE_CONFIGS` array
+- Status chips ("New layout", "Coming soon") for experimental features
+- Optional service-specific location overrides
+- Analytics tracking for section usage
 
