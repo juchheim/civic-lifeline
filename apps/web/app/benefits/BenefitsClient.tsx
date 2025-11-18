@@ -384,7 +384,9 @@ function formatLocalHelpLocation(location: BenefitsLocation): string {
   if (location.zip) return location.zip;
   const stateCode = resolveStateCode(location.stateCode) ?? resolveStateCode(location.stateName);
   if (location.countyName && stateCode) {
-    return `${location.countyName}, ${stateCode}`;
+    // Strip " County" suffix from county name for Career OneStop API compatibility
+    const countyWithoutSuffix = location.countyName.replace(/\s+County$/i, "");
+    return `${countyWithoutSuffix}, ${stateCode}`;
   }
   const labelParts = location.displayLabel.split(",").map((part) => part.trim()).filter(Boolean);
   if (stateCode && labelParts.length) {
