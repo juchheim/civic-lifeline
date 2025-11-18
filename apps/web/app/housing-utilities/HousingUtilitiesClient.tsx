@@ -9,7 +9,7 @@ import { ChevronDown, Clock, Droplets, Home, Sparkles, Wifi } from "lucide-react
 import type { LocationInputWithGeocodeHandle } from "@/components/LocationInputWithGeocode";
 import { HeroLocationCard } from "@/components/location/HeroLocationCard";
 import { SharedLocationProvider, useSharedLocation } from "@/components/location/SharedLocationContext";
-import UtilitiesExperience from "./UtilitiesExperience";
+import UtilitiesExperienceComponent from "./UtilitiesExperience";
 import type { SharedLocation } from "@/components/location/SharedLocationContext";
 
 type HousingExperienceProps = {
@@ -24,6 +24,11 @@ type BroadbandExperienceProps = {
   showIntro?: boolean;
   wrapperClassName?: string;
   id?: string;
+  location?: SharedLocation | null;
+  promptForLocation?: () => void;
+};
+
+type UtilitiesExperienceProps = {
   location?: SharedLocation | null;
   promptForLocation?: () => void;
 };
@@ -111,7 +116,7 @@ function HousingUtilitiesContent() {
       }
       return {
         ...config,
-        render: () => <UtilitiesExperience location={location} promptForLocation={promptForLocation} />,
+        render: () => <UtilitiesExperienceComponent location={location} promptForLocation={promptForLocation} />,
       };
     });
   }, [location, promptForLocation]);
