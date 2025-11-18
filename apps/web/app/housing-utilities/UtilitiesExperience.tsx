@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   zUtilitiesCostsResponse,
@@ -84,12 +84,13 @@ interface UtilitiesExperienceProps {
   promptForLocation?: () => void;
 }
 
-export default function UtilitiesExperience({ location = null, promptForLocation = () => {} }: UtilitiesExperienceProps) {
+export default function UtilitiesExperience({ location = null, promptForLocation = () => { } }: UtilitiesExperienceProps) {
   const [locationError, setLocationError] = useState<string | null>(null);
   const [searchParams, setSearchParams] = useState<UtilitiesSearchParams | null>(null);
   const [resolvedLabel, setResolvedLabel] = useState<string | null>(null);
   const [expandedCost, setExpandedCost] = useState<string | null>(null);
   const [activeProviderTab, setActiveProviderTab] = useState<(typeof providerTabs)[number]["id"]>("water");
+  const lastProcessedLocationRef = useRef<string | null>(null);
 
   const { data: states = [], isPending: isStatesLoading, error: statesError } = useQuery({
     queryKey: ["utilities-states"],
@@ -128,44 +129,55 @@ export default function UtilitiesExperience({ location = null, promptForLocation
     return firstComma || null;
   }, []);
 
-  const handleLocationResolved = useCallback(
-    (selection: LocationSelection | null) => {
-      if (!selection) {
-        setSearchParams(null);
-        setResolvedLabel(null);
-        setLocationError(null);
-        return;
-      }
-
-      const state = resolveStateCode(selection);
-      if (!state) {
-        setSearchParams(null);
-        setResolvedLabel(null);
-        setLocationError("We couldn't determine the state for that location. Try another search.");
-        return;
-      }
-      const county = resolveCountyName(selection);
-      if (!county) {
-        setSearchParams(null);
-        setResolvedLabel(null);
-        setLocationError("We couldn't determine the county for that location. Try another search.");
-        return;
-      }
-      setSearchParams({ state, county });
-      setResolvedLabel(`${county}, ${state}`);
-      setLocationError(null);
-    },
-    [resolveCountyName, resolveStateCode],
-  );
-
   useEffect(() => {
-    if (!location) {
-      handleLocationResolved(null);
+    // Create a stable key from the location to track if we've already processed it
+    const locationKey = location
+      ? `${location.latitude ?? ""},${location.longitude ?? ""},${location.displayLabel ?? ""},${location.zip ?? ""}`
+      : null;
+
+    // Skip if we've already processed this exact location
+    if (locationKey === lastProcessedLocationRef.current) {
       return;
     }
+
+    // Update the ref before processing to prevent re-processing
+    lastProcessedLocationRef.current = locationKey;
+
+    if (!location) {
+      setSearchParams(null);
+      setResolvedLabel(null);
+      setLocationError(null);
+      return;
+    }
+
     const selection = mapStoredLocationToSelection(location);
-    handleLocationResolved(selection);
-  }, [handleLocationResolved, location]);
+    const state = resolveStateCode(selection);
+    if (!state) {
+      setSearchParams(null);
+      setResolvedLabel(null);
+      setLocationError("We couldn't determine the state for that location. Try another search.");
+      return;
+    }
+    const county = resolveCountyName(selection);
+    if (!county) {
+      setSearchParams(null);
+      setResolvedLabel(null);
+      setLocationError("We couldn't determine the county for that location. Try another search.");
+      return;
+    }
+
+    // Only update state if values have actually changed
+    setSearchParams((prev) => {
+      if (prev?.state === state && prev?.county === county) {
+        return prev;
+      }
+      return { state, county };
+    });
+
+    const newLabel = `${county}, ${state}`;
+    setResolvedLabel((prev) => (prev === newLabel ? prev : newLabel));
+    setLocationError(null);
+  }, [location, resolveStateCode, resolveCountyName]);
 
   const costsQuery = useQuery({
     queryKey: ["utilities-costs", searchParams?.state ?? "", searchParams?.county ?? ""],

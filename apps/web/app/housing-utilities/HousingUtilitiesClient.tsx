@@ -267,7 +267,7 @@ function HousingUtilitiesContent() {
     <div className="space-y-12 pb-16 bg-neutral-bg">
       <section className="mt-4 overflow-hidden rounded-[2.5rem] border border-slate-200 bg-white shadow-lg shadow-slate-400/10">
         <div className="grid gap-8 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1fr)] lg:items-stretch">
-          <div className="flex flex-col justify-between px-6 py-8 sm:px-10 sm:pt-8 sm:pb-12">
+          <div className="flex min-w-0 flex-col justify-between px-6 py-8 sm:px-10 sm:pt-8 sm:pb-12">
             <div className="space-y-4">
               <span className="inline-flex w-fit items-center gap-2 rounded-full border border-brand-primary/20 bg-brand-primary/10 px-4 py-1.5 text-sm font-semibold uppercase tracking-[0.24em] text-brand-primary">
                 <Home className="h-4 w-4" />
@@ -340,9 +340,9 @@ function HousingUtilitiesContent() {
                 )}
             </div>
           </div>
-          <div className="relative">
+          <div className="relative min-w-0">
             <div className="absolute inset-0 bg-info-tint" aria-hidden />
-            <div className="relative flex h-full flex-col justify-between gap-6 rounded-t-3xl bg-info-tint px-6 py-8 text-slate-900 sm:px-10 lg:rounded-none">
+            <div className="relative flex min-w-0 h-full flex-col justify-between gap-6 rounded-t-3xl bg-info-tint px-6 py-8 text-slate-900 sm:px-10 lg:rounded-none">
               <div className="space-y-4">
                 <p className="text-sm font-semibold uppercase tracking-[0.3em] text-slate-600">Why it matters</p>
                 <ul className="space-y-2">
@@ -366,7 +366,7 @@ function HousingUtilitiesContent() {
       </section>
 
       <div className="grid gap-8 lg:grid-cols-[minmax(0,0.32fr)_minmax(0,1fr)]">
-        <div className="space-y-4 lg:sticky lg:top-24 lg:self-start lg:-translate-y-5">
+        <div className="space-y-4 lg:sticky lg:top-24 lg:self-start lg:-translate-y-5 min-w-0">
           <div className="lg:hidden">
             <p className="text-sm font-semibold text-slate-700">Pick a service</p>
             <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
@@ -379,11 +379,10 @@ function HousingUtilitiesContent() {
                     type="button"
                     data-nav-target={service.id}
                     onClick={() => handleNavClick(service.id)}
-                    className={`flex min-w-[220px] items-center gap-3 rounded-2xl border px-4 py-3 text-left text-sm font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2 ${
-                      isActive
-                        ? "border-brand-primary bg-brand-primary/10 text-brand-primary shadow-inner shadow-brand-primary/20"
-                        : "border-slate-200 bg-white text-slate-700 hover:border-brand-primary/40 hover:text-brand-primary"
-                    }`}
+                    className={`flex min-w-[220px] items-center gap-3 rounded-2xl border px-4 py-3 text-left text-sm font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2 ${isActive
+                      ? "border-brand-primary bg-brand-primary/10 text-brand-primary shadow-inner shadow-brand-primary/20"
+                      : "border-slate-200 bg-white text-slate-700 hover:border-brand-primary/40 hover:text-brand-primary"
+                      }`}
                   >
                     <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-brand-primary shadow-sm">
                       <Icon className="h-4 w-4" />
@@ -444,11 +443,10 @@ function HousingUtilitiesContent() {
                       type="button"
                       data-nav-target={service.id}
                       onClick={() => handleNavClick(service.id)}
-                    className={`flex items-center justify-between gap-3 rounded-2xl px-4 py-3 text-left text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2 ${
-                      isActive
+                      className={`flex items-center justify-between gap-3 rounded-2xl px-4 py-3 text-left text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2 ${isActive
                         ? "bg-brand-primary text-white shadow-lg shadow-brand-primary/30"
                         : "bg-slate-100 text-slate-600 hover:bg-brand-primary/10 hover:text-brand-primary"
-                    }`}
+                        }`}
                       aria-current={isActive ? "true" : "false"}
                     >
                       <span className="flex items-center gap-2">
@@ -473,7 +471,7 @@ function HousingUtilitiesContent() {
           </div>
         </div>
 
-        <div className="flex flex-col gap-6">
+        <div className="flex min-w-0 flex-col gap-6">
           {serviceConfigs.map((service) => (
             <ServicePanel
               key={service.id}
@@ -523,9 +521,7 @@ function ServicePanel({ service, isOpen, onToggle, isActive }: ServicePanelProps
     <section
       id={`service-${service.id}`}
       data-service-id={service.id}
-      className={`overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-lg shadow-slate-400/10 transition ring-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary ${
-        isActive ? "ring-1 ring-brand-primary/40" : ""
-      }`}
+      className={`min-w-0 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-lg shadow-slate-400/10 transition ring-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary ${isActive ? "ring-1 ring-brand-primary/40" : ""}`}
       tabIndex={-1}
       aria-labelledby={buttonId}
     >
@@ -537,12 +533,12 @@ function ServicePanel({ service, isOpen, onToggle, isActive }: ServicePanelProps
         aria-expanded={isOpen}
         aria-controls={panelId}
       >
-        <div className="flex flex-1 items-center gap-4">
+        <div className="flex min-w-0 flex-1 items-center gap-4">
           <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-brand-primary/10 text-brand-primary shadow-inner shadow-brand-primary/10">
             <Icon className="h-5 w-5" />
           </span>
-          <div className="flex flex-col gap-1">
-            <span className="text-2xl font-semibold text-slate-900">{service.label}</span>
+          <div className="flex min-w-0 flex-col gap-1">
+            <span className="break-words text-2xl font-semibold text-slate-900">{service.label}</span>
             {statusChip && (
               <span
                 className={`mt-2 inline-flex w-fit items-center gap-1 rounded-full border px-3 py-0.5 text-xs font-semibold ${statusChip.className}`}
@@ -563,13 +559,13 @@ function ServicePanel({ service, isOpen, onToggle, isActive }: ServicePanelProps
         id={panelId}
         role="region"
         aria-labelledby={buttonId}
-        className={`grid transition-[max-height,opacity] duration-300 ease-in-out ${isOpen ? "opacity-100" : "max-h-0 opacity-0"}`}
-        style={{ maxHeight: isOpen ? "5000px" : "0" }}
+        className={`grid overflow-hidden transition-[max-height,opacity] duration-300 ease-in-out ${isOpen ? "opacity-100" : "max-h-0 opacity-0"}`}
+        style={{ maxHeight: isOpen ? "none" : "0" }}
       >
         <div
           ref={contentRef}
           tabIndex={-1}
-          className="space-y-4 border-t border-slate-200 px-6 pb-6 pt-5 focus:outline-none"
+          className="space-y-4 break-words border-t border-slate-200 px-6 pb-6 pt-5 focus:outline-none min-w-0"
         >
           <span className="inline-flex items-center rounded-full border border-orange-200 bg-orange-100 px-3 py-1 text-sm font-medium text-orange-700">
             {service.pillText}
