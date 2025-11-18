@@ -10,13 +10,36 @@ import type { LocationInputWithGeocodeHandle } from "@/components/LocationInputW
 import { HeroLocationCard } from "@/components/location/HeroLocationCard";
 import { SharedLocationProvider, useSharedLocation } from "@/components/location/SharedLocationContext";
 import UtilitiesExperience from "./UtilitiesExperience";
+import type { SharedLocation } from "@/components/location/SharedLocationContext";
 
-const HousingExperience = dynamic(() => import("../housing/HousingExperience"), {
-  ssr: false,
-});
-const BroadbandExperience = dynamic(() => import("../broadband/BroadbandExperience"), {
-  ssr: false,
-});
+type HousingExperienceProps = {
+  showIntro?: boolean;
+  wrapperClassName?: string;
+  id?: string;
+  location?: SharedLocation | null;
+  promptForLocation?: () => void;
+};
+
+type BroadbandExperienceProps = {
+  showIntro?: boolean;
+  wrapperClassName?: string;
+  id?: string;
+  location?: SharedLocation | null;
+  promptForLocation?: () => void;
+};
+
+const HousingExperience = dynamic<HousingExperienceProps>(
+  () => import("../housing/HousingExperience"),
+  {
+    ssr: false,
+  }
+);
+const BroadbandExperience = dynamic<BroadbandExperienceProps>(
+  () => import("../broadband/BroadbandExperience"),
+  {
+    ssr: false,
+  }
+);
 
 type BaseServiceConfig = {
   id: string;

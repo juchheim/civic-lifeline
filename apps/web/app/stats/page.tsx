@@ -65,8 +65,8 @@ function StatsPageContent() {
     return counties.find((county) => county.fips === countyFips) ?? undefined;
   }, [counties, countyFips]);
 
-  const stateFips: string | undefined = selectedCounty?.stateFips ? selectedCounty.stateFips : undefined;
-  const countyName: string | undefined = selectedCounty?.name ? selectedCounty.name : undefined;
+  const stateFips: string | undefined = selectedCounty?.stateFips != null ? selectedCounty.stateFips : undefined;
+  const countyName: string | undefined = selectedCounty?.name != null ? selectedCounty.name : undefined;
 
   useEffect(() => {
     if (!location || !location.displayLabel) {
