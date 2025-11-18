@@ -839,7 +839,7 @@ function BenefitsDisclaimerModal({ onClose }: { onClose: () => void }) {
   return typeof document !== "undefined" ? createPortal(content, document.body) : content;
 }
 
-function FoodAndMoneyPanel({ location, promptForLocation }: BenefitPanelHelpers) {
+function FoodAndMoneyPanel({ location }: BenefitPanelHelpers) {
   const localHelpMutation = useLocalHelpSearch();
   const [activeHelpKind, setActiveHelpKind] = useState<FoodHelpKind>("food");
   const [helpResults, setHelpResults] = useState<Partial<Record<FoodHelpKind, BenefitsLocalHelpResponse>>>({});
@@ -855,17 +855,8 @@ function FoodAndMoneyPanel({ location, promptForLocation }: BenefitPanelHelpers)
     setPendingKind(null);
   }, [location?.displayLabel]);
 
-  const ensureLocation = useCallback(() => {
-    if (!location) {
-      promptForLocation();
-      return false;
-    }
-    return true;
-  }, [location, promptForLocation]);
-
-  const runLocalHelpSearch = useCallback(
+  const runLocalHelpSearchInternal = useCallback(
     (kind: FoodHelpKind) => {
-      if (!ensureLocation()) return;
       if (!location) return;
       setPendingKind(kind);
       setHasRequestedKind((prev) => ({ ...prev, [kind]: true }));
@@ -895,8 +886,16 @@ function FoodAndMoneyPanel({ location, promptForLocation }: BenefitPanelHelpers)
         },
       );
     },
-    [ensureLocation, localHelpMutation, location],
+    [localHelpMutation, location],
   );
+
+  // Auto-search when location is set and we haven't searched for active kind yet
+  useEffect(() => {
+    if (location && !hasRequestedKind[activeHelpKind]) {
+      runLocalHelpSearchInternal(activeHelpKind);
+    }
+  }, [location, activeHelpKind, hasRequestedKind, runLocalHelpSearchInternal]);
+
 
   const activeCategory = FOOD_HELP_CATEGORIES.find((category) => category.kind === activeHelpKind) ?? FOOD_HELP_CATEGORIES[0]!;
   const activeResults = helpResults[activeHelpKind];
@@ -945,20 +944,6 @@ function FoodAndMoneyPanel({ location, promptForLocation }: BenefitPanelHelpers)
         <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/70 px-4 py-3 text-sm text-slate-700">
           <p className="font-semibold text-slate-900">{activeCategory.label}</p>
           <p className="mt-1">{activeCategory.description}</p>
-        </div>
-        <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-          <button
-            type="button"
-            className={buttonVariants.primary}
-            onClick={() => runLocalHelpSearch(activeHelpKind)}
-            disabled={!location || isActiveLoading}
-            aria-describedby={!location ? locationAlertId : undefined}
-          >
-            {isActiveLoading ? "Searching…" : activeCategory.cta}
-          </button>
-          <button type="button" className={buttonVariants.secondary} onClick={promptForLocation}>
-            {location ? "Change location" : "Set my location"}
-          </button>
         </div>
         <div className="mt-5 space-y-3 text-sm text-slate-600">
           <p className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600">
@@ -1219,18 +1204,17 @@ function HealthCoveragePanel({ location, promptForLocation }: BenefitPanelHelper
 
   const locationAlertId = useId();
 
-  const handleHealthHelpSearch = useCallback(() => {
-    if (!location) {
-      promptForLocation();
-      return;
+  // Auto-search when location is set
+  useEffect(() => {
+    if (location && !localHelpMutation.isSuccess && !localHelpMutation.isPending && !localHelpMutation.isError) {
+      localHelpMutation.mutate({
+        locationText: formatLocalHelpLocation(location),
+        latitude: location.latitude,
+        longitude: location.longitude,
+        kind: "health",
+      });
     }
-    localHelpMutation.mutate({
-      locationText: formatLocalHelpLocation(location),
-      latitude: location.latitude,
-      longitude: location.longitude,
-      kind: "health",
-    });
-  }, [location, localHelpMutation, promptForLocation]);
+  }, [location?.displayLabel]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const healthError = healthCheckMutation.isError
     ? "We had trouble running this check. Please try again or talk to a local helper."
@@ -1345,23 +1329,15 @@ function HealthCoveragePanel({ location, promptForLocation }: BenefitPanelHelper
         title="Get help applying for health coverage"
         description="Find local people who can help you sign up for Medicaid, CHIP, or Marketplace health plans."
       >
-        <p className="text-sm text-slate-600">
-          {location ? `Searching near: ${location.displayLabel}` : "Set your location above to search near you."}
-        </p>
-        <button
-          type="button"
-          className={`${buttonVariants.primary} mt-3`}
-          onClick={handleHealthHelpSearch}
-          disabled={localHelpMutation.isPending}
-          aria-describedby={!location ? locationAlertId : undefined}
-        >
-          {localHelpMutation.isPending ? "Searching…" : "Find health coverage help"}
-        </button>
         {!location ? (
-          <p id={locationAlertId} className="mt-2 text-sm text-amber-700">
-            Add your location first so we can look for assisters near you.
+          <p id={locationAlertId} className="text-sm text-amber-700">
+            Add your location above so we can look for assisters near you.
           </p>
-        ) : null}
+        ) : (
+          <p className="text-sm text-slate-600">
+            {localHelpMutation.isPending ? "Searching…" : `Showing results near: ${location.displayLabel}`}
+          </p>
+        )}
         <div className="mt-4 space-y-2">
           <BenefitLocalHelpList
             items={localHelpMutation.data?.items ?? []}
@@ -1465,24 +1441,33 @@ function HealthCheckResultCard({ result }: { result: BenefitsHealthCheckResponse
 
 function BillsHousingPanel({ location, promptForLocation }: BenefitPanelHelpers) {
   const localHelpMutation = useLocalHelpSearch();
+  const [currentSearchKind, setCurrentSearchKind] = useState<BenefitLocalHelpKind | null>(null);
   const hasSearched = localHelpMutation.isSuccess || localHelpMutation.isError;
   const remoteError = localHelpMutation.isError
     ? "We had trouble loading local programs. Please try again or contact a local American Job Center."
     : undefined;
   const locationAlertId = useId();
 
-  const ensureLocation = useCallback(() => {
-    if (!location) {
-      promptForLocation();
-      return false;
+  // Auto-search for housing help when location is set
+  useEffect(() => {
+    if (location && !currentSearchKind) {
+      setCurrentSearchKind("housing");
+      localHelpMutation.mutate({
+        locationText: formatLocalHelpLocation(location),
+        latitude: location.latitude,
+        longitude: location.longitude,
+        kind: "housing",
+      });
     }
-    return true;
-  }, [location, promptForLocation]);
+  }, [location?.displayLabel]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const runLocalHelpSearch = useCallback(
     (kind: BenefitLocalHelpKind) => {
-      if (!ensureLocation()) return;
-      if (!location) return;
+      if (!location) {
+        promptForLocation();
+        return;
+      }
+      setCurrentSearchKind(kind);
       localHelpMutation.mutate({
         locationText: formatLocalHelpLocation(location),
         latitude: location.latitude,
@@ -1490,7 +1475,7 @@ function BillsHousingPanel({ location, promptForLocation }: BenefitPanelHelpers)
         kind,
       });
     },
-    [ensureLocation, localHelpMutation, location],
+    [localHelpMutation, location, promptForLocation],
   );
 
   const dailySupportSummary = (
@@ -1502,7 +1487,7 @@ function BillsHousingPanel({ location, promptForLocation }: BenefitPanelHelpers)
 
   return (
     <div className="space-y-5">
-      <BenefitCard title="Rent and housing help" description="Search for rental aid, shelter referrals, and tenant support.">
+      <BenefitCard title="Rent, utilities, and daily support" description="Housing vouchers, utility bill help, childcare, and daily basics.">
         <ul className="space-y-2 text-sm text-slate-600">
           <li className="flex gap-2">
             <span aria-hidden className="text-brand-primary">•</span>
@@ -1510,80 +1495,51 @@ function BillsHousingPanel({ location, promptForLocation }: BenefitPanelHelpers)
           </li>
           <li className="flex gap-2">
             <span aria-hidden className="text-brand-primary">•</span>
-            Tenant rights info and shelter referrals.
+            Energy, water, and phone or internet discount programs.
+          </li>
+          <li className="flex gap-2">
+            <span aria-hidden className="text-brand-primary">•</span>
+            Subsidized childcare, school meals, and daily support.
           </li>
         </ul>
-        <p className="mt-3 text-sm text-slate-600">
-          {location ? `Using: ${location.displayLabel}` : "Add your city or ZIP to search near you."}
-        </p>
         {!location ? (
-          <p id={locationAlertId} className="text-sm text-amber-700">
-            Add your location above to find nearby programs.
+          <p id={locationAlertId} className="mt-3 text-sm text-amber-700">
+            Add your location above to see nearby programs.
           </p>
-        ) : null}
-        <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+        ) : (
+          <p className="mt-3 text-sm text-slate-600">
+            {localHelpMutation.isPending ? "Searching…" : `Showing results near: ${location.displayLabel}`}
+          </p>
+        )}
+        <div className="mt-4 flex flex-wrap gap-2">
           <button
             type="button"
-            className={buttonVariants.primary}
+            className={`${buttonVariants.secondary} text-xs`}
             onClick={() => runLocalHelpSearch("housing")}
-            disabled={localHelpMutation.isPending}
-            aria-describedby={!location ? locationAlertId : undefined}
+            disabled={!location || localHelpMutation.isPending}
           >
-            {localHelpMutation.isPending ? "Searching…" : "Find housing help near me"}
+            Housing
           </button>
-          <Link href="/housing-utilities" className={`${buttonVariants.link} text-sm`}>
-            See housing and rent data
-          </Link>
-        </div>
-      </BenefitCard>
-
-      <BenefitCard
-        title="Help with utility bills"
-        description="Energy, water, and phone or internet discount programs."
-      >
-        <p className="text-sm text-slate-600">
-          {location ? `Searching near: ${location.displayLabel}` : "Add your city or ZIP to search for bill help nearby."}
-        </p>
-        <div className="mt-3 flex flex-col gap-2 sm:flex-row">
           <button
             type="button"
-            className={buttonVariants.primary}
+            className={`${buttonVariants.secondary} text-xs`}
             onClick={() => runLocalHelpSearch("bills")}
-            disabled={localHelpMutation.isPending}
-            aria-describedby={!location ? locationAlertId : undefined}
+            disabled={!location || localHelpMutation.isPending}
           >
-            {localHelpMutation.isPending ? "Searching…" : "Find help with bills"}
+            Bills
           </button>
-          <Link href="/housing-utilities" className={`${buttonVariants.link} text-sm`}>
-            See local utility costs
+          <button
+            type="button"
+            className={`${buttonVariants.secondary} text-xs`}
+            onClick={() => runLocalHelpSearch("kids")}
+            disabled={!location || localHelpMutation.isPending}
+          >
+            Kids & families
+          </button>
+          <Link href="/housing-utilities" className={`${buttonVariants.link} text-xs`}>
+            See housing data
           </Link>
         </div>
-      </BenefitCard>
-
-      <BenefitCard title="Childcare, school meals, and daily support">
-        <ul className="space-y-2 text-sm text-slate-600">
-          <li className="flex gap-2">
-            <span aria-hidden className="text-brand-primary">•</span>
-            Subsidized childcare, Head Start, and summer care spots.
-          </li>
-          <li className="flex gap-2">
-            <span aria-hidden className="text-brand-primary">•</span>
-            Free or reduced-price school meals and weekend food packs.
-          </li>
-          <li className="flex gap-2">
-            <span aria-hidden className="text-brand-primary">•</span>
-            Transportation, diapers, or hygiene support where available.
-          </li>
-        </ul>
-        <button
-          type="button"
-          className={`${buttonVariants.primary} mt-4`}
-          onClick={() => runLocalHelpSearch("kids")}
-          disabled={localHelpMutation.isPending}
-          aria-describedby={!location ? locationAlertId : undefined}
-        >
-          {localHelpMutation.isPending ? "Searching…" : "Find programs for kids & families"}
-        </button>
       </BenefitCard>
 
       <div className="space-y-2">
@@ -1607,6 +1563,7 @@ function BillsHousingPanel({ location, promptForLocation }: BenefitPanelHelpers)
 
 function SecurityDisabilityPanel({ location, promptForLocation }: BenefitPanelHelpers) {
   const localHelpMutation = useLocalHelpSearch();
+  const [currentSearchKind, setCurrentSearchKind] = useState<BenefitLocalHelpKind | null>(null);
   const hasSearched = localHelpMutation.isSuccess || localHelpMutation.isError;
   const remoteError = localHelpMutation.isError
     ? "We had trouble loading local programs. Please try again or contact a local American Job Center."
@@ -1623,6 +1580,19 @@ function SecurityDisabilityPanel({ location, promptForLocation }: BenefitPanelHe
     staleTime: 300_000,
     enabled: Boolean(stateCodeForStats),
   });
+
+  // Auto-search for social security help when location is set
+  useEffect(() => {
+    if (location && !currentSearchKind) {
+      setCurrentSearchKind("social-security");
+      localHelpMutation.mutate({
+        locationText: formatLocalHelpLocation(location),
+        latitude: location.latitude,
+        longitude: location.longitude,
+        kind: "social-security",
+      });
+    }
+  }, [location?.displayLabel]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const statsResponse = socialStatsQuery.data;
   const stats = statsResponse?.stats ?? null;
@@ -1675,18 +1645,13 @@ function SecurityDisabilityPanel({ location, promptForLocation }: BenefitPanelHe
     );
   })();
 
-  const ensureLocation = useCallback(() => {
-    if (!location) {
-      promptForLocation();
-      return false;
-    }
-    return true;
-  }, [location, promptForLocation]);
-
   const runLocalHelpSearch = useCallback(
     (kind: BenefitLocalHelpKind) => {
-      if (!ensureLocation()) return;
-      if (!location) return;
+      if (!location) {
+        promptForLocation();
+        return;
+      }
+      setCurrentSearchKind(kind);
       localHelpMutation.mutate({
         locationText: formatLocalHelpLocation(location),
         latitude: location.latitude,
@@ -1694,7 +1659,7 @@ function SecurityDisabilityPanel({ location, promptForLocation }: BenefitPanelHe
         kind,
       });
     },
-    [ensureLocation, localHelpMutation, location],
+    [localHelpMutation, location, promptForLocation],
   );
 
   const securitySummary = (
@@ -1711,29 +1676,39 @@ function SecurityDisabilityPanel({ location, promptForLocation }: BenefitPanelHe
         description="Covers retirement, disability (SSDI), survivors, and family benefits."
       >
         {statsContent}
-        <p className="mt-4 text-sm text-slate-600">
-          {location
-            ? `Using your saved location: ${location.displayLabel}.`
-            : "Add your location above to see state facts and nearby Social Security offices."}
-        </p>
         {!location ? (
-          <p id={locationAlertId} className="text-sm text-amber-700">
-            Enter your location to search for nearby SSA offices or helpers.
+          <p id={locationAlertId} className="mt-4 text-sm text-amber-700">
+            Add your location above to see state facts and nearby Social Security offices.
           </p>
-        ) : null}
-        <button
-          type="button"
-          className={`${buttonVariants.primary} mt-4`}
-          onClick={() => runLocalHelpSearch("social-security")}
-          disabled={localHelpMutation.isPending}
-          aria-describedby={!location ? locationAlertId : undefined}
-        >
-          {localHelpMutation.isPending ? "Searching…" : "Find help with Social Security"}
-        </button>
+        ) : (
+          <p className="mt-4 text-sm text-slate-600">
+            {localHelpMutation.isPending ? "Searching…" : `Showing results near: ${location.displayLabel}`}
+          </p>
+        )}
       </BenefitCard>
       <SocialSecurityOfficesPanel location={location} promptForLocation={promptForLocation} />
       <div className="space-y-2">
-        <h3 className="text-base font-semibold text-slate-900">Other helpers near you</h3>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h3 className="text-base font-semibold text-slate-900">Other helpers near you</h3>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              className={`${buttonVariants.secondary} text-xs`}
+              onClick={() => runLocalHelpSearch("social-security")}
+              disabled={!location || localHelpMutation.isPending}
+            >
+              Social Security
+            </button>
+            <button
+              type="button"
+              className={`${buttonVariants.secondary} text-xs`}
+              onClick={() => runLocalHelpSearch("veterans")}
+              disabled={!location || localHelpMutation.isPending}
+            >
+              Veterans
+            </button>
+          </div>
+        </div>
         <BenefitLocalHelpList
           items={localHelpMutation.data?.items ?? []}
           isLoading={localHelpMutation.isPending}
@@ -1746,34 +1721,10 @@ function SecurityDisabilityPanel({ location, promptForLocation }: BenefitPanelHe
       </div>
 
       <BenefitCard
-        title="SSI vs SSDI – what’s the difference?"
+        title="SSI vs SSDI – what's the difference?"
         description="SSI is needs-based for people with limited income and resources. SSDI is based on work credits and payroll taxes. Some people can get both."
-      >
-        <button
-          type="button"
-          className={buttonVariants.secondary}
-          onClick={() => runLocalHelpSearch("social-security")}
-          disabled={localHelpMutation.isPending}
-          aria-describedby={!location ? locationAlertId : undefined}
-        >
-          {localHelpMutation.isPending ? "Searching…" : "Get help applying"}
-        </button>
-      </BenefitCard>
-
-      <BenefitCard
-        title="Veterans benefits and legal help"
-        description="Find help with VA benefits and free or low-cost legal aid for benefit problems."
-      >
-        <button
-          type="button"
-          className={buttonVariants.primary}
-          onClick={() => runLocalHelpSearch("veterans")}
-          disabled={localHelpMutation.isPending}
-          aria-describedby={!location ? locationAlertId : undefined}
-        >
-          {localHelpMutation.isPending ? "Searching…" : "Find veterans or legal help"}
-        </button>
-      </BenefitCard>
+        variant="info"
+      />
       <CollapsibleGuideSection id="security-program-basics" title="Program basics" summary={securitySummary}>
         <PanelGuidance guide={PANEL_GUIDANCE["security-disability"]} />
       </CollapsibleGuideSection>
