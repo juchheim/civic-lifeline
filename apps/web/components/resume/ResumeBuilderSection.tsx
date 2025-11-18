@@ -408,7 +408,7 @@ useEffect(() => {
               Resume Builder
             </span>
             <div className="text-slate-900">
-              <h1 className="text-3xl font-semibold leading-tight sm:text-[2.5rem]">
+              <h1 className="text-3xl font-semibold leading-[1.1] text-slate-900 sm:text-[2.5rem]">
                 Build your resume with confidence.
               </h1>
               <p className="mt-3 text-sm font-semibold text-slate-600">{stepEyebrow}</p>

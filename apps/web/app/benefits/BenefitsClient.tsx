@@ -534,7 +534,7 @@ export default function BenefitsClient() {
               BENEFITS
             </span>
             <div className="space-y-4">
-              <h1 className="text-3xl font-bold leading-tight text-slate-900 sm:text-[2.5rem]">
+              <h1 className="text-3xl font-semibold leading-[1.1] text-slate-900 sm:text-[2.5rem]">
                 Benefits help all in one place.
               </h1>
               <p className="max-w-2xl text-base leading-relaxed text-slate-600 sm:text-lg">

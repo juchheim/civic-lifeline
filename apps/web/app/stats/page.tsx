@@ -65,8 +65,8 @@ function StatsPageContent() {
     return counties.find((county) => county.fips === countyFips) ?? undefined;
   }, [counties, countyFips]);
 
-  const stateFips: string | undefined = selectedCounty?.stateFips ?? undefined;
-  const countyName: string | undefined = selectedCounty?.name ?? undefined;
+  const stateFips: string | undefined = selectedCounty?.stateFips ? selectedCounty.stateFips : undefined;
+  const countyName: string | undefined = selectedCounty?.name ? selectedCounty.name : undefined;
 
   useEffect(() => {
     if (!location || !location.displayLabel) {
@@ -176,7 +176,7 @@ function StatsPageContent() {
                 <BarChart className="h-4 w-4" />
                 County Metrics
               </span>
-              <h1 className="text-3xl font-semibold text-slate-900">Local Safety Net</h1>
+              <h1 className="text-3xl font-semibold leading-[1.1] text-slate-900 sm:text-[2.5rem]">Local Safety Net</h1>
               <p className="mt-2 max-w-2xl text-sm text-slate-600">
                 Select a state and your county to see the latest unemployment trend from BLS LAUS,
                 plus supporting indicators like poverty, SNAP usage, housing burden, and median wages.
