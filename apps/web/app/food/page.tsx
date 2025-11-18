@@ -153,7 +153,7 @@ function FoodPageContent() {
   return (
     <main className={`space-y-12 bg-neutral-bg ${!mapReady ? "pb-28" : "pb-16"}`}>
       <section className="mt-4 overflow-hidden rounded-[2.5rem] border border-slate-200 bg-white shadow-md shadow-slate-400/5">
-        <div className="grid gap-8 lg:grid-cols-[minmax(0,0.55fr)_minmax(0,1.45fr)] lg:items-stretch">
+        <div className="grid lg:grid-cols-[minmax(0,0.7fr)_minmax(0,1.3fr)] lg:items-stretch">
           <div className="flex flex-col px-6 py-6 sm:px-10 sm:py-8">
             <div className="w-full max-w-[480px] space-y-4">
               <span className="inline-flex w-fit items-center gap-2 rounded-full border border-brand-primary/20 bg-brand-primary/10 px-4 py-1.5 text-sm font-semibold uppercase tracking-[0.24em] text-brand-primary">
@@ -171,10 +171,10 @@ function FoodPageContent() {
             </div>
             <div className="mt-3 w-full max-w-[480px] space-y-3">
               <HeroLocationCard
-                stepLabel="STEP 1: ADD YOUR CITY OR ZIP"
-                title="Add your city or ZIP one time."
+                stepLabel="ADD YOUR LOCATION"
+                title=""
                 helperText="City, county, or ZIP all work."
-                emptyStatusText="No location yet. Add one to unlock local results."
+                emptyStatusText=""
               />
               <p className="text-xs font-medium text-slate-500">We don&apos;t save your location.</p>
             </div>

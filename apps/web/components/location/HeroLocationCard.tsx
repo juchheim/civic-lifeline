@@ -172,7 +172,7 @@ export const HeroLocationCard = forwardRef<HTMLDivElement, HeroLocationCardProps
       <div className="mt-3 space-y-3">
         {showInput ? (
           <div className="space-y-1.5">
-            <h2 className="text-xl font-semibold text-slate-900 sm:text-2xl">{title}</h2>
+            {title ? <h2 className="text-xl font-semibold text-slate-900 sm:text-2xl">{title}</h2> : null}
             {description ? <p className="text-sm text-slate-600">{description}</p> : null}
           </div>
         ) : null}
@@ -193,12 +193,14 @@ export const HeroLocationCard = forwardRef<HTMLDivElement, HeroLocationCardProps
               leadingVisualClassName="text-civic-blue/60"
               inputClassName="border-slate-400 shadow-inner"
             />
-            <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
+            <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
               <span>{helperText}</span>
+            </div>
+            <div className="flex justify-end">
               <button
                 type="button"
                 onClick={handleUseCurrentLocation}
-                className="inline-flex items-center gap-1 rounded-full px-2 py-1 font-semibold text-brand-primary transition hover:text-brand-primary/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/60 focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-semibold text-brand-primary transition hover:text-brand-primary/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/60 focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-60"
                 disabled={isGeolocating}
               >
                 <Crosshair className="h-3.5 w-3.5" aria-hidden="true" />
@@ -206,10 +208,10 @@ export const HeroLocationCard = forwardRef<HTMLDivElement, HeroLocationCardProps
               </button>
             </div>
             {error ? <p className="text-sm text-red-600">{error}</p> : null}
-            <p className="text-sm text-slate-500">{emptyStatusText}</p>
+            {emptyStatusText ? <p className="text-sm text-slate-500">{emptyStatusText}</p> : null}
           </>
         ) : showSummary && statusVariant === "card" ? (
-          <div className="flex min-h-[12.5rem] flex-col justify-center gap-3 rounded-2xl border border-slate-200 bg-slate-50/80 p-4 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-h-[8rem] flex-col justify-center gap-3 rounded-2xl border border-slate-200 bg-slate-50/80 p-4 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="font-semibold text-slate-800">Using:</p>
               <p className="text-slate-700">{formattedStatus}</p>
