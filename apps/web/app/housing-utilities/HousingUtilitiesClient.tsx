@@ -3,9 +3,8 @@
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
-import { createPortal } from "react-dom";
 import type { LucideIcon } from "lucide-react";
-import { ChevronDown, Clock, Droplets, Home, Sparkles, Wifi } from "lucide-react";
+import { ChevronDown, Clock, Droplets, Home, Info, Sparkles, Wifi } from "lucide-react";
 import type { LocationInputWithGeocodeHandle } from "@/components/LocationInputWithGeocode";
 import { HeroLocationCard } from "@/components/location/HeroLocationCard";
 import { SharedLocationProvider, useSharedLocation } from "@/components/location/SharedLocationContext";
@@ -86,13 +85,21 @@ const BASE_SERVICE_CONFIGS: BaseServiceConfig[] = [
 
 const PRIMARY_SERVICE_ID = BASE_SERVICE_CONFIGS[0]?.id ?? "housing";
 
+type StepChipProps = { children: ReactNode; className?: string };
+
+function StepChip({ children, className }: StepChipProps) {
+  return (
+    <span
+      className={`inline-flex w-fit items-center gap-2 rounded-full border border-civic-blue/30 bg-civic-blue/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.32em] text-civic-blue benefits-step-chip ${className ?? ""}`}
+    >
+      {children}
+    </span>
+  );
+}
+
 function HousingUtilitiesContent() {
   const [openSections, setOpenSections] = useState<string[]>([PRIMARY_SERVICE_ID]);
   const [activeSection, setActiveSection] = useState<string>(PRIMARY_SERVICE_ID);
-  const [jumpMenuOpen, setJumpMenuOpen] = useState(false);
-  const [menuPosition, setMenuPosition] = useState<{ top: number; left: number; width: number } | null>(null);
-  const jumpButtonRef = useRef<HTMLButtonElement | null>(null);
-  const jumpMenuRef = useRef<HTMLDivElement | null>(null);
   const isManualNavigationRef = useRef<boolean>(false);
   const { location } = useSharedLocation();
   const locationCardRef = useRef<HTMLDivElement | null>(null);
@@ -127,12 +134,6 @@ function HousingUtilitiesContent() {
   }, [location, promptForLocation]);
 
   const serviceIds = useMemo(() => serviceConfigs.map((service) => service.id), [serviceConfigs]);
-
-  const updateMenuPosition = useCallback(() => {
-    if (!jumpButtonRef.current) return;
-    const rect = jumpButtonRef.current.getBoundingClientRect();
-    setMenuPosition({ top: rect.bottom + 8, left: rect.left, width: rect.width });
-  }, []);
 
   useEffect(() => {
     const media = window.matchMedia("(min-width: 1024px)");
@@ -177,35 +178,6 @@ function HousingUtilitiesContent() {
     return () => observer.disconnect();
   }, [serviceConfigs]);
 
-  useEffect(() => {
-    if (!jumpMenuOpen) {
-      setMenuPosition(null);
-      return;
-    }
-    updateMenuPosition();
-    const handleReflow = () => updateMenuPosition();
-    window.addEventListener("resize", handleReflow);
-    window.addEventListener("scroll", handleReflow, true);
-    const handlePointer = (event: MouseEvent) => {
-      const target = event.target as Node;
-      if (jumpMenuRef.current?.contains(target) || jumpButtonRef.current?.contains(target)) {
-        return;
-      }
-      setJumpMenuOpen(false);
-    };
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setJumpMenuOpen(false);
-    };
-    document.addEventListener("mousedown", handlePointer);
-    document.addEventListener("keydown", handleEscape);
-    return () => {
-      document.removeEventListener("mousedown", handlePointer);
-      document.removeEventListener("keydown", handleEscape);
-      window.removeEventListener("resize", handleReflow);
-      window.removeEventListener("scroll", handleReflow, true);
-    };
-  }, [jumpMenuOpen, updateMenuPosition]);
-
   const expandAll = useCallback(() => {
     setOpenSections(serviceIds);
   }, [serviceIds]);
@@ -246,117 +218,37 @@ function HousingUtilitiesContent() {
     }
   }, []);
 
-  const handleJumpSelect = useCallback(
-    (id: string) => {
-      handleNavClick(id);
-      setJumpMenuOpen(false);
-    },
-    [handleNavClick],
-  );
-
-  const heroHighlights = useMemo(
-    () => [
-      "Know fair market prices in your area before you rent.",
-      "Find out if you are likely to have internet access.",
-      "Learn about local utilities.",
-    ],
-    [],
-  );
-
   return (
     <div className="space-y-12 pb-16 bg-neutral-bg">
       <section className="mt-4 overflow-hidden rounded-[2.5rem] border border-slate-200 bg-white shadow-lg shadow-slate-400/10">
-        <div className="grid gap-8 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1fr)] lg:items-stretch">
-          <div className="flex min-w-0 flex-col justify-between px-6 py-8 sm:px-10 sm:pt-8 sm:pb-12">
+        <div className="px-6 py-6 sm:px-10 sm:py-8">
+          <div className="space-y-4">
+            <span className="inline-flex w-fit items-center gap-2 rounded-full border border-brand-primary/20 bg-brand-primary/10 px-4 py-1.5 text-sm font-semibold uppercase tracking-[0.24em] text-brand-primary">
+              <Home className="h-4 w-4" />
+              Housing & Utilities
+            </span>
             <div className="space-y-4">
-              <span className="inline-flex w-fit items-center gap-2 rounded-full border border-brand-primary/20 bg-brand-primary/10 px-4 py-1.5 text-sm font-semibold uppercase tracking-[0.24em] text-brand-primary">
-                <Home className="h-4 w-4" />
-                Housing & Utilities
-              </span>
               <h1 className="text-3xl font-semibold leading-[1.1] text-slate-900 sm:text-[2.5rem]">
                 Everything you need to know before renting or buying.
               </h1>
-              <p className="max-w-xl text-base leading-normal text-slate-600 sm:text-lg">
+              <p className="max-w-2xl text-base leading-relaxed text-slate-600 sm:text-lg">
                 Choose a service, enter your location and see local data.
               </p>
+            </div>
+            <div className="mt-6 grid gap-6 md:gap-8 lg:grid-cols-[minmax(0,0.6fr)_minmax(0,0.4fr)] lg:items-stretch">
               <HeroLocationCard
                 stepLabel="STEP 1: ADD YOUR CITY OR ZIP"
-                className="mt-6"
                 cardRef={locationCardRef}
                 inputHandleRef={locationInputRef}
                 description="We use this to show nearby programs and stats. We do not save your address."
                 statusFormatter={(label) => (location?.countyName ? `${label} (${location.countyName})` : label)}
               />
-            </div>
-            <div className="relative z-10 mt-8 w-full max-w-xs">
-              <button
-                ref={jumpButtonRef}
-                type="button"
-                onClick={() => setJumpMenuOpen((prev) => !prev)}
-                aria-haspopup="menu"
-                aria-expanded={jumpMenuOpen}
-                aria-controls="hero-jump-menu"
-                className="inline-flex w-full items-center justify-between gap-3 rounded-full bg-brand-primary px-5 py-3 text-base font-semibold text-white shadow-lg shadow-brand-primary/30 transition-colors duration-200 hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2"
-              >
-                <span>Jump to a service</span>
-                <ChevronDown className={`h-4 w-4 transition-transform ${jumpMenuOpen ? "rotate-180" : ""}`} />
-              </button>
-              {jumpMenuOpen &&
-                menuPosition &&
-                createPortal(
-                  <div
-                    id="hero-jump-menu"
-                    ref={jumpMenuRef}
-                    role="menu"
-                    className="z-[1000] rounded-2xl border border-brand-primary/20 bg-white p-2 text-slate-700 shadow-2xl shadow-brand-primary/20"
-                    style={{
-                      position: "fixed",
-                      top: menuPosition.top,
-                      left: menuPosition.left,
-                      width: menuPosition.width,
-                    }}
-                  >
-                    {serviceConfigs.map((service) => {
-                      const Icon = service.icon;
-                      return (
-                        <button
-                          key={service.id}
-                          type="button"
-                          role="menuitem"
-                          onClick={() => handleJumpSelect(service.id)}
-                          className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm font-semibold transition hover:bg-brand-primary/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
-                        >
-                          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-primary/10 text-brand-primary">
-                            <Icon className="h-4 w-4" />
-                          </span>
-                          <div>
-                            <p>{service.label}</p>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>,
-                  document.body,
-                )}
-            </div>
-          </div>
-          <div className="relative min-w-0">
-            <div className="absolute inset-0 bg-info-tint" aria-hidden />
-            <div className="relative flex min-w-0 h-full flex-col justify-between gap-6 rounded-t-3xl bg-info-tint px-6 py-8 text-slate-900 sm:px-10 lg:rounded-none">
-              <div className="space-y-4">
-                <p className="text-sm font-semibold uppercase tracking-[0.3em] text-slate-600">Why it matters</p>
-                <ul className="space-y-2">
-                  {heroHighlights.map((highlight) => (
-                    <li key={highlight} className="flex items-start gap-3 text-base leading-relaxed text-slate-700 sm:text-lg">
-                      <span className="mt-[0.625rem] h-2 w-2 shrink-0 rounded-full bg-brand-accent/60" aria-hidden />
-                      <span>{highlight}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div className="rounded-2xl border border-brand-accent/20 bg-white/80 p-5 text-base leading-relaxed text-slate-800 shadow-inner shadow-brand-accent/10 sm:text-lg">
-                <p className="font-semibold text-slate-800">Simple help in one place</p>
-                <p className="mt-2">
+              <div className="flex flex-col rounded-2xl border border-brand-accent/30 bg-white/80 p-3 text-sm leading-relaxed text-slate-800 shadow-inner shadow-brand-accent/10 sm:p-4">
+                <div className="flex items-center gap-2">
+                  <Info className="h-4 w-4 text-brand-accent/70" aria-hidden="true" />
+                  <p className="text-base font-semibold text-slate-800">Simple help in one place</p>
+                </div>
+                <p className="mt-1 text-sm text-slate-700">
                   All your government data in one place. No need to search multiple sites or agencies.
                 </p>
               </div>
@@ -365,8 +257,9 @@ function HousingUtilitiesContent() {
         </div>
       </section>
 
-      <div className="grid gap-8 lg:grid-cols-[minmax(0,0.32fr)_minmax(0,1fr)]">
-        <div className="space-y-4 lg:sticky lg:top-24 lg:self-start lg:-translate-y-5 min-w-0">
+      <div className="grid gap-x-5 gap-y-4 md:grid-cols-[minmax(0,280px)_minmax(0,1fr)] md:grid-rows-[auto_1fr] md:items-start lg:grid-cols-[minmax(260px,0.38fr)_minmax(0,1fr)]">
+        <StepChip className="benefits-step-chip md:col-start-1 md:row-start-1">Step 2: Pick a service</StepChip>
+        <div className="space-y-4 lg:sticky lg:top-24 lg:self-start lg:-translate-y-5 min-w-0 md:col-start-1 md:row-start-2">
           <div className="lg:hidden">
             <p className="text-sm font-semibold text-slate-700">Pick a service</p>
             <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
@@ -471,7 +364,8 @@ function HousingUtilitiesContent() {
           </div>
         </div>
 
-        <div className="flex min-w-0 flex-col gap-6">
+        <StepChip className="benefits-step-chip md:col-start-2 md:row-start-1">Step 3: Use the tools &amp; links</StepChip>
+        <div className="flex min-w-0 flex-col gap-6 md:col-start-2 md:row-start-2">
           {serviceConfigs.map((service) => (
             <ServicePanel
               key={service.id}
